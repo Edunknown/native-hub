@@ -28,15 +28,6 @@ export function Library() {
   )
 }
 
-export function Updates() {
-  return (
-    <Pending eyebrow="Actualizaciones" title="Actualizaciones" phase="Fase 3 y 6"
-      lede="Nuevas versiones, releases retiradas, cambios importantes y proyectos abandonados. Cada actualización se revisa antes de aplicarse; nada se sustituye sin tu permiso.">
-      <p className="empty">La detección de versiones nuevas frente a lo instalado no está implementada. Hoy el catálogo se comprueba con un script que revisa la última release de cada proyecto en GitHub.</p>
-    </Pending>
-  )
-}
-
 export function Downloads() {
   return (
     <Pending eyebrow="Descargas" title="Descargas" phase="Fase 4"

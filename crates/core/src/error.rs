@@ -8,6 +8,10 @@ pub enum Error {
     Json(#[from] serde_json::Error),
     #[error("catálogo no válido: {0}")]
     Catalog(String),
+    #[error("red: {0}")]
+    Http(String),
+    #[error("{0}")]
+    Invalid(String),
     #[error("no encontrado: {0}")]
     NotFound(String),
 }

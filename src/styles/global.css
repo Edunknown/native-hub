@@ -265,3 +265,32 @@ button.row:hover .game { color: var(--accent-ink); }
 .settings .source + .source { margin-top: 4px; }
 .settings .note-line { margin-top: 8px; }
 .table td { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Fase 3 ---------- */
+.err { color: #E5484D; }
+.ellipsis { min-width: 0; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jobbar { display: flex; align-items: center; gap: 14px; padding: 14px 0; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
+.jobbar > span:first-child { color: var(--fg); }
+.bar { width: 160px; height: 2px; background: var(--line); position: relative; flex: none; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .2s; }
+.yes-plain { color: var(--accent-ink); }
+.cand { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 24px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.cand .game { font-weight: 500; cursor: pointer; }
+.cand .game:hover { color: var(--accent-ink); }
+.cand .sub { color: var(--muted); font-size: 13px; margin-top: 2px; max-width: 80ch; }
+.cand .note-line { margin-top: 6px; }
+.cand-end { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; font-size: 12.5px; }
+.cand-actions { display: flex; align-items: center; gap: 16px; }
+.approve { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 12px; max-width: 560px; padding: 8px 0 4px; }
+.approve label { display: grid; grid-template-columns: 160px minmax(0, 1fr); align-items: center; gap: 16px; font-size: 13px; color: var(--muted); }
+.approve input, .approve select, .token input {
+  height: 34px; border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  border-radius: 3px; padding: 0 10px; font: inherit; font-size: 13px; min-width: 0;
+}
+.approve input:focus, .approve select:focus, .token input:focus { outline: 1.5px solid var(--accent-ink); outline-offset: 0; }
+.approve .chosen { color: var(--fg); }
+.suggest { list-style: none; margin: -4px 0 0 176px; padding: 0; border-left: 1px solid var(--line); }
+.suggest button { padding: 4px 12px; font-size: 13px; color: var(--muted); text-align: left; }
+.suggest button:hover { color: var(--fg); }
+.token { display: flex; gap: 10px; max-width: 460px; }
+.token input { flex: 1; }

@@ -133,3 +133,90 @@ export type View =
   | { name: 'settings' }
   | { name: 'game'; slug: string; project?: string }
   | { name: 'search'; query: string }
+
+// ---------- Fase 3 ----------
+
+export interface RateLimit {
+  limit: number
+  remaining: number
+  reset: number
+}
+
+export interface ReleasesStatus {
+  projectsWithRepo: number
+  checkedLast24h: number
+  neverChecked: number
+  lastLiveCheck: string | null
+  rateLimit: RateLimit | null
+  unseenEvents: number
+  busy: boolean
+  tokenConfigured: boolean
+  /** Solo en el navegador: las funciones en vivo necesitan la app de escritorio. */
+  unsupported?: boolean
+}
+
+export type UpdateKind = 'new_version' | 'withdrawn' | 'repo_missing' | 'abandoned' | 'windows_build'
+
+export interface UpdateEvent {
+  id: number
+  kind: UpdateKind
+  fromTag: string | null
+  toTag: string | null
+  detectedAt: string
+  seen: boolean
+  project: Project
+}
+
+export interface Candidate {
+  id: number
+  repoUrl: string
+  fullName: string
+  description: string | null
+  stars: number | null
+  language: string | null
+  topics: string[]
+  createdAt: string | null
+  pushedAt: string | null
+  abandoned: boolean
+  isFork: boolean
+  archived: boolean
+  reason: string
+  releaseTag: string | null
+  windowsAsset: string | null
+  releaseChecked: boolean
+  status: 'new' | 'approved' | 'rejected'
+  detectedAt: string
+  projectSlug: string | null
+  projectGame: string | null
+}
+
+export interface CandidateList {
+  items: Candidate[]
+  counts: { new: number; approved: number; rejected: number }
+}
+
+export interface Approval {
+  candidateId: number
+  game?: string
+  newGameTitle?: string
+  platform: string
+  kind: ProjectKind
+  name?: string
+}
+
+export interface JobProgress {
+  job: 'refresh' | 'scan'
+  done: number
+  total: number
+  current: string
+}
+
+export interface JobFinished {
+  job: 'refresh' | 'scan'
+  result: Record<string, unknown>
+}
+
+export interface RefreshResult {
+  outcome: { slug: string; status: string; tag: string | null; events: UpdateKind[] }
+  detail: GameDetail
+}

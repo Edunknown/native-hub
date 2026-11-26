@@ -65,8 +65,14 @@ pub fn import_if_newer(conn: &mut Connection, cat: &CatalogFile) -> Result<bool>
 
 pub fn import(conn: &mut Connection, cat: &CatalogFile) -> Result<()> {
     let tx = conn.transaction()?;
+    // Se reemplaza solo lo que viene del catálogo. Lo local (proyectos aprobados desde el
+    // escáner) se conserva; las claves foráneas se comprueban al confirmar la transacción.
     tx.execute_batch(
-        "DELETE FROM project_games; DELETE FROM projects; DELETE FROM games; DELETE FROM platforms;",
+        "PRAGMA defer_foreign_keys = ON;
+         DELETE FROM project_games WHERE project IN (SELECT slug FROM projects WHERE origin = 'catalog');
+         DELETE FROM projects WHERE origin = 'catalog';
+         DELETE FROM games WHERE origin = 'catalog';
+         DELETE FROM platforms;",
     )?;
 
     {
@@ -82,7 +88,9 @@ pub fn import(conn: &mut Connection, cat: &CatalogFile) -> Result<()> {
     }
     {
         let mut st = tx.prepare(
-            "INSERT INTO games (slug, title, platform, year, igdb, search) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT INTO games (slug, title, platform, year, igdb, search) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+             ON CONFLICT(slug) DO UPDATE SET title = excluded.title, platform = excluded.platform,
+               year = excluded.year, igdb = excluded.igdb, search = excluded.search, origin = 'catalog'",
         )?;
         for g in &cat.games {
             st.execute(params![g.slug, g.title, g.platform, g.year, g.igdb, fold(&g.title)])?;
@@ -96,10 +104,15 @@ pub fn import(conn: &mut Connection, cat: &CatalogFile) -> Result<()> {
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
         )?;
         let mut pg = tx.prepare("INSERT OR IGNORE INTO project_games (project, game) VALUES (?1, ?2)")?;
+        // Si un proyecto aprobado a mano ya está en el catálogo, manda la ficha del catálogo.
+        let mut drop_local = tx.prepare(
+            "DELETE FROM projects WHERE origin = 'local' AND (slug = ?1 OR LOWER(repo_url) = LOWER(?2))",
+        )?;
         for p in &cat.projects {
             let slug = s(p, "slug").ok_or_else(|| Error::Catalog("proyecto sin slug".into()))?;
             let game = s(p, "game").ok_or_else(|| Error::Catalog(format!("{slug} sin juego")))?;
             let release = p.get("release").filter(|r| !r.is_null());
+            drop_local.execute(params![slug, s(p, "repoUrl")])?;
             let search = fold(&format!(
                 "{} {} {}",
                 s(p, "name").unwrap_or_default(),
@@ -135,6 +148,7 @@ pub fn import(conn: &mut Connection, cat: &CatalogFile) -> Result<()> {
             }
         }
     }
+    crate::releases::reapply_live_state(&tx)?;
     tx.execute(
         "INSERT INTO settings (key, value) VALUES ('catalog_generated_at', ?1)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value",

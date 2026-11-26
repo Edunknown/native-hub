@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useCatalog } from './catalog'
+import { useLive } from './live'
 import { fmtDateTime, fmtNum } from '../lib/format'
 import type { View } from '../lib/types'
 import { useNav } from './nav'
@@ -31,6 +32,8 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
   const input = useRef<HTMLInputElement>(null)
   const scroller = useRef<HTMLDivElement>(null)
   const { summary } = useCatalog()
+  const live = useLive()
+  const unseen = live.status?.unseenEvents ?? 0
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -51,6 +54,7 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
     <button key={name} type="button" className="nav-item" aria-current={active === name ? 'page' : undefined}
       onClick={() => go({ name } as View)}>
       <Icon />
+      {name === 'updates' && unseen > 0 && <span className="count num">{unseen > 99 ? '99+' : unseen}</span>}
       {label}
     </button>
   )
@@ -83,13 +87,13 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
         </header>
 
         <div className="phase-note">
-          <b>Fase 2 · catálogo.</b> Catálogo real en base de datos local; descargas, instalación y biblioteca aún no están implementadas.
+          <b>Fase 3 · repositorios.</b> Releases comprobadas en vivo y escáner con cola de revisión; descargas, instalación y biblioteca aún no están implementadas.
         </div>
 
         <div className="scroll" ref={scroller}>{children}</div>
 
         <footer className="status" aria-label="Estado">
-          <span>Sin descargas en curso</span>
+          <span>{live.progress ? `${live.progress.job === 'scan' ? 'Buscando proyectos' : 'Comprobando releases'} · ${live.progress.done}/${live.progress.total}` : 'Sin descargas en curso'}</span>
           <span className="num">{fmtNum(summary.projectCount)} proyectos · {fmtNum(summary.installableCount)} con ejecutable Windows</span>
           <span className="push">Catálogo: última comprobación <span className="num">{fmtDateTime(summary.generatedAt)}</span></span>
         </footer>

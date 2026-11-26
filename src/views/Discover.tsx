@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useCatalog } from '../app/catalog'
+import { useLive } from '../app/live'
+import { Review } from './Review'
 import { ProjectTable } from '../components/ProjectTable'
 import { api } from '../lib/api'
 import { fmtNum } from '../lib/format'
@@ -26,6 +28,8 @@ const PAGE = 100
 
 export function Discover() {
   const { summary } = useCatalog()
+  const live = useLive()
+  const [mode, setMode] = useState<'catalog' | 'review'>('catalog')
   const [listing, setListing] = useState<Listing | undefined>('library')
   const [kind, setKind] = useState<ProjectKind | undefined>(undefined)
   const [items, setItems] = useState<Project[]>([])
@@ -41,7 +45,7 @@ export function Discover() {
     load(0).then((r) => { if (alive) { setItems(r.items); setTotal(r.total) } })
     return () => { alive = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listing, kind])
+  }, [listing, kind, live.version])
 
   const more = () => load(items.length).then((r) => setItems((prev) => [...prev, ...r.items]))
 
@@ -55,6 +59,12 @@ export function Discover() {
         </p>
       </div>
 
+      <div className="filters" role="group" aria-label="Sección">
+        <button type="button" aria-pressed={mode === 'catalog'} onClick={() => setMode('catalog')}>Catálogo</button>
+        <button type="button" aria-pressed={mode === 'review'} onClick={() => setMode('review')}>Cola de revisión</button>
+      </div>
+
+      {mode === 'review' ? <Review /> : <>
       <div className="filters" role="group" aria-label="Disponibilidad">
         {LISTINGS.map((f) => (
           <button key={f.label} type="button" aria-pressed={listing === f.id} onClick={() => setListing(f.id)}>{f.label}</button>
@@ -73,7 +83,8 @@ export function Discover() {
         <div><button type="button" className="btn-line" onClick={more}>Cargar {Math.min(PAGE, total - items.length)} más</button></div>
       )}
 
-      <p className="devnote">El descubrimiento automático en GitHub y GitLab llega en la fase 3. Lo que detecte irá a una cola de revisión y no entrará en el catálogo sin aprobación.</p>
+      <p className="devnote">Lo que encuentra el escáner va a la cola de revisión y no entra en el catálogo sin tu aprobación.</p>
+      </>}
     </main>
   )
 }

@@ -3,7 +3,7 @@ import { useCatalog } from '../app/catalog'
 import { useNav } from '../app/nav'
 import { IconDownload, IconOut } from '../app/icons'
 import { openExternal } from '../lib/api'
-import { fmtDate, fmtNum, fmtSize, kindLabel, plural, statusLabel } from '../lib/format'
+import { fmtDate, fmtDateTime, fmtNum, fmtSize, kindLabel, plural, statusLabel } from '../lib/format'
 import type { Game, GameDetail, Project } from '../lib/types'
 
 function initials(title: string) {
@@ -86,14 +86,27 @@ function Notes({ project, platform }: { project: Project; platform: string }) {
 }
 
 /** Bloque de juego con selector de recompilador. Se usa en el destacado de Inicio y en la ficha. */
-export function GameFeature({ detail, eyebrow, initialProject, linkTitle }: { detail: GameDetail; eyebrow: string; initialProject?: string; linkTitle?: boolean }) {
+export function GameFeature({ detail, eyebrow, initialProject, linkTitle, onRefresh }: {
+  detail: GameDetail; eyebrow: string; initialProject?: string; linkTitle?: boolean
+  /** Comprueba en vivo la release del proyecto elegido (solo en la ficha). */
+  onRefresh?: (slug: string) => Promise<string>
+}) {
   const { go } = useNav()
   const { platformOf } = useCatalog()
   const { game, projects } = detail
-  const start = Math.max(0, projects.findIndex((p) => p.slug === initialProject))
-  const [sel, setSel] = useState(start)
+  // Se guarda el slug y no la posición: el orden puede cambiar tras comprobar una release.
+  const [selSlug, setSelSlug] = useState(initialProject)
+  const sel = Math.max(0, projects.findIndex((p) => p.slug === selSlug))
   const project = projects[sel]
   const installable = projects.filter((p) => p.listing === 'library').length
+  const [checking, setChecking] = useState(false)
+  const [checkMsg, setCheckMsg] = useState<string | null>(null)
+  const check = async () => {
+    if (!onRefresh || !project) return
+    setChecking(true)
+    setCheckMsg(null)
+    try { setCheckMsg(await onRefresh(project.slug)) } catch (e) { setCheckMsg(String(e)) } finally { setChecking(false) }
+  }
 
   return (
     <section aria-labelledby={`t-${game.slug}`}>
@@ -115,7 +128,7 @@ export function GameFeature({ detail, eyebrow, initialProject, linkTitle }: { de
             <p className="f-desc">Hay {projects.length} proyectos para este juego. <strong>Elige cuál quieres usar</strong>: cada uno tiene sus propios requisitos, su forma de instalarse y de actualizarse.</p>
           )}
 
-          {projects.length > 0 && <ProjectPicker projects={projects} selected={sel} onSelect={setSel} />}
+          {projects.length > 0 && <ProjectPicker projects={projects} selected={sel} onSelect={(i) => setSelSlug(projects[i].slug)} />}
 
           {project && (
             <>
@@ -137,9 +150,14 @@ export function GameFeature({ detail, eyebrow, initialProject, linkTitle }: { de
                 {project.release && (
                   <a className="link" onClick={() => openExternal(project.release!.url)}>Ver release {project.release.tag}<IconOut /></a>
                 )}
+                {onRefresh && project.repoUrl && (
+                  <button type="button" className="link" disabled={checking} onClick={check}>{checking ? 'Comprobando…' : 'Comprobar release ahora'}</button>
+                )}
                 {project.stars != null && <span className="note-line num">★ {fmtNum(project.stars)}</span>}
               </div>
+              {checkMsg && <div className="note-line">{checkMsg}</div>}
               <div className="note-line">
+                {project.checkedAt && <>Comprobado el {fmtDateTime(project.checkedAt)}. </>}
                 {project.listing === 'library'
                   ? 'Instalación pendiente de implementar (fase 5). La descarga saldrá del repositorio oficial y nada se ejecutará sin tu confirmación.'
                   : project.checkedAt == null

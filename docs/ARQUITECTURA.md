@@ -226,7 +226,15 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 - **Comprobación.** Se usan las páginas públicas de releases de github.com para no chocar con el límite de 60 consultas por hora de la API sin token. En la fase 3 la app lo hará con la API oficial, ETag y token opcional.
 - **Switch 2.** Se incluyen porque el catálogo debe ser completo, pero con aviso: juegos comerciales recientes, muchos forks y riesgo legal y de seguridad alto.
 
-## 9. Estado real de cada función
+## 9. Repositorios en vivo (fase 3)
+
+- **Release Manager** (`crates/core/src/releases.rs`). Consulta la API oficial de GitHub, GitLab o Codeberg según el repositorio, decide si la release publica un ejecutable Windows (la misma lógica que el script del catálogo) y guarda el resultado. Las novedades quedan en `update_events`: versión nueva, primer ejecutable Windows, release retirada y repositorio desaparecido. Lo comprobado en vivo se guarda aparte (`release_state`) y se vuelve a aplicar si se importa un catálogo más antiguo.
+- **Cuota.** Cada petición lleva su ETag: un 304 no gasta cuota en GitHub. La cuota restante se guarda y los lotes se detienen solos dejando un margen. Sin token, 60 consultas por hora; con token, 5.000. El token es opcional, se valida contra GitHub antes de guardarlo y vive en el Administrador de credenciales de Windows.
+- **Repository Scanner** (`crates/core/src/scanner.rs`). Búsquedas concretas en GitHub (temas `static-recompilation`, `recompilation`, «recomp» en el nombre, «native pc port»…). Descarta lo que ya está en el catálogo, guarda el resto como candidato y comprueba la release de los 30 más populares. Los candidatos no entran en el catálogo: hay que aprobarlos en la cola de revisión y asignarles juego, plataforma y tipo. Lo aprobado es de origen `local` y sobrevive a las reimportaciones del catálogo.
+- **Seguridad.** Solo se habla con `api.github.com`, `gitlab.com` y `codeberg.org`, siempre por HTTPS. Las URL de repositorio se validan antes de construir ninguna petición. Nada se descarga ni se ejecuta.
+- **Pruebas.** `npm test` usa un servidor falso. `cargo test -p native-hub-core --test network -- --ignored` prueba contra las APIs reales.
+
+## 10. Estado real de cada función
 
 | Función | Estado |
 |---|---|
@@ -234,7 +242,10 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 | Catálogo de ≈1.550 proyectos con releases comprobadas en GitHub | Hecho (fase 2) |
 | Base de datos SQLite con migraciones, importación y consultas | Hecho (fase 2), con pruebas en `crates/core` |
 | Clasificación por consolas y familias | Hecho (fase 2) |
-| Escáner automático de GitHub/GitLab y cola de revisión | No implementado (fase 3) |
+| Comprobación de releases en vivo (GitHub, GitLab, Codeberg) con ETag y control de cuota | Hecho (fase 3) |
+| Escáner de GitHub y cola de revisión con aprobación manual | Hecho (fase 3) |
+| Token de GitHub opcional en el Administrador de credenciales | Hecho (fase 3) |
+| Escáner en GitLab | No implementado (solo se comprueban releases de proyectos de GitLab ya en el catálogo) |
 | Descargas | No implementado (fase 4) |
 | Adaptadores e instalación | No implementado (fase 5) |
 | Biblioteca: ejecutar, actualizar, desinstalar | No implementado (fase 6). En la interfaz aparece vacía. |

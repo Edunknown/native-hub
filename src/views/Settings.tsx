@@ -1,7 +1,38 @@
+import { useState } from 'react'
 import { useCatalog } from '../app/catalog'
+import { useLive } from '../app/live'
+
 import type { Theme } from '../app/theme'
-import { isTauri, openExternal } from '../lib/api'
+import { api, isTauri, openExternal } from '../lib/api'
 import { fmtDateTime } from '../lib/format'
+
+function TokenSetting() {
+  const live = useLive()
+  const [value, setValue] = useState('')
+  const [msg, setMsg] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  if (live.status?.unsupported) return <span className="tbd">Solo en la app de escritorio</span>
+  const save = async () => {
+    setBusy(true); setMsg(null)
+    try { await api.setGithubToken(value); setValue(''); setMsg('Token guardado en el Administrador de credenciales de Windows.'); live.reload() }
+    catch (e) { setMsg(String(e)) } finally { setBusy(false) }
+  }
+  const clear = async () => { await api.clearGithubToken(); setMsg('Token eliminado.'); live.reload() }
+  return (
+    <>
+      {live.status?.tokenConfigured ? (
+        <p><span className="yes">Configurado</span> <button type="button" className="link" onClick={clear}>Quitar</button></p>
+      ) : (
+        <div className="token">
+          <input type="password" autoComplete="off" spellCheck={false} placeholder="ghp_… o github_pat_…" value={value} onChange={(e) => setValue(e.target.value)} />
+          <button type="button" className="btn-line" disabled={busy || !value.trim()} onClick={save}>{busy ? 'Comprobando…' : 'Guardar'}</button>
+        </div>
+      )}
+      <p className="note-line">Opcional. Sin token, GitHub permite 60 consultas por hora; con uno, 5.000. Basta un token sin permisos (solo lectura de repositorios públicos). Se guarda en el Administrador de credenciales de Windows, nunca en archivos.</p>
+      {msg && <p className="note-line">{msg}</p>}
+    </>
+  )
+}
 
 export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Theme) => void }) {
   const { summary } = useCatalog()
@@ -27,7 +58,7 @@ export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Them
         </div>
         <div>
           <dt>Token de GitHub</dt>
-          <dd><span className="muted">Opcional, para superar el límite de 60 consultas por hora. </span><span className="tbd">No implementado (fase 3)</span></dd>
+          <dd><TokenSetting /></dd>
         </div>
         <div>
           <dt>Catálogo</dt>

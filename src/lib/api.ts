@@ -1,8 +1,12 @@
 // Capa de acceso a datos de la interfaz.
 // En la app de escritorio llama a los comandos Rust (SQLite). En el navegador (npm run dev)
-// usa web-backend.ts, que hace las mismas consultas sobre catalog/catalog.json.
+// usa web-backend.ts, que hace las mismas consultas de catálogo sobre catalog/catalog.json;
+// las funciones en vivo (releases, escáner, token) solo existen en la app.
 
-import type { DiscoverFilter, DiscoverResult, GameDetail, Home, Platform, Project, Summary } from './types'
+import type {
+  Approval, CandidateList, DiscoverFilter, DiscoverResult, GameDetail, Home, JobFinished, JobProgress,
+  Platform, Project, RefreshResult, ReleasesStatus, Summary, UpdateEvent,
+} from './types'
 
 export const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 
@@ -27,6 +31,31 @@ export const api = {
   search: (q: string, limit = 100) => call<Project[]>('catalog_search', { q, limit }),
   discover: (f: DiscoverFilter) => call<DiscoverResult>('catalog_discover', { ...f }),
   home: () => call<Home>('catalog_home'),
+  gamesLookup: (q: string) => call<{ slug: string; title: string; platform: string }[]>('catalog_games_lookup', { q }),
+
+  releasesStatus: () => call<ReleasesStatus>('releases_status'),
+  refreshProject: (slug: string) => call<RefreshResult>('refresh_project', { slug }),
+  refreshStale: (maxAgeHours = 24, limit = 200) => call<boolean>('refresh_stale', { maxAgeHours, limit }),
+  cancelJob: () => call<void>('cancel_job'),
+  updateEvents: (limit = 100) => call<UpdateEvent[]>('update_events', { limit }),
+  markEventsSeen: () => call<number>('mark_events_seen'),
+
+  scan: () => call<boolean>('scan_repositories'),
+  candidates: (status: 'new' | 'approved' | 'rejected' = 'new') => call<CandidateList>('candidates', { status }),
+  approve: (approval: Approval) => call<string>('approve_candidate', { approval }),
+  reject: (id: number) => call<void>('reject_candidate', { id }),
+
+  setGithubToken: (value: string) => call<{ ok: boolean }>('set_github_token', { value }),
+  clearGithubToken: () => call<void>('clear_github_token'),
+}
+
+/** Escucha el progreso y el final de los trabajos en segundo plano. Devuelve la función para dejar de escuchar. */
+export async function onJobs(progress: (p: JobProgress) => void, finished: (f: JobFinished) => void): Promise<() => void> {
+  if (!isTauri) return () => {}
+  const { listen } = await import('@tauri-apps/api/event')
+  const a = await listen<JobProgress>('job-progress', (e) => progress(e.payload))
+  const b = await listen<JobFinished>('job-finished', (e) => finished(e.payload))
+  return () => { a(); b() }
 }
 
 /** Abre un enlace en el navegador del sistema (Tauri) o en una pestaña nueva (web). */

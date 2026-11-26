@@ -63,6 +63,43 @@ const MIGRATIONS: &[&str] = &[
         action TEXT NOT NULL, subject TEXT, detail TEXT
     );
     "#,
+    // v2 · fase 3: proyectos y juegos locales (aprobados desde el escáner), caché HTTP,
+    // estado de releases comprobadas en vivo, candidatos del escáner y novedades.
+    r#"
+    ALTER TABLE projects ADD COLUMN origin TEXT NOT NULL DEFAULT 'catalog';
+    ALTER TABLE games ADD COLUMN origin TEXT NOT NULL DEFAULT 'catalog';
+
+    CREATE TABLE http_cache (url TEXT PRIMARY KEY, etag TEXT, body TEXT NOT NULL, fetched_at TEXT NOT NULL);
+
+    -- Última comprobación en vivo de cada repositorio. Sobrevive a las reimportaciones del
+    -- catálogo y se vuelve a aplicar si es más reciente que el dato del catálogo.
+    CREATE TABLE release_state (
+        repo_url TEXT PRIMARY KEY, data TEXT NOT NULL, checked_at TEXT NOT NULL
+    );
+
+    CREATE TABLE scan_candidates (
+        id INTEGER PRIMARY KEY,
+        repo_url TEXT NOT NULL UNIQUE, host TEXT NOT NULL, full_name TEXT NOT NULL,
+        description TEXT, stars INTEGER, language TEXT, topics TEXT,
+        created_at TEXT, pushed_at TEXT, is_fork INTEGER, archived INTEGER,
+        reason TEXT NOT NULL,
+        release_tag TEXT, windows_asset TEXT, release_checked_at TEXT,
+        status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'approved', 'rejected')),
+        detected_at TEXT NOT NULL DEFAULT (datetime('now')),
+        reviewed_at TEXT, project_slug TEXT
+    );
+    CREATE INDEX scan_candidates_status ON scan_candidates(status, stars);
+
+    CREATE TABLE update_events (
+        id INTEGER PRIMARY KEY,
+        project TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('new_version', 'withdrawn', 'repo_missing', 'abandoned', 'windows_build')),
+        from_tag TEXT, to_tag TEXT,
+        detected_at TEXT NOT NULL DEFAULT (datetime('now')),
+        seen_at TEXT
+    );
+    CREATE INDEX update_events_detected ON update_events(detected_at);
+    "#,
 ];
 
 pub fn open(path: &Path) -> Result<Connection> {
@@ -75,7 +112,7 @@ pub fn open_in_memory() -> Result<Connection> {
 }
 
 fn setup(mut conn: Connection) -> Result<Connection> {
-    conn.execute_batch("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;")?;
+    conn.execute_batch("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;")?;
     migrate(&mut conn)?;
     Ok(conn)
 }

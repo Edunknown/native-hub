@@ -1,13 +1,30 @@
+import { useState } from 'react'
+import { useLive } from '../app/live'
 import { useNav } from '../app/nav'
 import { IconBack } from '../app/icons'
 import { GameFeature } from '../components/GameFeature'
 import { api } from '../lib/api'
 import { fmtDate, fmtDateTime, fmtNum } from '../lib/format'
+import type { GameDetail } from '../lib/types'
 import { useAsync } from '../lib/useAsync'
 
 export function GameView({ slug, project }: { slug: string; project?: string }) {
   const { back, canGoBack } = useNav()
-  const detail = useAsync(() => api.game(slug), [slug])
+  const live = useLive()
+  const loaded = useAsync(() => api.game(slug), [slug, live.version])
+  const [fresh, setFresh] = useState<{ slug: string; detail: GameDetail } | null>(null)
+  const detail = fresh?.slug === slug ? { status: 'ok' as const, data: fresh.detail } : loaded
+  const live_ok = !live.status?.unsupported
+  const refresh = async (projectSlug: string) => {
+    const r = await api.refreshProject(projectSlug)
+    setFresh({ slug, detail: r.detail })
+    live.reload()
+    const ev = r.outcome.events
+    if (r.outcome.status === 'repo_missing') return 'El repositorio ya no existe.'
+    if (r.outcome.status === 'no_release') return 'El proyecto no tiene releases publicadas.'
+    if (ev.includes('new_version')) return `Hay una versión nueva: ${r.outcome.tag}.`
+    return `Sin cambios: la última release sigue siendo ${r.outcome.tag}.`
+  }
   if (detail.status === 'loading') return <main className="content"><p className="empty">Cargando…</p></main>
   if (detail.status === 'error') return <main className="content"><p className="empty">No se encontró el juego en el catálogo.</p></main>
   const { projects } = detail.data
@@ -18,7 +35,8 @@ export function GameView({ slug, project }: { slug: string; project?: string }) 
         <div><button type="button" className="link" onClick={back}><IconBack width={14} height={14} />Volver</button></div>
       )}
       {/* key: reinicia el selector al cambiar de juego */}
-      <GameFeature key={`${slug}:${project ?? ''}`} detail={detail.data} eyebrow="Ficha del juego" initialProject={project} />
+      <GameFeature key={`${slug}:${project ?? ''}`} detail={detail.data} eyebrow="Ficha del juego" initialProject={project}
+        onRefresh={live_ok ? refresh : undefined} />
 
       <section>
         <div className="sec-head"><h2>Proyectos para este juego</h2><span className="aside">Datos de GitHub</span></div>

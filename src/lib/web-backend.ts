@@ -81,6 +81,20 @@ const handlers: Record<string, (a: Record<string, unknown>) => unknown> = {
   },
 }
 
+const desktopOnly = () => { throw new Error('Disponible solo en la app de escritorio (npm run tauri dev).') }
+Object.assign(handlers, {
+  catalog_games_lookup: ({ q }: Record<string, unknown>) => {
+    const t = fold(String(q))
+    return cat.games.filter((g) => fold(g.title).includes(t)).slice(0, 20).map(({ slug, title, platform }) => ({ slug, title, platform }))
+  },
+  releases_status: () => ({ projectsWithRepo: 0, checkedLast24h: 0, neverChecked: 0, lastLiveCheck: null, rateLimit: null, unseenEvents: 0, busy: false, tokenConfigured: false, unsupported: true }),
+  update_events: () => [],
+  mark_events_seen: () => 0,
+  candidates: () => ({ items: [], counts: { new: 0, approved: 0, rejected: 0 } }),
+  refresh_project: desktopOnly, refresh_stale: desktopOnly, cancel_job: desktopOnly, scan_repositories: desktopOnly,
+  approve_candidate: desktopOnly, reject_candidate: desktopOnly, set_github_token: desktopOnly, clear_github_token: desktopOnly,
+})
+
 export async function handle(cmd: string, args: Record<string, unknown>) {
   const h = handlers[cmd]
   if (!h) throw new Error(`comando desconocido: ${cmd}`)
