@@ -2,8 +2,9 @@ import type { ReactNode } from 'react'
 import { useCatalog } from '../app/catalog'
 import { useNav } from '../app/nav'
 import type { Project } from '../lib/types'
+import { ConsoleIcon } from './ConsoleIcon'
 
-/** Fila editorial: miniatura de plataforma, juego/proyecto y un dato a la derecha. */
+/** Fila editorial: silueta de la consola, juego/proyecto y un dato a la derecha. */
 export function ProjectRow({ project, title, sub, end }: { project: Project; title?: ReactNode; sub?: ReactNode; end?: ReactNode }) {
   const { go } = useNav()
   const { platformOf } = useCatalog()
@@ -11,10 +12,15 @@ export function ProjectRow({ project, title, sub, end }: { project: Project; tit
   return (
     <li>
       <button type="button" className="row" onClick={() => go({ name: 'game', slug: project.game, project: project.slug })}>
-        <span className="thumb">{platform?.short ?? platform?.name}</span>
+        <span className="thumb" title={platform?.name}>
+          <ConsoleIcon slug={project.platform} size={30} strokeWidth={1.6} />
+          <span>{platform?.short ?? platform?.name}</span>
+        </span>
         <span className="t">
           <div className="game">{title ?? project.name}</div>
-          <div className="sub">{sub ?? `${project.gameTitle}${project.developers ? ` · ${project.developers}` : ''}`}</div>
+          <div className="sub">
+            {sub ?? <>{project.gameTitle} · <span className="plat-name">{platform?.name}</span>{project.developers ? ` · ${project.developers}` : ''}</>}
+          </div>
         </span>
         <span className="end">{end}</span>
       </button>

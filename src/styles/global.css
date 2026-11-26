@@ -357,3 +357,9 @@ button.row:hover .game { color: var(--accent-ink); }
 .pending { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; max-width: 680px; }
 .exe-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .btn-line.err { border-color: #E5484D; color: #E5484D; }
+
+/* Miniatura de plataforma con silueta en las listas */
+.thumb { width: 44px; height: 44px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 3px 2px; color: var(--muted); font-size: 8.5px; }
+.thumb svg { flex: none; }
+.row { grid-template-columns: 44px minmax(0, 1fr) auto; }
+.row .sub .plat-name { color: var(--fg); }
