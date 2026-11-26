@@ -243,7 +243,18 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 - **Dónde.** `%LOCALAPPDATA%\dev.nativehub.app\downloads\<proyecto>\<versión>\<archivo>`. Nada se descomprime ni se ejecuta: eso es la fase 5.
 - **Pruebas.** Seis con transporte falso (redirecciones, SHA-256, host no permitido, pausa y reanudación, nombres de archivo) y una real (`--ignored`) que descarga SpaghettiKart y comprueba su SHA-256.
 
-## 11. Estado real de cada función
+## 11. Instalación (fase 5)
+
+- **Plan antes de actuar.** `install::plan` describe qué se va a hacer (extraer, copiar, abrir un instalador o extracción manual), dónde y qué pedirá el juego. La interfaz lo enseña y solo instala al pulsar «Instalar».
+- **Método según el archivo.** ZIP: extracción segura (rutas dentro de la carpeta, sin enlaces simbólicos, límites de tamaño y número de archivos; se quita la carpeta raíz común). EXE portable: se copia. Instalador (setup/installer, .msi): no se abre hasta que el usuario lo confirma, y después elige el ejecutable instalado. 7z/RAR: extracción manual.
+- **Ejecutable.** Se buscan los .exe (sin desinstaladores, actualizadores ni gestores de errores). Si hay uno solo en el nivel más alto, se elige; si no, el usuario escoge. Siempre se puede cambiar.
+- **Adaptadores revisados** (`catalog/adapters/*.json`, unidos al catálogo por repositorio). JSON declarativo: `firstRun` (qué pedirá el juego al abrirlo), `userFiles` (reglas para comprobar ROM, ISO o volcado: extensión, cabecera, tamaño y SHA-1 solo si el proyecto lo publica), `exeHint` (si se conoce) y `preserve` (fase 6). Primeros siete: Ship of Harkinian, 2 Ship 2 Harkinian, Zelda64Recomp, Starship, SpaghettiKart, sm64coopdx y Unleashed Recompiled. Revisados con la documentación pública; aún sin probar con el juego.
+- **Game File Validator.** Comprueba el archivo del usuario sin copiarlo ni modificarlo y guarda solo la ruta. No obtiene claves ni extrae nada protegido.
+- **Ejecutar y desinstalar.** Ejecutar solo lanza el ejecutable elegido (dentro de la carpeta del juego, salvo instaladores externos). Desinstalar borra únicamente carpetas dentro de la carpeta de juegos, tras confirmar, y avisa de que se pierden las partidas que el juego guarde dentro.
+- **Carpeta de juegos.** `Documentos\NATIVE HUB` por defecto; se cambia en Ajustes.
+- **Pruebas.** Siete con archivos ZIP generados (método, extracción, ruta maliciosa, instalar/ejecutar/desinstalar, instalador externo, ROM de N64, adaptador en el plan) y una real (`--ignored`) que descarga e instala SpaghettiKart.
+
+## 12. Estado real de cada función
 
 | Función | Estado |
 |---|---|
@@ -256,5 +267,6 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 | Token de GitHub opcional en el Administrador de credenciales | Hecho (fase 3) |
 | Escáner en GitLab | No implementado (solo se comprueban releases de proyectos de GitLab ya en el catálogo) |
 | Descargas oficiales reanudables con SHA-256 | Hecho (fase 4) |
-| Adaptadores e instalación | No implementado (fase 5) |
-| Biblioteca: ejecutar, actualizar, desinstalar | No implementado (fase 6). En la interfaz aparece vacía. |
+| Instalación con plan, adaptadores declarativos y validación de archivos del usuario | Hecho (fase 5) |
+| Biblioteca: ejecutar, cambiar ejecutable, abrir carpeta, desinstalar | Hecho (fase 5) |
+| Actualizar instalaciones conservando partidas y configuración | No implementado (fase 6). Se avisa de que hay versión nueva. |

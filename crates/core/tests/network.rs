@@ -64,3 +64,20 @@ fn descarga_real_con_sha256() {
     assert_eq!(state, "done");
     assert_eq!(row["verified"], true);
 }
+
+#[test]
+#[ignore]
+fn instalacion_real_de_spaghettikart() {
+    use std::sync::atomic::AtomicU8;
+    use native_hub_core::{download, install};
+    let conn = setup();
+    let dir = tempfile::tempdir().unwrap();
+    let slug = "harbourmasters-spaghettikart";
+    let id = download::enqueue(&conn, &dir.path().join("dl"), slug).unwrap();
+    assert_eq!(download::run(&conn, &download::UreqTransport::default(), id, &AtomicU8::new(download::RUN), |_| {}).unwrap(), "done");
+    let root = dir.path().join("Juegos");
+    println!("{}", install::plan(&conn, slug, &root).unwrap());
+    let inst = install::install(&conn, slug, &root).unwrap();
+    println!("estado {} · exe {} · candidatos {}", inst["state"], inst["executablePath"], inst["config"]["candidates"]);
+    assert!(inst["executablePath"].is_string() || inst["config"]["pending"] == "choose_exe");
+}

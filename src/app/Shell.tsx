@@ -95,7 +95,7 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
         </header>
 
         <div className="phase-note">
-          <b>Fase 4 · descargas.</b> Descargas oficiales con SHA-256; la instalación y la biblioteca aún no están implementadas.
+          <b>Fase 5 · instalación.</b> Descarga, instala y ejecuta; actualizar lo instalado llega en la fase 6.
         </div>
 
         <div className="scroll" ref={scroller}>{children}</div>

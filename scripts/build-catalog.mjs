@@ -67,6 +67,16 @@ for (const m of manual.projects) {
   })
 }
 
+// Adaptadores revisados (catalog/adapters/*.json), uno por proyecto, por repositorio.
+const { readdir } = await import('node:fs/promises')
+const adapterDir = join(ROOT, 'catalog/adapters')
+for (const f of existsSync(adapterDir) ? (await readdir(adapterDir)).filter((n) => n.endsWith('.json')) : []) {
+  const a = JSON.parse(await readFile(join(adapterDir, f), 'utf8'))
+  const target = projects.get(key(a.repo))
+  if (!target) { console.warn(`adaptador ${f}: el repositorio ${a.repo} no está en el catálogo`); continue }
+  target.adapter = a.adapter
+}
+
 for (const p of projects.values()) {
   if (!games.has(p.game)) throw new Error(`Proyecto ${p.repo}: juego desconocido ${p.game}`)
   p.platform ??= games.get(p.game).platform
@@ -212,6 +222,7 @@ for (const p of projects.values()) {
     requirementsText: p.requirementsText ?? null,
     requirements: p.requirements ?? null,
     tags: p.tags ?? [],
+    adapter: p.adapter ?? null,
     stars: p.stars ?? null,
     createdAt: p.createdAt ?? null,
     pushedAt: p.pushedAt ?? null,

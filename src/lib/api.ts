@@ -4,7 +4,7 @@
 // las funciones en vivo (releases, escáner, token) solo existen en la app.
 
 import type {
-  Approval, CandidateList, DownloadItem, DownloadProgress, DiscoverFilter, DiscoverResult, GameDetail, Home, JobFinished, JobProgress,
+  Approval, CandidateList, DownloadItem, DownloadProgress, InstallPlan, Installation, UserFileCheck, DiscoverFilter, DiscoverResult, GameDetail, Home, JobFinished, JobProgress,
   Platform, Project, RefreshResult, ReleasesStatus, Summary, UpdateEvent,
 } from './types'
 
@@ -53,6 +53,18 @@ export const api = {
   downloadRemove: (id: number, deleteFile: boolean) => call<void>('download_remove', { id, deleteFile }),
   downloadReveal: (id: number) => call<void>('download_reveal', { id }),
 
+  installRoot: () => call<{ path: string; default: boolean }>('install_root_get'),
+  setInstallRoot: (path: string | null) => call<{ path: string; default: boolean }>('install_root_set', { path }),
+  installPlan: (slug: string) => call<InstallPlan>('install_plan', { slug }),
+  install: (slug: string) => call<Installation>('install_project', { slug }),
+  installations: () => call<Installation[]>('installations_list'),
+  setExecutable: (id: number, path: string) => call<Installation>('installation_set_exe', { id, path }),
+  launch: (id: number) => call<void>('installation_launch', { id }),
+  openInstallFolder: (id: number) => call<void>('installation_open_folder', { id }),
+  runInstaller: (id: number) => call<void>('installation_run_installer', { id }),
+  uninstall: (id: number, deleteFiles: boolean) => call<void>('installation_uninstall', { id, deleteFiles }),
+  checkUserFile: (slug: string, key: string, path: string, installation?: number) => call<UserFileCheck>('user_file_check', { slug, key, path, installation }),
+
   setGithubToken: (value: string) => call<{ ok: boolean }>('set_github_token', { value }),
   clearGithubToken: () => call<void>('clear_github_token'),
 }
@@ -73,6 +85,20 @@ export async function onDownloads(progress: (p: DownloadProgress) => void, finis
   const a = await listen<DownloadProgress>('download-progress', (e) => progress(e.payload))
   const b = await listen<{ id: number; state: string }>('download-finished', (e) => finished(e.payload))
   return () => { a(); b() }
+}
+
+/** Selector de archivos o carpetas del sistema (solo en la app de escritorio). */
+export async function pickPath(opts: { directory?: boolean; title?: string; extensions?: string[]; defaultPath?: string }): Promise<string | null> {
+  if (!isTauri) return null
+  const { open } = await import('@tauri-apps/plugin-dialog')
+  const r = await open({
+    directory: opts.directory ?? false,
+    multiple: false,
+    title: opts.title,
+    defaultPath: opts.defaultPath,
+    filters: opts.extensions ? [{ name: opts.extensions.join(', '), extensions: opts.extensions }] : undefined,
+  })
+  return typeof r === 'string' ? r : null
 }
 
 /** Abre un enlace en el navegador del sistema (Tauri) o en una pestaña nueva (web). */

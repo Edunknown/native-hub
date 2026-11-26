@@ -1,10 +1,33 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCatalog } from '../app/catalog'
 import { useLive } from '../app/live'
 
 import type { Theme } from '../app/theme'
-import { api, isTauri, openExternal } from '../lib/api'
+import { api, isTauri, openExternal, pickPath } from '../lib/api'
 import { fmtDateTime } from '../lib/format'
+
+function InstallRootSetting() {
+  const [root, setRoot] = useState<{ path: string; default: boolean } | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+  useEffect(() => { api.installRoot().then(setRoot, () => {}) }, [])
+  if (!isTauri) return <span className="tbd">Solo en la app de escritorio</span>
+  const change = async () => {
+    setErr(null)
+    const p = await pickPath({ directory: true, title: 'Carpeta de juegos', defaultPath: root?.path })
+    if (p) api.setInstallRoot(p).then(setRoot, (e) => setErr(String(e)))
+  }
+  return (
+    <>
+      <p><span className="mono">{root?.path}</span>{root?.default && <span className="muted"> (por defecto)</span>}</p>
+      <div className="actions">
+        <button type="button" className="btn-line" onClick={change}>Cambiar…</button>
+        {root && !root.default && <button type="button" className="link" onClick={() => api.setInstallRoot(null).then(setRoot)}>Volver a la carpeta por defecto</button>}
+      </div>
+      <p className="note-line">Cada juego se instala en su propia subcarpeta. Cambiarla no mueve lo que ya está instalado.</p>
+      {err && <p className="note-line err">{err}</p>}
+    </>
+  )
+}
 
 function TokenSetting() {
   const live = useLive()
@@ -53,8 +76,8 @@ export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Them
           </dd>
         </div>
         <div>
-          <dt>Carpeta de instalación</dt>
-          <dd><span className="tbd">Se podrá elegir en la fase 5</span></dd>
+          <dt>Carpeta de juegos</dt>
+          <dd><InstallRootSetting /></dd>
         </div>
         <div>
           <dt>Token de GitHub</dt>

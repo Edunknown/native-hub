@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { useDownloads } from '../app/downloads'
+import { useLibrary } from '../app/library'
+import { InstallPanel } from './Install'
+import { api as liveApi } from '../lib/api'
 import { useCatalog } from '../app/catalog'
 import { useNav } from '../app/nav'
 import { IconDownload, IconOut } from '../app/icons'
@@ -54,9 +57,21 @@ export function CompatSheet({ project }: { project: Project }) {
 }
 
 /** Descargar el ejecutable Windows de la release oficial (fase 4). */
-function DownloadButton({ project }: { project: Project }) {
+function DownloadButton({ project, onInstall }: { project: Project; onInstall: () => void }) {
   const { items, progress, start, error, available } = useDownloads()
   const { go } = useNav()
+  const lib = useLibrary()
+  const inst = lib.byProject(project.slug)
+  if (inst) {
+    return (
+      <>
+        {inst.state === 'ready'
+          ? <button type="button" className="btn-primary" onClick={() => liveApi.launch(inst.id)}>Ejecutar</button>
+          : <button type="button" className="btn-line" onClick={() => go({ name: 'library' })}>Terminar la instalación</button>}
+        <button type="button" className="link" onClick={() => go({ name: 'library' })}>En la biblioteca{inst.updateAvailable ? ' · actualización disponible' : ''}</button>
+      </>
+    )
+  }
   const dl = items.find((d) => d.project === project.slug && d.url === project.windowsAsset?.url && d.state !== 'cancelled')
   if (project.listing !== 'library') {
     return <button type="button" className="btn-primary" disabled><IconDownload width={15} height={15} strokeWidth={2.2} />No instalable</button>
@@ -75,7 +90,12 @@ function DownloadButton({ project }: { project: Project }) {
     )
   }
   if (dl && dl.state === 'done') {
-    return <button type="button" className="btn-line" onClick={() => go({ name: 'downloads' })}><span className="yes">Descargado {dl.releaseTag ?? ''}</span></button>
+    return (
+      <>
+        <button type="button" className="btn-primary" onClick={onInstall}>Instalar…</button>
+        <span className="note-line"><span className="yes">Descargado {dl.releaseTag ?? ''}</span>{dl.verified ? ' · SHA-256 comprobado' : ''}</span>
+      </>
+    )
   }
   return (
     <>
@@ -136,6 +156,7 @@ export function GameFeature({ detail, eyebrow, initialProject, linkTitle, onRefr
   const sel = Math.max(0, projects.findIndex((p) => p.slug === selSlug))
   const project = projects[sel]
   const installable = projects.filter((p) => p.listing === 'library').length
+  const [installing, setInstalling] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
   const [checkMsg, setCheckMsg] = useState<string | null>(null)
   const check = async () => {
@@ -176,7 +197,7 @@ export function GameFeature({ detail, eyebrow, initialProject, linkTitle, onRefr
                 <div className="req"><div className="eyebrow">Requisitos según el proyecto</div><p>{project.requirementsText}</p></div>
               )}
               <div className="actions">
-                <DownloadButton project={project} />
+                <DownloadButton project={project} onInstall={() => setInstalling(project.slug)} />
                 <a className="link" onClick={() => openExternal(project.repoUrl)}>
                   <span className="mono">{project.repoUrl.replace(/^https?:\/\//, '')}</span>
                   <IconOut />
@@ -189,11 +210,12 @@ export function GameFeature({ detail, eyebrow, initialProject, linkTitle, onRefr
                 )}
                 {project.stars != null && <span className="note-line num">★ {fmtNum(project.stars)}</span>}
               </div>
+              {installing === project.slug && <InstallPanel slug={project.slug} onClose={() => setInstalling(null)} />}
               {checkMsg && <div className="note-line">{checkMsg}</div>}
               <div className="note-line">
                 {project.checkedAt && <>Comprobado el {fmtDateTime(project.checkedAt)}. </>}
                 {project.listing === 'library'
-                  ? 'La descarga sale de la release oficial y se comprueba su SHA-256 cuando el proyecto lo publica. Nada se ejecuta: la instalación llega en la fase 5.'
+                  ? 'La descarga sale de la release oficial y se comprueba su SHA-256 cuando el proyecto lo publica. Antes de instalar verás el plan, y nada se ejecuta hasta que pulses «Ejecutar».'
                   : project.checkedAt == null
                     ? 'Release todavía sin comprobar. Hasta entonces no se puede instalar.'
                     : 'Su última release oficial no publica un ejecutable para Windows. Se puede consultar, pero no instalar.'}

@@ -1,0 +1,32 @@
+{
+  "repo": "2ship2harkinian/2ship2harkinian",
+  "adapter": {
+    "id": "2ship2harkinian",
+    "version": 1,
+    "reviewedAt": "2026-11-27",
+    "notes": [
+      "Adaptador revisado con la documentación pública del proyecto; todavía no probado con una instalación real."
+    ],
+    "firstRun": "Al abrirlo por primera vez te pedirá tu ROM de Majora’s Mask y preparará sus archivos a partir de ella.",
+    "userFiles": [
+      {
+        "key": "rom",
+        "label": "ROM de The Legend of Zelda: Majora’s Mask (N64)",
+        "extensions": [
+          "z64",
+          "n64",
+          "v64"
+        ],
+        "magic": [
+          "80371240",
+          "37804012",
+          "40123780"
+        ],
+        "minSize": 4194304,
+        "maxSize": 67108864,
+        "when": "first_launch",
+        "help": "Un volcado de tu propio cartucho. NATIVE HUB solo comprueba que es una ROM de N64 válida; el juego verifica la versión exacta."
+      }
+    ]
+  }
+}

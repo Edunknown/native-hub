@@ -73,6 +73,7 @@ export interface Project {
   requirementsText: string | null
   requirements: Requirements | null
   tags: string[]
+  adapter?: { id: string; version: number; reviewedAt: string | null; firstRun?: string | null; userFiles: UserFileRule[] } | null
   stars: number | null
   createdAt: string | null
   pushedAt: string | null
@@ -252,4 +253,56 @@ export interface DownloadProgress {
   done: number
   total: number | null
   bytesPerSec: number
+}
+
+// ---------- Fase 5 ----------
+
+export interface UserFileRule {
+  key: string
+  label: string
+  extensions: string[]
+  magic: string[]
+  when: string
+  help?: string | null
+}
+
+export interface InstallPlan {
+  project: string
+  name: string
+  gameTitle: string
+  assetName: string
+  method: 'extract_zip' | 'copy_exe' | 'installer' | 'manual'
+  installDir: string
+  dirExists: boolean
+  downloaded: boolean
+  releaseTag: string | null
+  adapter: { id: string; version: number; reviewedAt: string | null; userFiles: UserFileRule[] } | null
+  reviewed: boolean
+  alreadyInstalled: number | null
+  steps: { kind: string; text: string; done?: boolean }[]
+}
+
+export interface Installation {
+  id: number
+  project: string
+  releaseTag: string | null
+  latestTag: string | null
+  updateAvailable: boolean
+  installDir: string
+  executablePath: string | null
+  state: 'downloaded' | 'needs_files' | 'ready' | 'broken'
+  installedAt: string
+  lastPlayedAt: string | null
+  config: {
+    method?: InstallPlan['method']
+    pending?: 'choose_exe' | 'no_exe' | 'run_installer' | 'manual_extract' | null
+    candidates?: string[]
+  }
+  projectData: Project
+}
+
+export interface UserFileCheck {
+  ok: boolean
+  size: number
+  checks: { check: string; ok: boolean; text: string }[]
 }

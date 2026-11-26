@@ -1,5 +1,6 @@
 import { CatalogProvider } from './app/catalog'
 import { DownloadsProvider } from './app/downloads'
+import { LibraryProvider } from './app/library'
 import { LiveProvider } from './app/live'
 import { NavProvider, useNav } from './app/nav'
 import { Shell } from './app/Shell'
@@ -9,7 +10,7 @@ import { Discover } from './views/Discover'
 import { GameView } from './views/GameView'
 import { Home } from './views/Home'
 import { Downloads } from './views/Downloads'
-import { Library } from './views/Placeholders'
+import { Library } from './views/Library'
 import { Updates } from './views/Updates'
 import { Search } from './views/Search'
 import { Settings } from './views/Settings'
@@ -35,11 +36,13 @@ export default function App() {
     <CatalogProvider>
       <LiveProvider>
       <DownloadsProvider>
+      <LibraryProvider>
       <NavProvider>
         <Shell theme={t.theme} onToggleTheme={t.toggle}>
           <Router {...t} />
         </Shell>
       </NavProvider>
+      </LibraryProvider>
       </DownloadsProvider>
       </LiveProvider>
     </CatalogProvider>

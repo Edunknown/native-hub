@@ -1,0 +1,13 @@
+{
+  "repo": "hedge-dev/UnleashedRecomp",
+  "adapter": {
+    "id": "unleashedrecomp",
+    "version": 1,
+    "reviewedAt": "2026-11-27",
+    "notes": [
+      "Adaptador revisado con la documentación pública del proyecto; todavía no probado con una instalación real."
+    ],
+    "firstRun": "Al abrirlo por primera vez, su asistente te pedirá los archivos de tu copia de Sonic Unleashed para Xbox 360 (el juego y, si los tienes, la actualización y los DLC).",
+    "userFiles": []
+  }
+}

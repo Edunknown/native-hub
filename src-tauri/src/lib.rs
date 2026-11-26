@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
 use native_hub_core::http::UreqFetcher;
-use native_hub_core::{Error, Result, catalog, db, download, query, releases, scanner};
+use native_hub_core::{Error, Result, catalog, db, download, install, query, releases, scanner};
 use rusqlite::Connection;
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -37,6 +37,8 @@ struct AppState {
     /// Control de pausa/cancelación de la descarga en curso.
     dl_controls: Mutex<HashMap<i64, Arc<AtomicU8>>>,
     dl_worker: AtomicBool,
+    /// Carpeta de juegos por defecto (Documentos\NATIVE HUB); se puede cambiar en Ajustes.
+    default_install_root: PathBuf,
 }
 
 impl AppState {
@@ -53,6 +55,12 @@ impl AppState {
     }
     fn job_conn(&self) -> Result<Connection> {
         db::open(&self.db_path)
+    }
+    fn install_root(&self) -> Result<PathBuf> {
+        let custom: Option<String> = self.with(|c| {
+            Ok(c.query_row("SELECT value FROM settings WHERE key = 'install_root'", [], |r| r.get(0)).ok())
+        })?;
+        Ok(custom.map(PathBuf::from).unwrap_or_else(|| self.default_install_root.clone()))
     }
 }
 
@@ -336,6 +344,116 @@ fn download_reveal(s: State<AppState>, id: i64) -> Result<()> {
     tauri_plugin_opener::reveal_item_in_dir(&path).map_err(|e| Error::Invalid(e.to_string()))
 }
 
+// ---------- Instalación y biblioteca (fase 5) ----------
+
+#[tauri::command]
+fn install_root_get(s: State<AppState>) -> Result<Value> {
+    let root = s.install_root()?;
+    Ok(json!({ "path": root.to_string_lossy(), "default": root == s.default_install_root }))
+}
+
+#[tauri::command]
+fn install_root_set(s: State<AppState>, path: Option<String>) -> Result<Value> {
+    match path.filter(|p| !p.trim().is_empty()) {
+        Some(p) => {
+            let pb = PathBuf::from(&p);
+            if !pb.is_absolute() {
+                return Err(Error::Invalid("elige una carpeta completa".into()));
+            }
+            std::fs::create_dir_all(&pb).map_err(|e| Error::Invalid(format!("no se puede usar esa carpeta: {e}")))?;
+            s.with(|c| {
+                c.execute("INSERT INTO settings (key, value) VALUES ('install_root', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [&p])?;
+                Ok(())
+            })?;
+        }
+        None => s.with(|c| {
+            c.execute("DELETE FROM settings WHERE key = 'install_root'", [])?;
+            Ok(())
+        })?,
+    }
+    install_root_get(s)
+}
+
+#[tauri::command]
+fn install_plan(s: State<AppState>, slug: String) -> Result<Value> {
+    let root = s.install_root()?;
+    s.with(|c| install::plan(c, &slug, &root))
+}
+
+#[tauri::command]
+async fn install_project(app: AppHandle, slug: String) -> Result<Value> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let s = app.state::<AppState>();
+        let root = s.install_root()?;
+        std::fs::create_dir_all(&root).map_err(|e| Error::Invalid(format!("no se puede crear la carpeta de juegos: {e}")))?;
+        let conn = s.job_conn()?;
+        install::install(&conn, &slug, &root)
+    })
+    .await
+    .map_err(|e| Error::Invalid(e.to_string()))?
+}
+
+#[tauri::command]
+fn installations_list(s: State<AppState>) -> Result<Vec<Value>> {
+    s.with(install::list)
+}
+
+#[tauri::command]
+fn installation_set_exe(s: State<AppState>, id: i64, path: String) -> Result<Value> {
+    s.with(|c| install::set_executable(c, id, std::path::Path::new(&path)))
+}
+
+#[tauri::command]
+fn installation_launch(s: State<AppState>, id: i64) -> Result<()> {
+    let (exe, wd) = s.with(|c| install::launch_target(c, id))?;
+    std::process::Command::new(&exe)
+        .current_dir(&wd)
+        .spawn()
+        .map_err(|e| Error::Invalid(format!("no se pudo abrir {}: {e}", exe.display())))?;
+    Ok(())
+}
+
+#[tauri::command]
+fn installation_open_folder(s: State<AppState>, id: i64) -> Result<()> {
+    let dir: String = s.with(|c| Ok(c.query_row("SELECT install_dir FROM installations WHERE id = ?1", [id], |r| r.get(0))?))?;
+    tauri_plugin_opener::open_path(&dir, None::<&str>).map_err(|e| Error::Invalid(e.to_string()))
+}
+
+#[tauri::command]
+fn installation_run_installer(s: State<AppState>, id: i64) -> Result<()> {
+    // Solo se llega aquí cuando el usuario lo confirma en la interfaz.
+    let path = s.with(|c| install::installer_path(c, id))?;
+    s.with(|c| {
+        c.execute("INSERT INTO audit_log (action, subject, detail) VALUES ('run_installer', ?1, ?2)", rusqlite::params![id.to_string(), path.to_string_lossy()])?;
+        Ok(())
+    })?;
+    tauri_plugin_opener::open_path(&path, None::<&str>).map_err(|e| Error::Invalid(e.to_string()))
+}
+
+#[tauri::command]
+fn installation_uninstall(s: State<AppState>, id: i64, delete_files: bool) -> Result<()> {
+    let root = s.install_root()?;
+    s.with(|c| install::uninstall(c, id, &root, delete_files))
+}
+
+#[tauri::command]
+fn user_file_check(s: State<AppState>, slug: String, key: String, path: String, installation: Option<i64>) -> Result<Value> {
+    s.with(|c| {
+        let rule = install::adapter_rule(c, &slug, &key)?;
+        let p = std::path::Path::new(&path);
+        let res = install::validate_user_file(p, &rule)?;
+        if let Some(id) = installation {
+            install::record_user_file(c, id, &key, p, res["ok"].as_bool() == Some(true))?;
+        }
+        Ok(res)
+    })
+}
+
+#[tauri::command]
+fn user_files_list(s: State<AppState>, installation: i64) -> Result<Vec<Value>> {
+    s.with(|c| install::user_files(c, installation))
+}
+
 // ---------- Token de GitHub ----------
 
 #[tauri::command]
@@ -384,6 +502,7 @@ fn open_database(app: &tauri::App) -> std::result::Result<(Connection, PathBuf),
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -396,6 +515,7 @@ pub fn run() {
             download::recover(&conn)?;
             let downloads_dir = app.path().app_local_data_dir()?.join("downloads");
             std::fs::create_dir_all(&downloads_dir)?;
+            let default_install_root = app.path().document_dir()?.join("NATIVE HUB");
             app.manage(AppState {
                 db: Mutex::new(conn),
                 db_path,
@@ -405,6 +525,7 @@ pub fn run() {
                 downloads_dir,
                 dl_controls: Mutex::new(HashMap::new()),
                 dl_worker: AtomicBool::new(false),
+                default_install_root,
             });
             // Comprobación ligera en segundo plano de los proyectos menos recientes.
             let _ = refresh_stale(app.handle().clone(), Some(24), Some(STARTUP_REFRESH));
@@ -438,6 +559,18 @@ pub fn run() {
             download_cancel,
             download_remove,
             download_reveal,
+            install_root_get,
+            install_root_set,
+            install_plan,
+            install_project,
+            installations_list,
+            installation_set_exe,
+            installation_launch,
+            installation_open_folder,
+            installation_run_installer,
+            installation_uninstall,
+            user_file_check,
+            user_files_list,
         ])
         .run(tauri::generate_context!())
         .expect("error al iniciar NATIVE HUB");

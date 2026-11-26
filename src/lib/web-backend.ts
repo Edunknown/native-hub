@@ -93,6 +93,10 @@ Object.assign(handlers, {
   candidates: () => ({ items: [], counts: { new: 0, approved: 0, rejected: 0 } }),
   refresh_project: desktopOnly, refresh_stale: desktopOnly, cancel_job: desktopOnly, scan_repositories: desktopOnly,
   downloads_list: () => [],
+  installations_list: () => [],
+  install_root_get: () => ({ path: 'Documentos\NATIVE HUB', default: true }),
+  install_plan: desktopOnly, install_project: desktopOnly, install_root_set: desktopOnly, installation_set_exe: desktopOnly, installation_launch: desktopOnly,
+  installation_open_folder: desktopOnly, installation_run_installer: desktopOnly, installation_uninstall: desktopOnly, user_file_check: desktopOnly, user_files_list: () => [],
   download_start: desktopOnly, download_pause: desktopOnly, download_resume: desktopOnly, download_cancel: desktopOnly, download_remove: desktopOnly, download_reveal: desktopOnly,
   approve_candidate: desktopOnly, reject_candidate: desktopOnly, set_github_token: desktopOnly, clear_github_token: desktopOnly,
 })
