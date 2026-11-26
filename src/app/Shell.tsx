@@ -1,0 +1,99 @@
+import { useEffect, useRef, type ReactNode } from 'react'
+import { getCatalog } from '../lib/api'
+import { fmtDateTime } from '../lib/format'
+import type { View } from '../lib/types'
+import { useNav } from './nav'
+import type { Theme } from './theme'
+import {
+  IconConsoles, IconDiscover, IconDownload, IconHome, IconLibrary, IconSearch, IconSettings, IconTheme, IconUpdates, Mark,
+} from './icons'
+
+type Section = Exclude<View['name'], 'game' | 'search'>
+
+const NAV: { name: Section; label: string; Icon: typeof IconHome }[] = [
+  { name: 'home', label: 'Inicio', Icon: IconHome },
+  { name: 'library', label: 'Biblioteca', Icon: IconLibrary },
+  { name: 'discover', label: 'Descubrir', Icon: IconDiscover },
+  { name: 'consoles', label: 'Consolas', Icon: IconConsoles },
+  { name: 'updates', label: 'Actualiz.', Icon: IconUpdates },
+  { name: 'downloads', label: 'Descargas', Icon: IconDownload },
+]
+
+function sectionOf(v: View): Section | null {
+  if (v.name === 'game' || v.name === 'search') return null
+  return v.name
+}
+
+export function Shell({ children, theme, onToggleTheme }: { children: ReactNode; theme: Theme; onToggleTheme: () => void }) {
+  const { view, go, back } = useNav()
+  const active = sectionOf(view)
+  const q = view.name === 'search' ? view.query : ''
+  const input = useRef<HTMLInputElement>(null)
+  const scroller = useRef<HTMLDivElement>(null)
+  const catalog = getCatalog()
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); input.current?.focus(); input.current?.select() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  useEffect(() => { if (view.name !== 'search') scroller.current?.scrollTo({ top: 0 }) }, [view])
+
+  const onSearch = (value: string) => {
+    if (value.trim()) go({ name: 'search', query: value })
+    else if (view.name === 'search') back()
+  }
+
+  const item = (name: Section, label: string, Icon: typeof IconHome) => (
+    <button key={name} type="button" className="nav-item" aria-current={active === name ? 'page' : undefined}
+      onClick={() => go({ name } as View)}>
+      <Icon />
+      {label}
+    </button>
+  )
+
+  return (
+    <div className="app">
+      <aside className="rail" aria-label="Navegación principal">
+        <Mark className="mark" aria-label="NATIVE HUB" />
+        <nav className="nav">{NAV.map((n) => item(n.name, n.label, n.Icon))}</nav>
+        <div className="spacer" />
+        {item('settings', 'Ajustes', IconSettings)}
+      </aside>
+
+      <div className="main">
+        <header className="top">
+          <button type="button" className="wordmark" onClick={() => go({ name: 'home' })}>NATIVE <span>HUB</span></button>
+          <label className="search" htmlFor="q">
+            <IconSearch />
+            <input id="q" ref={input} type="search" placeholder="Buscar juego, proyecto o consola" autoComplete="off"
+              value={q} onChange={(e) => onSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') { if (view.name === 'search') back(); input.current?.blur() } }} />
+            <span className="kbd">Ctrl K</span>
+          </label>
+          <div className="top-actions">
+            <button type="button" onClick={onToggleTheme} aria-label="Cambiar tema">
+              <IconTheme />
+              <span className="lbl">{theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}</span>
+            </button>
+          </div>
+        </header>
+
+        <div className="phase-note">
+          <b>Fase 1 · prototipo visual.</b> Catálogo real comprobado en GitHub; descargas, instalación y biblioteca aún no están implementadas.
+        </div>
+
+        <div className="scroll" ref={scroller}>{children}</div>
+
+        <footer className="status" aria-label="Estado">
+          <span>Sin descargas en curso</span>
+          <span>{catalog.projects.length} proyectos en catálogo</span>
+          <span className="push">Catálogo: última comprobación <span className="num">{fmtDateTime(catalog.generatedAt)}</span></span>
+        </footer>
+      </div>
+    </div>
+  )
+}

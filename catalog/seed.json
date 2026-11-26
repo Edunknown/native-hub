@@ -1,0 +1,903 @@
+{
+  "$comment": "Generado por scripts/snapshot-releases.mjs. No editar a mano.",
+  "generatedAt": "2026-11-26T21:57:23.673Z",
+  "platforms": [
+    {
+      "slug": "nes",
+      "name": "NES",
+      "family": "Nintendo"
+    },
+    {
+      "slug": "snes",
+      "name": "SNES",
+      "family": "Nintendo"
+    },
+    {
+      "slug": "n64",
+      "name": "Nintendo 64",
+      "short": "N64",
+      "family": "Nintendo"
+    },
+    {
+      "slug": "gb",
+      "name": "Game Boy",
+      "family": "Nintendo"
+    },
+    {
+      "slug": "gbc",
+      "name": "Game Boy Color",
+      "family": "Nintendo"
+    },
+    {
+      "slug": "gba",
+      "name": "Game Boy Advance",
+      "family": "Nintendo"
+    },
+    {
+      "slug": "nds",
+      "name": "Nintendo DS",
+      "short": "DS",
+      "family": "Nintendo"
+    },
+    {
+      "slug": "3ds",
+      "name": "Nintendo 3DS",
+      "short": "3DS",
+      "family": "Nintendo"
+    },
+    {
+      "slug": "gc",
+      "name": "GameCube",
+      "family": "Nintendo"
+    },
+    {
+      "slug": "wii",
+      "name": "Wii",
+      "family": "Nintendo"
+    },
+    {
+      "slug": "wiiu",
+      "name": "Wii U",
+      "family": "Nintendo"
+    },
+    {
+      "slug": "switch",
+      "name": "Nintendo Switch",
+      "short": "Switch",
+      "family": "Nintendo"
+    },
+    {
+      "slug": "ps1",
+      "name": "PlayStation",
+      "short": "PS1",
+      "family": "PlayStation"
+    },
+    {
+      "slug": "ps2",
+      "name": "PlayStation 2",
+      "short": "PS2",
+      "family": "PlayStation"
+    },
+    {
+      "slug": "ps3",
+      "name": "PlayStation 3",
+      "short": "PS3",
+      "family": "PlayStation"
+    },
+    {
+      "slug": "ps4",
+      "name": "PlayStation 4",
+      "short": "PS4",
+      "family": "PlayStation"
+    },
+    {
+      "slug": "psp",
+      "name": "PSP",
+      "family": "PlayStation"
+    },
+    {
+      "slug": "vita",
+      "name": "PS Vita",
+      "family": "PlayStation"
+    },
+    {
+      "slug": "xbox",
+      "name": "Xbox",
+      "family": "Xbox"
+    },
+    {
+      "slug": "x360",
+      "name": "Xbox 360",
+      "short": "X360",
+      "family": "Xbox"
+    },
+    {
+      "slug": "md",
+      "name": "Mega Drive",
+      "family": "Sega"
+    },
+    {
+      "slug": "saturn",
+      "name": "Sega Saturn",
+      "short": "Saturn",
+      "family": "Sega"
+    },
+    {
+      "slug": "dc",
+      "name": "Dreamcast",
+      "family": "Sega"
+    },
+    {
+      "slug": "other",
+      "name": "Otras plataformas",
+      "family": "Otras"
+    }
+  ],
+  "games": [
+    {
+      "slug": "oot",
+      "title": "The Legend of Zelda: Ocarina of Time",
+      "platform": "n64"
+    },
+    {
+      "slug": "mm",
+      "title": "The Legend of Zelda: Majora’s Mask",
+      "platform": "n64"
+    },
+    {
+      "slug": "sm64",
+      "title": "Super Mario 64",
+      "platform": "n64"
+    },
+    {
+      "slug": "pd",
+      "title": "Perfect Dark",
+      "platform": "n64"
+    },
+    {
+      "slug": "sf64",
+      "title": "Star Fox 64",
+      "platform": "n64"
+    },
+    {
+      "slug": "mk64",
+      "title": "Mario Kart 64",
+      "platform": "n64"
+    },
+    {
+      "slug": "sonic-unleashed",
+      "title": "Sonic Unleashed",
+      "platform": "x360"
+    },
+    {
+      "slug": "jak1",
+      "title": "Jak and Daxter: The Precursor Legacy",
+      "platform": "ps2"
+    },
+    {
+      "slug": "alttp",
+      "title": "The Legend of Zelda: A Link to the Past",
+      "platform": "snes"
+    },
+    {
+      "slug": "super-metroid",
+      "title": "Super Metroid",
+      "platform": "snes"
+    }
+  ],
+  "projects": [
+    {
+      "slug": "shipwright",
+      "game": "oot",
+      "name": "Ship of Harkinian",
+      "developers": "HarbourMasters",
+      "kind": "decomp_port",
+      "repo": {
+        "host": "github",
+        "owner": "HarbourMasters",
+        "name": "Shipwright"
+      },
+      "windowsAssetPattern": "Win64\\.zip$",
+      "requirements": {
+        "originalFiles": "ROM del juego",
+        "extractedFiles": false,
+        "keys": false,
+        "manualBuild": false
+      },
+      "repoUrl": "https://github.com/HarbourMasters/Shipwright",
+      "repoExists": true,
+      "archived": false,
+      "license": null,
+      "pushedAt": "2026-11-24T03:53:21Z",
+      "createdAt": "2022-03-22T01:42:52Z",
+      "release": {
+        "tag": "9.3.1",
+        "name": "Dewey Bravo 9.3.1",
+        "publishedAt": "2026-10-18T21:06:27Z",
+        "prerelease": false,
+        "url": "https://github.com/HarbourMasters/Shipwright/releases/tag/9.3.1",
+        "assets": [
+          {
+            "name": "SoH-Dewey-Bravo-Mac.zip",
+            "size": 49516403,
+            "url": "https://github.com/HarbourMasters/Shipwright/releases/download/9.3.1/SoH-Dewey-Bravo-Mac.zip",
+            "sha256": "6d9b69b7037d3af863c1767829af42666732c9f4651468a7e086c3e11268bd4b"
+          },
+          {
+            "name": "SoH-Dewey-Bravo-Win64.zip",
+            "size": 72980600,
+            "url": "https://github.com/HarbourMasters/Shipwright/releases/download/9.3.1/SoH-Dewey-Bravo-Win64.zip",
+            "sha256": "429292a0bfbdfcda283b33c1538ecdc49163b9ed53e8702cac80b2489d9fe26c"
+          },
+          {
+            "name": "SoH-Dewey-Bravo.appimage",
+            "size": 32113856,
+            "url": "https://github.com/HarbourMasters/Shipwright/releases/download/9.3.1/SoH-Dewey-Bravo.appimage",
+            "sha256": "e4bb775c9a0c3629ebac57e4b6ccba6d0b621d71ab201e9105aceef9141ad1f4"
+          }
+        ]
+      },
+      "windowsAsset": {
+        "name": "SoH-Dewey-Bravo-Win64.zip",
+        "size": 72980600,
+        "url": "https://github.com/HarbourMasters/Shipwright/releases/download/9.3.1/SoH-Dewey-Bravo-Win64.zip",
+        "sha256": "429292a0bfbdfcda283b33c1538ecdc49163b9ed53e8702cac80b2489d9fe26c"
+      },
+      "hasWindowsExecutable": true,
+      "listing": "library",
+      "checkedAt": "2026-11-26T21:57:23.673Z"
+    },
+    {
+      "slug": "2ship2harkinian",
+      "game": "mm",
+      "name": "2 Ship 2 Harkinian",
+      "developers": "HarbourMasters",
+      "kind": "decomp_port",
+      "repo": {
+        "host": "github",
+        "owner": "HarbourMasters",
+        "name": "2ship2harkinian"
+      },
+      "windowsAssetPattern": "Win64\\.zip$",
+      "requirements": {
+        "originalFiles": "ROM del juego",
+        "extractedFiles": false,
+        "keys": false,
+        "manualBuild": false
+      },
+      "repoUrl": "https://github.com/2ship2harkinian/2ship2harkinian",
+      "repoExists": true,
+      "archived": false,
+      "license": "CC0-1.0",
+      "pushedAt": "2026-11-23T17:05:30Z",
+      "createdAt": "2023-11-15T03:06:29Z",
+      "release": {
+        "tag": "5.0.1",
+        "name": "Battler Bravo 5.0.1",
+        "publishedAt": "2026-08-25T17:54:43Z",
+        "prerelease": false,
+        "url": "https://github.com/2ship2harkinian/2ship2harkinian/releases/tag/5.0.1",
+        "assets": [
+          {
+            "name": "2Ship-Battler-Bravo-Linux.zip",
+            "size": 16262941,
+            "url": "https://github.com/2ship2harkinian/2ship2harkinian/releases/download/5.0.1/2Ship-Battler-Bravo-Linux.zip",
+            "sha256": "6cdd4fe06f3f9b095e99c86fef70b9265cc921fb6faa7ba1e18e94e90ed0b345"
+          },
+          {
+            "name": "2Ship-Battler-Bravo-Mac.zip",
+            "size": 26742222,
+            "url": "https://github.com/2ship2harkinian/2ship2harkinian/releases/download/5.0.1/2Ship-Battler-Bravo-Mac.zip",
+            "sha256": "b6019b4339d06ce0a476299a5be7b35629dff2fb779acb3da219da3cfcf1f84a"
+          },
+          {
+            "name": "2Ship-Battler-Bravo-Win64.zip",
+            "size": 44976935,
+            "url": "https://github.com/2ship2harkinian/2ship2harkinian/releases/download/5.0.1/2Ship-Battler-Bravo-Win64.zip",
+            "sha256": "a46664a01623ad5d7cc82d29a9889699f6a98c9501c7a959a089f34380c1f078"
+          }
+        ]
+      },
+      "windowsAsset": {
+        "name": "2Ship-Battler-Bravo-Win64.zip",
+        "size": 44976935,
+        "url": "https://github.com/2ship2harkinian/2ship2harkinian/releases/download/5.0.1/2Ship-Battler-Bravo-Win64.zip",
+        "sha256": "a46664a01623ad5d7cc82d29a9889699f6a98c9501c7a959a089f34380c1f078"
+      },
+      "hasWindowsExecutable": true,
+      "listing": "library",
+      "checkedAt": "2026-11-26T21:57:23.673Z"
+    },
+    {
+      "slug": "zelda64recomp",
+      "game": "mm",
+      "name": "Zelda64Recomp",
+      "developers": "Wiseguy y colaboradores",
+      "kind": "static_recomp",
+      "repo": {
+        "host": "github",
+        "owner": "Zelda64Recomp",
+        "name": "Zelda64Recomp"
+      },
+      "windowsAssetPattern": "-Windows\\.zip$",
+      "requirements": {
+        "originalFiles": "ROM del juego",
+        "extractedFiles": false,
+        "keys": false,
+        "manualBuild": false
+      },
+      "repoUrl": "https://github.com/Zelda64Recomp/Zelda64Recomp",
+      "repoExists": true,
+      "archived": false,
+      "license": "GPL-3.0",
+      "pushedAt": "2026-09-25T18:57:57Z",
+      "createdAt": "2023-10-23T19:54:50Z",
+      "release": {
+        "tag": "v1.2.2",
+        "name": "v1.2.2",
+        "publishedAt": "2025-08-27T00:58:35Z",
+        "prerelease": false,
+        "url": "https://github.com/Zelda64Recomp/Zelda64Recomp/releases/tag/v1.2.2",
+        "assets": [
+          {
+            "name": "Zelda64Recompiled-v1.2.2-Linux-ARM64.zip",
+            "size": 19228944,
+            "url": "https://github.com/Zelda64Recomp/Zelda64Recomp/releases/download/v1.2.2/Zelda64Recompiled-v1.2.2-Linux-ARM64.zip",
+            "sha256": "2e49b96aced578363065e1764ca96eaa5590cb6f7e80efd10e8ce1a08462b933"
+          },
+          {
+            "name": "Zelda64Recompiled-v1.2.2-Linux-Flatpak-X64.zip",
+            "size": 13024507,
+            "url": "https://github.com/Zelda64Recomp/Zelda64Recomp/releases/download/v1.2.2/Zelda64Recompiled-v1.2.2-Linux-Flatpak-X64.zip",
+            "sha256": "79efc38a5469d524b09c024f97509a3ff0c61466db4a74630c112f4901804e10"
+          },
+          {
+            "name": "Zelda64Recompiled-v1.2.2-Linux-X64.zip",
+            "size": 18638525,
+            "url": "https://github.com/Zelda64Recomp/Zelda64Recomp/releases/download/v1.2.2/Zelda64Recompiled-v1.2.2-Linux-X64.zip",
+            "sha256": "de8b19cdb4e3ad0c10fd6d8127f7a6cc2a9eba106d89c753439178b718887c42"
+          },
+          {
+            "name": "Zelda64Recompiled-v1.2.2-macOS.zip",
+            "size": 32315959,
+            "url": "https://github.com/Zelda64Recomp/Zelda64Recomp/releases/download/v1.2.2/Zelda64Recompiled-v1.2.2-macOS.zip",
+            "sha256": "f369815d7ba2a1139a6fab8a0aa51c52e5f064dcfcce649eb888fdef9f648689"
+          },
+          {
+            "name": "Zelda64Recompiled-v1.2.2-Windows.zip",
+            "size": 28940501,
+            "url": "https://github.com/Zelda64Recomp/Zelda64Recomp/releases/download/v1.2.2/Zelda64Recompiled-v1.2.2-Windows.zip",
+            "sha256": "d02b95f1cf5e4d44d6587fa6136c6db521f61aa41ba8700c05f91bea8b0a26d0"
+          }
+        ]
+      },
+      "windowsAsset": {
+        "name": "Zelda64Recompiled-v1.2.2-Windows.zip",
+        "size": 28940501,
+        "url": "https://github.com/Zelda64Recomp/Zelda64Recomp/releases/download/v1.2.2/Zelda64Recompiled-v1.2.2-Windows.zip",
+        "sha256": "d02b95f1cf5e4d44d6587fa6136c6db521f61aa41ba8700c05f91bea8b0a26d0"
+      },
+      "hasWindowsExecutable": true,
+      "listing": "library",
+      "checkedAt": "2026-11-26T21:57:23.673Z"
+    },
+    {
+      "slug": "sm64coopdx",
+      "game": "sm64",
+      "name": "sm64coopdx",
+      "developers": "coop-deluxe",
+      "kind": "decomp_port",
+      "repo": {
+        "host": "github",
+        "owner": "coop-deluxe",
+        "name": "sm64coopdx"
+      },
+      "windowsAssetPattern": "_Windows\\.zip$",
+      "requirements": {
+        "originalFiles": "ROM del juego",
+        "extractedFiles": false,
+        "keys": false,
+        "manualBuild": false
+      },
+      "repoUrl": "https://github.com/coop-deluxe/sm64coopdx",
+      "repoExists": true,
+      "archived": false,
+      "license": null,
+      "pushedAt": "2026-11-21T14:41:38Z",
+      "createdAt": "2023-10-30T03:11:39Z",
+      "release": {
+        "tag": "v1.5.1",
+        "name": "Super Mario 64 Coop Deluxe v1.5.1",
+        "publishedAt": "2026-06-01T02:00:11Z",
+        "prerelease": false,
+        "url": "https://github.com/coop-deluxe/sm64coopdx/releases/tag/v1.5.1",
+        "assets": [
+          {
+            "name": "sm64coopdx_Linux.zip",
+            "size": 55414437,
+            "url": "https://github.com/coop-deluxe/sm64coopdx/releases/download/v1.5.1/sm64coopdx_Linux.zip",
+            "sha256": "4229f82fc4395e78faf192c910ffcfcc1d70f59a558cadf0f63ae548901fa5f5"
+          },
+          {
+            "name": "sm64coopdx_macOS_ARM.zip",
+            "size": 45322557,
+            "url": "https://github.com/coop-deluxe/sm64coopdx/releases/download/v1.5.1/sm64coopdx_macOS_ARM.zip",
+            "sha256": "bd1ce33b4886cbfab125095f4211889ca77628b8e481136b08f8148d7e415680"
+          },
+          {
+            "name": "sm64coopdx_macOS_Intel.zip",
+            "size": 44493092,
+            "url": "https://github.com/coop-deluxe/sm64coopdx/releases/download/v1.5.1/sm64coopdx_macOS_Intel.zip",
+            "sha256": "665e82a486b1477b22cb9d0320120a961d0cbf3904f188a0ab7bb8ab137343c7"
+          },
+          {
+            "name": "sm64coopdx_SteamOS.zip",
+            "size": 55414933,
+            "url": "https://github.com/coop-deluxe/sm64coopdx/releases/download/v1.5.1/sm64coopdx_SteamOS.zip",
+            "sha256": "9b18cb0ea54053dd5957d99481a136787821fba407566361bf75cf4b6fc76fac"
+          },
+          {
+            "name": "sm64coopdx_Windows.zip",
+            "size": 41801915,
+            "url": "https://github.com/coop-deluxe/sm64coopdx/releases/download/v1.5.1/sm64coopdx_Windows.zip",
+            "sha256": "2a98c40acb2a46d30cde89f3072c039b641dbdf977985f9e82a040615f1b2381"
+          }
+        ]
+      },
+      "windowsAsset": {
+        "name": "sm64coopdx_Windows.zip",
+        "size": 41801915,
+        "url": "https://github.com/coop-deluxe/sm64coopdx/releases/download/v1.5.1/sm64coopdx_Windows.zip",
+        "sha256": "2a98c40acb2a46d30cde89f3072c039b641dbdf977985f9e82a040615f1b2381"
+      },
+      "hasWindowsExecutable": true,
+      "listing": "library",
+      "checkedAt": "2026-11-26T21:57:23.673Z"
+    },
+    {
+      "slug": "perfect-dark",
+      "game": "pd",
+      "name": "Perfect Dark port",
+      "developers": "fgsfdsfgs",
+      "kind": "decomp_port",
+      "repo": {
+        "host": "github",
+        "owner": "fgsfdsfgs",
+        "name": "perfect_dark"
+      },
+      "windowsAssetPattern": "x86_64-windows\\.zip$",
+      "requirements": {
+        "originalFiles": "ROM del juego",
+        "extractedFiles": false,
+        "keys": false,
+        "manualBuild": false
+      },
+      "repoUrl": "https://github.com/perfect-dark-pc-port/perfect_dark",
+      "repoExists": true,
+      "archived": false,
+      "license": "MIT",
+      "pushedAt": "2026-10-27T20:20:09Z",
+      "createdAt": "2023-07-21T15:52:32Z",
+      "release": {
+        "tag": "ci-dev-build",
+        "name": "Latest automatic build (port branch)",
+        "publishedAt": "2024-05-14T09:41:23Z",
+        "prerelease": false,
+        "url": "https://github.com/perfect-dark-pc-port/perfect_dark/releases/tag/ci-dev-build",
+        "assets": [
+          {
+            "name": "io.github.fgsfdsfgs.perfect_dark.flatpak",
+            "size": 1519088,
+            "url": "https://github.com/perfect-dark-pc-port/perfect_dark/releases/download/ci-dev-build/io.github.fgsfdsfgs.perfect_dark.flatpak",
+            "sha256": "e5b6cf50e10197a502f433c822ec0a2c7fb60005b062e528767e383b4f073eee"
+          },
+          {
+            "name": "io.github.perfect_dark_pc_port.perfect_dark.flatpak",
+            "size": 1520216,
+            "url": "https://github.com/perfect-dark-pc-port/perfect_dark/releases/download/ci-dev-build/io.github.perfect_dark_pc_port.perfect_dark.flatpak",
+            "sha256": "248ede25caba42c0274e05af1f3125b7bc5dd1214beee3025dc7c6ed35bb4269"
+          },
+          {
+            "name": "pd-arm64-nswitch.zip",
+            "size": 10815625,
+            "url": "https://github.com/perfect-dark-pc-port/perfect_dark/releases/download/ci-dev-build/pd-arm64-nswitch.zip",
+            "sha256": "59babcbaa81728b15110fbf40899ce34e41f3f4a6a1d49335b3817e0142cdfdb"
+          },
+          {
+            "name": "pd-arm64-osx.tar.xz",
+            "size": 3500000,
+            "url": "https://github.com/perfect-dark-pc-port/perfect_dark/releases/download/ci-dev-build/pd-arm64-osx.tar.xz",
+            "sha256": "36a649bc011031286b65260a60bbb5317eb2d938371ff7ed63a3a40bef2ecbe2"
+          },
+          {
+            "name": "pd-i686-linux.tar.gz",
+            "size": 21419437,
+            "url": "https://github.com/perfect-dark-pc-port/perfect_dark/releases/download/ci-dev-build/pd-i686-linux.tar.gz",
+            "sha256": "46bf3ecd5f8394094aacb04d9e5182c3871ed01de19df28f6ff5c2afd3c66618"
+          },
+          {
+            "name": "pd-i686-windows.zip",
+            "size": 25147137,
+            "url": "https://github.com/perfect-dark-pc-port/perfect_dark/releases/download/ci-dev-build/pd-i686-windows.zip",
+            "sha256": "685eb52755e4f71269a1af7ccc76f5f5921c211a4624572e3e0b91bd0afe4ab7"
+          },
+          {
+            "name": "pd-x86_64-linux.tar.gz",
+            "size": 22213594,
+            "url": "https://github.com/perfect-dark-pc-port/perfect_dark/releases/download/ci-dev-build/pd-x86_64-linux.tar.gz",
+            "sha256": "0f28fd59b488e0a919aae4350083059faebd462fce52df7bfdc9a4aec26f92ae"
+          },
+          {
+            "name": "pd-x86_64-osx.tar.xz",
+            "size": 2905352,
+            "url": "https://github.com/perfect-dark-pc-port/perfect_dark/releases/download/ci-dev-build/pd-x86_64-osx.tar.xz",
+            "sha256": "6f684e8946370d39e6d7bba2da693f695faa865789ee160848311211801fa9dd"
+          },
+          {
+            "name": "pd-x86_64-windows.zip",
+            "size": 25739820,
+            "url": "https://github.com/perfect-dark-pc-port/perfect_dark/releases/download/ci-dev-build/pd-x86_64-windows.zip",
+            "sha256": "56e6a2f8bad36bd90f0d396c1d525b953adcc1a20157f594b90a7530d58258d3"
+          }
+        ]
+      },
+      "windowsAsset": {
+        "name": "pd-x86_64-windows.zip",
+        "size": 25739820,
+        "url": "https://github.com/perfect-dark-pc-port/perfect_dark/releases/download/ci-dev-build/pd-x86_64-windows.zip",
+        "sha256": "56e6a2f8bad36bd90f0d396c1d525b953adcc1a20157f594b90a7530d58258d3"
+      },
+      "hasWindowsExecutable": true,
+      "listing": "library",
+      "checkedAt": "2026-11-26T21:57:23.673Z"
+    },
+    {
+      "slug": "starship",
+      "game": "sf64",
+      "name": "Starship",
+      "developers": "HarbourMasters",
+      "kind": "decomp_port",
+      "repo": {
+        "host": "github",
+        "owner": "HarbourMasters",
+        "name": "Starship"
+      },
+      "windowsAssetPattern": "-Windows\\.zip$",
+      "requirements": {
+        "originalFiles": "ROM del juego",
+        "extractedFiles": false,
+        "keys": false,
+        "manualBuild": false
+      },
+      "repoUrl": "https://github.com/HarbourMasters/Starship",
+      "repoExists": true,
+      "archived": false,
+      "license": "CC0-1.0",
+      "pushedAt": "2026-09-15T21:17:12Z",
+      "createdAt": "2024-05-21T03:28:06Z",
+      "release": {
+        "tag": "v2.0.0",
+        "name": "Starship - Barnard Alfa",
+        "publishedAt": "2025-05-25T03:43:32Z",
+        "prerelease": false,
+        "url": "https://github.com/HarbourMasters/Starship/releases/tag/v2.0.0",
+        "assets": [
+          {
+            "name": "Starship-Barnard-Alfa-Linux.zip",
+            "size": 79980135,
+            "url": "https://github.com/HarbourMasters/Starship/releases/download/v2.0.0/Starship-Barnard-Alfa-Linux.zip",
+            "sha256": null
+          },
+          {
+            "name": "Starship-Barnard-Alfa-Switch.zip",
+            "size": 6488483,
+            "url": "https://github.com/HarbourMasters/Starship/releases/download/v2.0.0/Starship-Barnard-Alfa-Switch.zip",
+            "sha256": null
+          },
+          {
+            "name": "Starship-Barnard-Alfa-Windows.zip",
+            "size": 4218590,
+            "url": "https://github.com/HarbourMasters/Starship/releases/download/v2.0.0/Starship-Barnard-Alfa-Windows.zip",
+            "sha256": null
+          }
+        ]
+      },
+      "windowsAsset": {
+        "name": "Starship-Barnard-Alfa-Windows.zip",
+        "size": 4218590,
+        "url": "https://github.com/HarbourMasters/Starship/releases/download/v2.0.0/Starship-Barnard-Alfa-Windows.zip",
+        "sha256": null
+      },
+      "hasWindowsExecutable": true,
+      "listing": "library",
+      "checkedAt": "2026-11-26T21:57:23.673Z"
+    },
+    {
+      "slug": "spaghettikart",
+      "game": "mk64",
+      "name": "SpaghettiKart",
+      "developers": "HarbourMasters",
+      "kind": "decomp_port",
+      "repo": {
+        "host": "github",
+        "owner": "HarbourMasters",
+        "name": "SpaghettiKart"
+      },
+      "windowsAssetPattern": "-windows\\.zip$",
+      "requirements": {
+        "originalFiles": "ROM del juego",
+        "extractedFiles": false,
+        "keys": false,
+        "manualBuild": false
+      },
+      "repoUrl": "https://github.com/HarbourMasters/SpaghettiKart",
+      "repoExists": true,
+      "archived": false,
+      "license": null,
+      "pushedAt": "2026-10-22T15:55:20Z",
+      "createdAt": "2024-04-07T15:49:14Z",
+      "release": {
+        "tag": "1.0.0",
+        "name": "Bolognese Alfa 1.0.0",
+        "publishedAt": "2026-02-25T02:26:04Z",
+        "prerelease": false,
+        "url": "https://github.com/HarbourMasters/SpaghettiKart/releases/tag/1.0.0",
+        "assets": [
+          {
+            "name": "spaghetti-linux.zip",
+            "size": 12395451,
+            "url": "https://github.com/HarbourMasters/SpaghettiKart/releases/download/1.0.0/spaghetti-linux.zip",
+            "sha256": "54e249bd4aa71e55c63239c9c1c0eb522b07497d85f2ede193907059e4de250c"
+          },
+          {
+            "name": "spaghetti-mac-arm64.zip",
+            "size": 7542558,
+            "url": "https://github.com/HarbourMasters/SpaghettiKart/releases/download/1.0.0/spaghetti-mac-arm64.zip",
+            "sha256": "d40314ed0cd8932c359239fb6dcd8554d4dd48e85be3c460c044004a88a03e80"
+          },
+          {
+            "name": "spaghetti-mac-intel-x64.zip",
+            "size": 7858520,
+            "url": "https://github.com/HarbourMasters/SpaghettiKart/releases/download/1.0.0/spaghetti-mac-intel-x64.zip",
+            "sha256": "6ca0cf6747cf3081a65a7324a6c0c891be75465966fa4872fb57f9e58966cd90"
+          },
+          {
+            "name": "spaghetti-windows.zip",
+            "size": 7806456,
+            "url": "https://github.com/HarbourMasters/SpaghettiKart/releases/download/1.0.0/spaghetti-windows.zip",
+            "sha256": "bf7bd7cdb5f412c7b370af92949b9431ce7503968631f8cacd607933fb32aff3"
+          }
+        ]
+      },
+      "windowsAsset": {
+        "name": "spaghetti-windows.zip",
+        "size": 7806456,
+        "url": "https://github.com/HarbourMasters/SpaghettiKart/releases/download/1.0.0/spaghetti-windows.zip",
+        "sha256": "bf7bd7cdb5f412c7b370af92949b9431ce7503968631f8cacd607933fb32aff3"
+      },
+      "hasWindowsExecutable": true,
+      "listing": "library",
+      "checkedAt": "2026-11-26T21:57:23.673Z"
+    },
+    {
+      "slug": "unleashed-recomp",
+      "game": "sonic-unleashed",
+      "name": "Unleashed Recompiled",
+      "developers": "hedge-dev",
+      "kind": "static_recomp",
+      "repo": {
+        "host": "github",
+        "owner": "hedge-dev",
+        "name": "UnleashedRecomp"
+      },
+      "windowsAssetPattern": "-Windows\\.zip$",
+      "requirements": {
+        "originalFiles": "Archivos del juego de Xbox 360",
+        "extractedFiles": true,
+        "keys": false,
+        "manualBuild": false
+      },
+      "repoUrl": "https://github.com/hedge-dev/UnleashedRecomp",
+      "repoExists": true,
+      "archived": false,
+      "license": "GPL-3.0",
+      "pushedAt": "2026-11-18T13:37:29Z",
+      "createdAt": "2024-09-30T07:47:13Z",
+      "release": {
+        "tag": "v1.0.3",
+        "name": "v1.0.3",
+        "publishedAt": "2025-04-03T22:04:45Z",
+        "prerelease": false,
+        "url": "https://github.com/hedge-dev/UnleashedRecomp/releases/tag/v1.0.3",
+        "assets": [
+          {
+            "name": "UnleashedRecomp-Flatpak.zip",
+            "size": 36827696,
+            "url": "https://github.com/hedge-dev/UnleashedRecomp/releases/download/v1.0.3/UnleashedRecomp-Flatpak.zip",
+            "sha256": null
+          },
+          {
+            "name": "UnleashedRecomp-Windows.zip",
+            "size": 53386467,
+            "url": "https://github.com/hedge-dev/UnleashedRecomp/releases/download/v1.0.3/UnleashedRecomp-Windows.zip",
+            "sha256": null
+          }
+        ]
+      },
+      "windowsAsset": {
+        "name": "UnleashedRecomp-Windows.zip",
+        "size": 53386467,
+        "url": "https://github.com/hedge-dev/UnleashedRecomp/releases/download/v1.0.3/UnleashedRecomp-Windows.zip",
+        "sha256": null
+      },
+      "hasWindowsExecutable": true,
+      "listing": "library",
+      "checkedAt": "2026-11-26T21:57:23.673Z"
+    },
+    {
+      "slug": "opengoal",
+      "game": "jak1",
+      "name": "OpenGOAL",
+      "developers": "open-goal",
+      "kind": "engine_reimpl",
+      "repo": {
+        "host": "github",
+        "owner": "open-goal",
+        "name": "jak-project"
+      },
+      "windowsAssetPattern": "^opengoal-windows-.*\\.zip$",
+      "requirements": {
+        "originalFiles": "ISO del juego",
+        "extractedFiles": false,
+        "keys": false,
+        "manualBuild": false
+      },
+      "repoUrl": "https://github.com/open-goal/jak-project",
+      "repoExists": true,
+      "archived": false,
+      "license": "ISC",
+      "pushedAt": "2026-11-24T02:45:03Z",
+      "createdAt": "2020-08-22T23:55:21Z",
+      "release": {
+        "tag": "v0.3.9",
+        "name": "v0.3.9",
+        "publishedAt": "2026-10-15T23:15:46Z",
+        "prerelease": false,
+        "url": "https://github.com/open-goal/jak-project/releases/tag/v0.3.9",
+        "assets": [
+          {
+            "name": "opengoal-linux-v0.3.9.tar.gz",
+            "size": 43512280,
+            "url": "https://github.com/open-goal/jak-project/releases/download/v0.3.9/opengoal-linux-v0.3.9.tar.gz",
+            "sha256": "acacd03896e09902503fee2ac98e8cb72228cfd221d8ff96b3e88a98ada04ee1"
+          },
+          {
+            "name": "opengoal-lsp-linux-v0.3.9.bin",
+            "size": 12950024,
+            "url": "https://github.com/open-goal/jak-project/releases/download/v0.3.9/opengoal-lsp-linux-v0.3.9.bin",
+            "sha256": "5c53e7bfa6884b4d09ab12fefe706770566fe455966a6fb886544a3139b18688"
+          },
+          {
+            "name": "opengoal-lsp-macos-arm-v0.3.9.bin",
+            "size": 10108208,
+            "url": "https://github.com/open-goal/jak-project/releases/download/v0.3.9/opengoal-lsp-macos-arm-v0.3.9.bin",
+            "sha256": "3717b7c4ef8cb8652f5679040d729e25d660e24a35487d0a5a66ee416a4a5e36"
+          },
+          {
+            "name": "opengoal-lsp-macos-intel-v0.3.9.bin",
+            "size": 11440400,
+            "url": "https://github.com/open-goal/jak-project/releases/download/v0.3.9/opengoal-lsp-macos-intel-v0.3.9.bin",
+            "sha256": "6fc3c33a0a9f584f5285a01d20b945a5f745366a91f56c7b1f532828d0516f02"
+          },
+          {
+            "name": "opengoal-lsp-windows-v0.3.9.exe",
+            "size": 17098752,
+            "url": "https://github.com/open-goal/jak-project/releases/download/v0.3.9/opengoal-lsp-windows-v0.3.9.exe",
+            "sha256": "4a56c5396d60c7601325c04cc1624059ad2ef374aab48182093ceea81d78c703"
+          },
+          {
+            "name": "opengoal-macos-arm-v0.3.9.tar.gz",
+            "size": 41239582,
+            "url": "https://github.com/open-goal/jak-project/releases/download/v0.3.9/opengoal-macos-arm-v0.3.9.tar.gz",
+            "sha256": "613d7b2b2171fd1840c71b2928e1352ee1b5f2ec8df5a4ec76c1bfe91b926d42"
+          },
+          {
+            "name": "opengoal-macos-intel-v0.3.9.tar.gz",
+            "size": 42486346,
+            "url": "https://github.com/open-goal/jak-project/releases/download/v0.3.9/opengoal-macos-intel-v0.3.9.tar.gz",
+            "sha256": "7388d3f2a42b8cde8e0e83e0fe202dc5eba05239e68c4fdbd49f632c871f31ab"
+          },
+          {
+            "name": "opengoal-windows-v0.3.9.zip",
+            "size": 42598650,
+            "url": "https://github.com/open-goal/jak-project/releases/download/v0.3.9/opengoal-windows-v0.3.9.zip",
+            "sha256": "d2000d4d934313541ac38cb1a801838dac1447b623b4fae58638fd319864a162"
+          }
+        ]
+      },
+      "windowsAsset": {
+        "name": "opengoal-windows-v0.3.9.zip",
+        "size": 42598650,
+        "url": "https://github.com/open-goal/jak-project/releases/download/v0.3.9/opengoal-windows-v0.3.9.zip",
+        "sha256": "d2000d4d934313541ac38cb1a801838dac1447b623b4fae58638fd319864a162"
+      },
+      "hasWindowsExecutable": true,
+      "listing": "library",
+      "checkedAt": "2026-11-26T21:57:23.673Z"
+    },
+    {
+      "slug": "zelda3",
+      "game": "alttp",
+      "name": "zelda3",
+      "developers": "snesrev",
+      "kind": "decomp_port",
+      "repo": {
+        "host": "github",
+        "owner": "snesrev",
+        "name": "zelda3"
+      },
+      "windowsAssetPattern": "(?i)win",
+      "requirements": {
+        "originalFiles": "ROM del juego",
+        "extractedFiles": false,
+        "keys": false,
+        "manualBuild": true
+      },
+      "repoUrl": "https://github.com/snesrev/zelda3",
+      "repoExists": true,
+      "archived": false,
+      "license": null,
+      "pushedAt": "2026-10-02T23:58:23Z",
+      "createdAt": "2022-08-11T01:11:41Z",
+      "release": {
+        "tag": "v0.3",
+        "name": "v0.3",
+        "publishedAt": "2023-08-17T01:18:40Z",
+        "prerelease": false,
+        "url": "https://github.com/snesrev/zelda3/releases/tag/v0.3",
+        "assets": [
+          {
+            "name": "zelda3_v0.3.zip",
+            "size": 1847661,
+            "url": "https://github.com/snesrev/zelda3/releases/download/v0.3/zelda3_v0.3.zip",
+            "sha256": null
+          }
+        ]
+      },
+      "windowsAsset": null,
+      "hasWindowsExecutable": false,
+      "listing": "in_development",
+      "checkedAt": "2026-11-26T21:57:23.673Z"
+    },
+    {
+      "slug": "sm",
+      "game": "super-metroid",
+      "name": "sm",
+      "developers": "snesrev",
+      "kind": "decomp_port",
+      "repo": {
+        "host": "github",
+        "owner": "snesrev",
+        "name": "sm"
+      },
+      "windowsAssetPattern": "(?i)win",
+      "requirements": {
+        "originalFiles": "ROM del juego",
+        "extractedFiles": false,
+        "keys": false,
+        "manualBuild": true
+      },
+      "repoUrl": "https://github.com/snesrev/sm",
+      "repoExists": true,
+      "archived": false,
+      "license": null,
+      "pushedAt": "2023-08-21T22:53:49Z",
+      "createdAt": "2023-03-05T06:03:53Z",
+      "release": null,
+      "windowsAsset": null,
+      "hasWindowsExecutable": false,
+      "listing": "in_development",
+      "checkedAt": "2026-11-26T21:57:23.673Z"
+    }
+  ]
+}
