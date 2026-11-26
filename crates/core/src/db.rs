@@ -100,6 +100,13 @@ const MIGRATIONS: &[&str] = &[
     );
     CREATE INDEX update_events_detected ON update_events(detected_at);
     "#,
+    // v3 · fase 4: datos de la descarga (archivo y versión) para la vista Descargas.
+    r#"
+    ALTER TABLE downloads ADD COLUMN asset_name TEXT;
+    ALTER TABLE downloads ADD COLUMN release_tag TEXT;
+    ALTER TABLE downloads ADD COLUMN queued_at TEXT NOT NULL DEFAULT '1970-01-01T00:00:00Z';
+    CREATE INDEX downloads_state ON downloads(state);
+    "#,
 ];
 
 pub fn open(path: &Path) -> Result<Connection> {

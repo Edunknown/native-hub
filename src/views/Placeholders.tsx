@@ -27,12 +27,3 @@ export function Library() {
     </Pending>
   )
 }
-
-export function Downloads() {
-  return (
-    <Pending eyebrow="Descargas" title="Descargas" phase="Fase 4"
-      lede="Descargas directas desde la release oficial, interrumpibles y reanudables, con comprobación SHA-256 cuando el proyecto publica el hash.">
-      <p className="empty">No hay descargas. El gestor de descargas todavía no está implementado.</p>
-    </Pending>
-  )
-}

@@ -320,3 +320,14 @@ button.row:hover .game { color: var(--accent-ink); }
 .csel-body .f-title { margin-top: 26px; font-size: 36px; }
 @media (max-width: 1180px) { .cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } .csel { grid-template-columns: minmax(0, 1fr); } .csel-side { max-width: 220px; } }
 @media (prefers-reduced-motion: no-preference) { .ccard, .ccard .ico { transition: border-color .15s, color .15s, background-color .15s; } }
+
+/* ---------- Fase 4: descargas ---------- */
+.btn-sub { font-weight: 400; opacity: .7; font-size: 12px; margin-left: 2px; }
+.bar.wide { width: 260px; }
+.dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 24px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.dl .game { font-weight: 500; }
+.dl-main { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.dl-bar { display: flex; align-items: center; gap: 14px; font-size: 12.5px; margin-top: 4px; }
+.dl-end { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; font-size: 12.5px; }
+.dl-actions { display: flex; align-items: center; gap: 14px; }
+.ellipsis-wide { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 640px; }

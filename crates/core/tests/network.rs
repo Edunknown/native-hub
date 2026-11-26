@@ -45,3 +45,22 @@ fn escaner_real() {
         println!("  {} ★{} {}", c["fullName"], c["stars"], c["description"]);
     }
 }
+
+#[test]
+#[ignore]
+fn descarga_real_con_sha256() {
+    use std::sync::atomic::AtomicU8;
+    use native_hub_core::download;
+    let conn = setup();
+    let dir = tempfile::tempdir().unwrap();
+    // SpaghettiKart: ~8 MB y GitHub publica su SHA-256.
+    let id = download::enqueue(&conn, dir.path(), "harbourmasters-spaghettikart").unwrap();
+    let state = download::run(&conn, &download::UreqTransport::default(), id, &AtomicU8::new(download::RUN), |p| {
+        println!("  {} / {:?} bytes · {} B/s", p.done, p.total, p.bytes_per_sec)
+    })
+    .unwrap();
+    let row = &download::list(&conn).unwrap()[0];
+    println!("{state}: {row}");
+    assert_eq!(state, "done");
+    assert_eq!(row["verified"], true);
+}

@@ -92,6 +92,8 @@ Object.assign(handlers, {
   mark_events_seen: () => 0,
   candidates: () => ({ items: [], counts: { new: 0, approved: 0, rejected: 0 } }),
   refresh_project: desktopOnly, refresh_stale: desktopOnly, cancel_job: desktopOnly, scan_repositories: desktopOnly,
+  downloads_list: () => [],
+  download_start: desktopOnly, download_pause: desktopOnly, download_resume: desktopOnly, download_cancel: desktopOnly, download_remove: desktopOnly, download_reveal: desktopOnly,
   approve_candidate: desktopOnly, reject_candidate: desktopOnly, set_github_token: desktopOnly, clear_github_token: desktopOnly,
 })
 

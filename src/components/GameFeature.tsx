@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useDownloads } from '../app/downloads'
 import { useCatalog } from '../app/catalog'
 import { useNav } from '../app/nav'
 import { IconDownload, IconOut } from '../app/icons'
@@ -49,6 +50,42 @@ export function CompatSheet({ project }: { project: Project }) {
       <div><dt>SHA-256 publicado</dt>{a ? <Bool v={Boolean(a.sha256)} /> : <dd className="tbd">—</dd>}</div>
       <div><dt>Licencia</dt>{project.license ? <dd className="mono">{project.license}</dd> : tbd}</div>
     </dl>
+  )
+}
+
+/** Descargar el ejecutable Windows de la release oficial (fase 4). */
+function DownloadButton({ project }: { project: Project }) {
+  const { items, progress, start, error, available } = useDownloads()
+  const { go } = useNav()
+  const dl = items.find((d) => d.project === project.slug && d.url === project.windowsAsset?.url && d.state !== 'cancelled')
+  if (project.listing !== 'library') {
+    return <button type="button" className="btn-primary" disabled><IconDownload width={15} height={15} strokeWidth={2.2} />No instalable</button>
+  }
+  if (!available) {
+    return <button type="button" className="btn-primary" disabled title="Solo en la app de escritorio"><IconDownload width={15} height={15} strokeWidth={2.2} />Descargar {project.name}</button>
+  }
+  if (dl && (dl.state === 'running' || dl.state === 'queued')) {
+    const p = progress[dl.id]
+    const total = p?.total ?? dl.total
+    const pct = total ? Math.round(((p?.done ?? dl.done) / total) * 100) : null
+    return (
+      <button type="button" className="btn-line" onClick={() => go({ name: 'downloads' })}>
+        {dl.state === 'queued' ? 'En cola…' : `Descargando${pct != null ? ` ${pct} %` : '…'}`}
+      </button>
+    )
+  }
+  if (dl && dl.state === 'done') {
+    return <button type="button" className="btn-line" onClick={() => go({ name: 'downloads' })}><span className="yes">Descargado {dl.releaseTag ?? ''}</span></button>
+  }
+  return (
+    <>
+      <button type="button" className="btn-primary" onClick={() => start(project.slug)}>
+        <IconDownload width={15} height={15} strokeWidth={2.2} />
+        {dl?.state === 'paused' ? 'Reanudar descarga' : `Descargar ${project.name}`}
+        {project.windowsAsset?.size ? <span className="btn-sub">{fmtSize(project.windowsAsset.size, project.windowsAsset.sizeApprox)}</span> : null}
+      </button>
+      {error && <span className="note-line err">{error}</span>}
+    </>
   )
 }
 
@@ -139,10 +176,7 @@ export function GameFeature({ detail, eyebrow, initialProject, linkTitle, onRefr
                 <div className="req"><div className="eyebrow">Requisitos según el proyecto</div><p>{project.requirementsText}</p></div>
               )}
               <div className="actions">
-                <button type="button" className="btn-primary" disabled title="La instalación llega en la fase 5">
-                  <IconDownload width={15} height={15} strokeWidth={2.2} />
-                  {project.listing === 'library' ? `Instalar ${project.name}` : 'No instalable'}
-                </button>
+                <DownloadButton project={project} />
                 <a className="link" onClick={() => openExternal(project.repoUrl)}>
                   <span className="mono">{project.repoUrl.replace(/^https?:\/\//, '')}</span>
                   <IconOut />
@@ -159,7 +193,7 @@ export function GameFeature({ detail, eyebrow, initialProject, linkTitle, onRefr
               <div className="note-line">
                 {project.checkedAt && <>Comprobado el {fmtDateTime(project.checkedAt)}. </>}
                 {project.listing === 'library'
-                  ? 'Instalación pendiente de implementar (fase 5). La descarga saldrá del repositorio oficial y nada se ejecutará sin tu confirmación.'
+                  ? 'La descarga sale de la release oficial y se comprueba su SHA-256 cuando el proyecto lo publica. Nada se ejecuta: la instalación llega en la fase 5.'
                   : project.checkedAt == null
                     ? 'Release todavía sin comprobar. Hasta entonces no se puede instalar.'
                     : 'Su última release oficial no publica un ejecutable para Windows. Se puede consultar, pero no instalar.'}

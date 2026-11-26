@@ -3,9 +3,9 @@
 Launcher universal de recompilaciones y ports nativos de videojuegos para PC (Windows 10/11, 64 bits).
 Tauri 2 + Rust + React + TypeScript + SQLite.
 
-> Estado: **fase 3, repositorios.** ≈1.550 proyectos de 40 plataformas en SQLite, releases comprobadas
-> en vivo (GitHub, GitLab, Codeberg) y escáner de GitHub con cola de revisión. Descargas, instalación
-> y biblioteca **todavía no están implementadas**.
+> Estado: **fase 4, descargas.** ≈1.550 proyectos de 40 plataformas en SQLite, releases comprobadas
+> en vivo, escáner con cola de revisión y descargas oficiales con SHA-256. Instalación y biblioteca
+> **todavía no están implementadas**.
 
 ## Documentación
 

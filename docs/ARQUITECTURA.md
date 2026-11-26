@@ -234,7 +234,16 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 - **Seguridad.** Solo se habla con `api.github.com`, `gitlab.com` y `codeberg.org`, siempre por HTTPS. Las URL de repositorio se validan antes de construir ninguna petición. Nada se descarga ni se ejecuta.
 - **Pruebas.** `npm test` usa un servidor falso. `cargo test -p native-hub-core --test network -- --ignored` prueba contra las APIs reales.
 
-## 10. Estado real de cada función
+## 10. Descargas (fase 4)
+
+- **Download Manager** (`crates/core/src/download.rs`). La interfaz solo pide «descargar el proyecto X»: la URL sale del catálogo, nunca de la interfaz. Antes de poner nada en cola se comprueba que el proyecto es instalable (ejecutable Windows identificado, sin DMCA) y que la URL es un archivo de release de su propio repositorio.
+- **Orígenes.** Solo HTTPS y solo `github.com`, sus CDN de archivos (`objects.githubusercontent.com`, `release-assets.githubusercontent.com`), `gitlab.com` y `codeberg.org`. Las redirecciones se siguen a mano y cada salto se valida.
+- **Integridad.** Si la release publica el SHA-256 del archivo, se compara al terminar; si no coincide, el archivo se borra y la descarga queda como error. Si no lo publica, se calcula y se guarda el SHA-256 local.
+- **Control.** Una descarga a la vez, en cola. Se puede pausar, reanudar (petición `Range` sobre el `.part`), cancelar y reintentar. Un cierre inesperado deja la descarga en pausa al volver a abrir.
+- **Dónde.** `%LOCALAPPDATA%\dev.nativehub.app\downloads\<proyecto>\<versión>\<archivo>`. Nada se descomprime ni se ejecuta: eso es la fase 5.
+- **Pruebas.** Seis con transporte falso (redirecciones, SHA-256, host no permitido, pausa y reanudación, nombres de archivo) y una real (`--ignored`) que descarga SpaghettiKart y comprueba su SHA-256.
+
+## 11. Estado real de cada función
 
 | Función | Estado |
 |---|---|
@@ -246,6 +255,6 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 | Escáner de GitHub y cola de revisión con aprobación manual | Hecho (fase 3) |
 | Token de GitHub opcional en el Administrador de credenciales | Hecho (fase 3) |
 | Escáner en GitLab | No implementado (solo se comprueban releases de proyectos de GitLab ya en el catálogo) |
-| Descargas | No implementado (fase 4) |
+| Descargas oficiales reanudables con SHA-256 | Hecho (fase 4) |
 | Adaptadores e instalación | No implementado (fase 5) |
 | Biblioteca: ejecutar, actualizar, desinstalar | No implementado (fase 6). En la interfaz aparece vacía. |

@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useCatalog } from './catalog'
 import { useLive } from './live'
+import { useDownloads } from './downloads'
 import { fmtDateTime, fmtNum } from '../lib/format'
 import type { View } from '../lib/types'
 import { useNav } from './nav'
@@ -34,6 +35,12 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
   const { summary } = useCatalog()
   const live = useLive()
   const unseen = live.status?.unseenEvents ?? 0
+  const dls = useDownloads()
+  const running = dls.items.find((d) => d.state === 'running')
+  const queued = dls.items.filter((d) => d.state === 'running' || d.state === 'queued').length
+  const rp = running ? dls.progress[running.id] : undefined
+  const rTotal = rp?.total ?? running?.total
+  const rPct = running && rTotal ? Math.round(((rp?.done ?? running.done) / rTotal) * 100) : null
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -55,6 +62,7 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
       onClick={() => go({ name } as View)}>
       <Icon />
       {name === 'updates' && unseen > 0 && <span className="count num">{unseen > 99 ? '99+' : unseen}</span>}
+      {name === 'downloads' && queued > 0 && <span className="count num">{queued}</span>}
       {label}
     </button>
   )
@@ -87,13 +95,13 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
         </header>
 
         <div className="phase-note">
-          <b>Fase 3 · repositorios.</b> Releases comprobadas en vivo y escáner con cola de revisión; descargas, instalación y biblioteca aún no están implementadas.
+          <b>Fase 4 · descargas.</b> Descargas oficiales con SHA-256; la instalación y la biblioteca aún no están implementadas.
         </div>
 
         <div className="scroll" ref={scroller}>{children}</div>
 
         <footer className="status" aria-label="Estado">
-          <span>{live.progress ? `${live.progress.job === 'scan' ? 'Buscando proyectos' : 'Comprobando releases'} · ${live.progress.done}/${live.progress.total}` : 'Sin descargas en curso'}</span>
+          <span>{live.progress ? `${live.progress.job === 'scan' ? 'Buscando proyectos' : 'Comprobando releases'} · ${live.progress.done}/${live.progress.total}` : running ? `Descargando ${running.projectName ?? running.project}${rPct != null ? ` · ${rPct} %` : ''}` : 'Sin descargas en curso'}</span>
           <span className="num">{fmtNum(summary.projectCount)} proyectos · {fmtNum(summary.installableCount)} con ejecutable Windows</span>
           <span className="push">Catálogo: última comprobación <span className="num">{fmtDateTime(summary.generatedAt)}</span></span>
         </footer>

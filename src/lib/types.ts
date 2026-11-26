@@ -220,3 +220,36 @@ export interface RefreshResult {
   outcome: { slug: string; status: string; tag: string | null; events: UpdateKind[] }
   detail: GameDetail
 }
+
+// ---------- Fase 4 ----------
+
+export type DownloadState = 'queued' | 'running' | 'paused' | 'done' | 'failed' | 'cancelled'
+
+export interface DownloadItem {
+  id: number
+  project: string
+  projectName: string | null
+  gameTitle: string | null
+  gameSlug: string | null
+  url: string
+  path: string
+  done: number
+  total: number | null
+  state: DownloadState
+  sha256Expected: string | null
+  sha256Local: string | null
+  /** true = coincide con el publicado; false = no coincide; null = no hay hash publicado o no ha terminado. */
+  verified: boolean | null
+  error: string | null
+  assetName: string | null
+  releaseTag: string | null
+  queuedAt: string
+  finishedAt: string | null
+}
+
+export interface DownloadProgress {
+  id: number
+  done: number
+  total: number | null
+  bytesPerSec: number
+}

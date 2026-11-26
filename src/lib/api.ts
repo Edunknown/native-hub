@@ -4,7 +4,7 @@
 // las funciones en vivo (releases, escáner, token) solo existen en la app.
 
 import type {
-  Approval, CandidateList, DiscoverFilter, DiscoverResult, GameDetail, Home, JobFinished, JobProgress,
+  Approval, CandidateList, DownloadItem, DownloadProgress, DiscoverFilter, DiscoverResult, GameDetail, Home, JobFinished, JobProgress,
   Platform, Project, RefreshResult, ReleasesStatus, Summary, UpdateEvent,
 } from './types'
 
@@ -45,6 +45,14 @@ export const api = {
   approve: (approval: Approval) => call<string>('approve_candidate', { approval }),
   reject: (id: number) => call<void>('reject_candidate', { id }),
 
+  downloadStart: (slug: string) => call<number>('download_start', { slug }),
+  downloads: () => call<DownloadItem[]>('downloads_list'),
+  downloadPause: (id: number) => call<void>('download_pause', { id }),
+  downloadResume: (id: number) => call<void>('download_resume', { id }),
+  downloadCancel: (id: number) => call<void>('download_cancel', { id }),
+  downloadRemove: (id: number, deleteFile: boolean) => call<void>('download_remove', { id, deleteFile }),
+  downloadReveal: (id: number) => call<void>('download_reveal', { id }),
+
   setGithubToken: (value: string) => call<{ ok: boolean }>('set_github_token', { value }),
   clearGithubToken: () => call<void>('clear_github_token'),
 }
@@ -55,6 +63,15 @@ export async function onJobs(progress: (p: JobProgress) => void, finished: (f: J
   const { listen } = await import('@tauri-apps/api/event')
   const a = await listen<JobProgress>('job-progress', (e) => progress(e.payload))
   const b = await listen<JobFinished>('job-finished', (e) => finished(e.payload))
+  return () => { a(); b() }
+}
+
+/** Escucha el progreso de las descargas. */
+export async function onDownloads(progress: (p: DownloadProgress) => void, finished: (f: { id: number; state: string }) => void): Promise<() => void> {
+  if (!isTauri) return () => {}
+  const { listen } = await import('@tauri-apps/api/event')
+  const a = await listen<DownloadProgress>('download-progress', (e) => progress(e.payload))
+  const b = await listen<{ id: number; state: string }>('download-finished', (e) => finished(e.payload))
   return () => { a(); b() }
 }
 

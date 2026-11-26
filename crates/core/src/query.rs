@@ -221,7 +221,7 @@ mod tests {
         let s = summary(&conn).unwrap();
         assert_eq!(s["projectCount"], 3);
         assert_eq!(s["installableCount"], 2);
-        assert_eq!(s["schemaVersion"], 2);
+        assert_eq!(s["schemaVersion"], 3);
     }
 
     #[test]

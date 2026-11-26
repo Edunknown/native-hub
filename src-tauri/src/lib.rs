@@ -7,12 +7,13 @@
 
 mod token;
 
+use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
 use native_hub_core::http::UreqFetcher;
-use native_hub_core::{Error, Result, catalog, db, query, releases, scanner};
+use native_hub_core::{Error, Result, catalog, db, download, query, releases, scanner};
 use rusqlite::Connection;
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -31,6 +32,11 @@ struct AppState {
     fetcher: RwLock<Arc<UreqFetcher>>,
     busy: AtomicBool,
     cancel: Arc<AtomicBool>,
+    /// Carpeta donde se guardan las descargas (fase 5 permitirá elegir la de instalación).
+    downloads_dir: PathBuf,
+    /// Control de pausa/cancelación de la descarga en curso.
+    dl_controls: Mutex<HashMap<i64, Arc<AtomicU8>>>,
+    dl_worker: AtomicBool,
 }
 
 impl AppState {
@@ -235,6 +241,101 @@ fn reject_candidate(s: State<AppState>, id: i64) -> Result<()> {
     s.with(|c| scanner::reject(c, id))
 }
 
+// ---------- Descargas (fase 4) ----------
+
+/// Procesa la cola de descargas de una en una, en su propio hilo.
+fn ensure_download_worker(app: &AppHandle) {
+    let s = app.state::<AppState>();
+    if s.dl_worker.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let app = app.clone();
+    std::thread::spawn(move || {
+        let s = app.state::<AppState>();
+        let transport = download::UreqTransport::default();
+        if let Ok(conn) = s.job_conn() {
+            while let Ok(Some(id)) = download::next_queued(&conn) {
+                let control = Arc::new(AtomicU8::new(download::RUN));
+                s.dl_controls.lock().expect("controles").insert(id, control.clone());
+                let _ = app.emit("download-progress", json!({ "id": id, "done": 0, "total": null, "bytesPerSec": 0 }));
+                let state = download::run(&conn, &transport, id, &control, |p| {
+                    let _ = app.emit("download-progress", &p);
+                })
+                .unwrap_or_else(|_| "failed".into());
+                s.dl_controls.lock().expect("controles").remove(&id);
+                let _ = app.emit("download-finished", json!({ "id": id, "state": state }));
+            }
+        }
+        s.dl_worker.store(false, Ordering::SeqCst);
+        // Si entró algo en la cola justo al terminar, volver a arrancar.
+        if let Ok(conn) = s.job_conn() {
+            if matches!(download::next_queued(&conn), Ok(Some(_))) {
+                ensure_download_worker(&app);
+            }
+        }
+    });
+}
+
+#[tauri::command]
+fn download_start(app: AppHandle, slug: String) -> Result<i64> {
+    let s = app.state::<AppState>();
+    let id = s.with(|c| download::enqueue(c, &s.downloads_dir, &slug))?;
+    ensure_download_worker(&app);
+    Ok(id)
+}
+
+#[tauri::command]
+fn downloads_list(s: State<AppState>) -> Result<Vec<Value>> {
+    s.with(download::list)
+}
+
+fn signal(s: &AppState, id: i64, value: u8) -> bool {
+    match s.dl_controls.lock().expect("controles").get(&id) {
+        Some(c) => {
+            c.store(value, Ordering::SeqCst);
+            true
+        }
+        None => false,
+    }
+}
+
+#[tauri::command]
+fn download_pause(s: State<AppState>, id: i64) -> Result<()> {
+    if !signal(&s, id, download::PAUSE) {
+        s.with(|c| {
+            c.execute("UPDATE downloads SET state = 'paused' WHERE id = ?1 AND state = 'queued'", [id])?;
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn download_resume(app: AppHandle, id: i64) -> Result<()> {
+    app.state::<AppState>().with(|c| download::resume(c, id))?;
+    ensure_download_worker(&app);
+    Ok(())
+}
+
+#[tauri::command]
+fn download_cancel(s: State<AppState>, id: i64) -> Result<()> {
+    if !signal(&s, id, download::CANCEL) {
+        s.with(|c| download::cancel_idle(c, id))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn download_remove(s: State<AppState>, id: i64, delete_file: bool) -> Result<()> {
+    s.with(|c| download::remove(c, &s.downloads_dir, id, delete_file))
+}
+
+#[tauri::command]
+fn download_reveal(s: State<AppState>, id: i64) -> Result<()> {
+    let path: String = s.with(|c| Ok(c.query_row("SELECT dest_path FROM downloads WHERE id = ?1 AND state = 'done'", [id], |r| r.get(0))?))?;
+    tauri_plugin_opener::reveal_item_in_dir(&path).map_err(|e| Error::Invalid(e.to_string()))
+}
+
 // ---------- Token de GitHub ----------
 
 #[tauri::command]
@@ -292,12 +393,18 @@ pub fn run() {
                 )?;
             }
             let (conn, db_path) = open_database(app)?;
+            download::recover(&conn)?;
+            let downloads_dir = app.path().app_local_data_dir()?.join("downloads");
+            std::fs::create_dir_all(&downloads_dir)?;
             app.manage(AppState {
                 db: Mutex::new(conn),
                 db_path,
                 fetcher: RwLock::new(Arc::new(UreqFetcher::new(token::get()))),
                 busy: AtomicBool::new(false),
                 cancel: Arc::new(AtomicBool::new(false)),
+                downloads_dir,
+                dl_controls: Mutex::new(HashMap::new()),
+                dl_worker: AtomicBool::new(false),
             });
             // Comprobación ligera en segundo plano de los proyectos menos recientes.
             let _ = refresh_stale(app.handle().clone(), Some(24), Some(STARTUP_REFRESH));
@@ -324,6 +431,13 @@ pub fn run() {
             reject_candidate,
             set_github_token,
             clear_github_token,
+            download_start,
+            downloads_list,
+            download_pause,
+            download_resume,
+            download_cancel,
+            download_remove,
+            download_reveal,
         ])
         .run(tauri::generate_context!())
         .expect("error al iniciar NATIVE HUB");
