@@ -1,72 +1,126 @@
-// Tipos del dominio. Reflejan catalog/seed.json y, en la fase 2, las filas de SQLite.
-
-export type PlatformFamily = 'Nintendo' | 'PlayStation' | 'Xbox' | 'Sega' | 'Otras'
+// Tipos del dominio. Reflejan catalog/catalog.json y lo que devuelven los comandos Rust
+// (crates/core/src/query.rs).
 
 export interface Platform {
   slug: string
   name: string
-  short?: string
-  family: PlatformFamily
+  short: string | null
+  family: string
+  projectCount: number
+  installableCount: number
 }
 
 export interface Game {
   slug: string
   title: string
   platform: string
+  year: number | null
 }
 
-export type ProjectKind = 'decomp_port' | 'static_recomp' | 'engine_reimpl' | 'source_port' | 'other'
+export type ProjectKind =
+  | 'static_recomp' | 'decomp_port' | 'engine_reimpl' | 'source_port'
+  | 'native_layer' | 'fan_remake' | 'decompilation' | 'other'
 export type Listing = 'library' | 'in_development' | 'hidden'
+export type DevStatus = 'complete' | 'stable' | 'playable' | 'beta' | 'experimental' | 'unknown'
 
 export interface Asset {
   name: string
-  size: number
   url: string
+  size: number | null
+  sizeApprox?: boolean
   sha256: string | null
 }
 
 export interface Release {
   tag: string
-  name: string | null
-  publishedAt: string | null
-  prerelease: boolean
   url: string
+  publishedAt: string | null
+  prerelease: boolean | null
   assets: Asset[]
 }
 
 export interface Requirements {
   originalFiles: string | null
-  extractedFiles: boolean
-  keys: boolean
-  manualBuild: boolean
+  extractedFiles: boolean | null
+  keys: boolean | null
+  manualBuild: boolean | null
 }
 
 export interface Project {
   slug: string
   game: string
+  gameTitle: string
+  games: string[]
+  platform: string
   name: string
-  developers: string
+  developers: string | null
   kind: ProjectKind
-  repo: { host: 'github' | 'gitlab' | 'other'; owner: string; name: string }
-  repoUrl: string | null
-  repoExists: boolean
-  archived: boolean | null
-  license: string | null
-  pushedAt: string | null
-  createdAt?: string | null
+  devStatus: DevStatus
+  abandoned: boolean
+  takedown: boolean
+  forkOf: string | null
+  toolchain: string | null
+  repo: { host: string; owner: string | null; name: string | null }
+  repoUrl: string
+  repoMovedFrom: string | null
+  homepage: string | null
+  repoExists: boolean | null
   release: Release | null
   windowsAsset: Asset | null
-  hasWindowsExecutable: boolean
+  hasWindowsExecutable: boolean | null
   listing: Listing
-  requirements: Requirements
-  checkedAt: string
+  summary: string | null
+  requirementsText: string | null
+  requirements: Requirements | null
+  tags: string[]
+  stars: number | null
+  createdAt: string | null
+  pushedAt: string | null
+  license: string | null
+  source: string
+  checkedAt: string | null
 }
 
-export interface Catalog {
-  generatedAt: string
-  platforms: Platform[]
-  games: Game[]
+export interface Source {
+  name: string
+  url: string | null
+  data?: string
+  license: string | null
+  commit?: string
+}
+
+export interface Summary {
+  generatedAt: string | null
+  sources: Source[] | null
+  projectCount: number
+  installableCount: number
+  gameCount: number
+  families: string[]
+  schemaVersion: number | null
+}
+
+export interface GameDetail {
+  game: Game
   projects: Project[]
+}
+
+export interface Home {
+  featured: GameDetail | null
+  updated: Project[]
+  newest: Project[]
+}
+
+export interface DiscoverFilter {
+  listing?: Listing
+  kind?: ProjectKind
+  platform?: string
+  offset?: number
+  limit?: number
+}
+
+export interface DiscoverResult {
+  total: number
+  items: Project[]
 }
 
 export type View =

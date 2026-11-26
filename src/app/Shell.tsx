@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
-import { getCatalog } from '../lib/api'
-import { fmtDateTime } from '../lib/format'
+import { useCatalog } from './catalog'
+import { fmtDateTime, fmtNum } from '../lib/format'
 import type { View } from '../lib/types'
 import { useNav } from './nav'
 import type { Theme } from './theme'
@@ -30,7 +30,7 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
   const q = view.name === 'search' ? view.query : ''
   const input = useRef<HTMLInputElement>(null)
   const scroller = useRef<HTMLDivElement>(null)
-  const catalog = getCatalog()
+  const { summary } = useCatalog()
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -83,15 +83,15 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
         </header>
 
         <div className="phase-note">
-          <b>Fase 1 · prototipo visual.</b> Catálogo real comprobado en GitHub; descargas, instalación y biblioteca aún no están implementadas.
+          <b>Fase 2 · catálogo.</b> Catálogo real en base de datos local; descargas, instalación y biblioteca aún no están implementadas.
         </div>
 
         <div className="scroll" ref={scroller}>{children}</div>
 
         <footer className="status" aria-label="Estado">
           <span>Sin descargas en curso</span>
-          <span>{catalog.projects.length} proyectos en catálogo</span>
-          <span className="push">Catálogo: última comprobación <span className="num">{fmtDateTime(catalog.generatedAt)}</span></span>
+          <span className="num">{fmtNum(summary.projectCount)} proyectos · {fmtNum(summary.installableCount)} con ejecutable Windows</span>
+          <span className="push">Catálogo: última comprobación <span className="num">{fmtDateTime(summary.generatedAt)}</span></span>
         </footer>
       </div>
     </div>

@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Cachés de scripts del catálogo
+.cache/
+/target

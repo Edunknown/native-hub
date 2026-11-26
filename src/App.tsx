@@ -1,3 +1,4 @@
+import { CatalogProvider } from './app/catalog'
 import { NavProvider, useNav } from './app/nav'
 import { Shell } from './app/Shell'
 import { useTheme } from './app/theme'
@@ -27,10 +28,12 @@ function Router({ theme, setTheme }: ReturnType<typeof useTheme>) {
 export default function App() {
   const t = useTheme()
   return (
-    <NavProvider>
-      <Shell theme={t.theme} onToggleTheme={t.toggle}>
-        <Router {...t} />
-      </Shell>
-    </NavProvider>
+    <CatalogProvider>
+      <NavProvider>
+        <Shell theme={t.theme} onToggleTheme={t.toggle}>
+          <Router {...t} />
+        </Shell>
+      </NavProvider>
+    </CatalogProvider>
   )
 }

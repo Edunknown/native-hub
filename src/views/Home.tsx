@@ -2,33 +2,23 @@ import { useNav } from '../app/nav'
 import { ConsoleIndex } from '../components/ConsoleIndex'
 import { GameFeature } from '../components/GameFeature'
 import { ProjectRow } from '../components/ProjectRow'
-import { gameOf, libraryProjects } from '../lib/api'
+import { api } from '../lib/api'
 import { fmtDate, kindLabel } from '../lib/format'
-
-const FEATURED = 'mm'
+import { useAsync } from '../lib/useAsync'
 
 export function Home() {
   const { go } = useNav()
-  const featured = gameOf(FEATURED)
-  const lib = libraryProjects()
-
-  const updated = [...lib]
-    .filter((p) => p.release?.publishedAt)
-    .sort((a, b) => b.release!.publishedAt!.localeCompare(a.release!.publishedAt!))
-    .slice(0, 5)
-
-  const newest = [...lib]
-    .filter((p) => p.createdAt)
-    .sort((a, b) => b.createdAt!.localeCompare(a.createdAt!))
-    .slice(0, 5)
+  const home = useAsync(() => api.home(), [])
+  if (home.status !== 'ok') return <main className="content"><p className="empty">{home.status === 'error' ? home.error : 'Cargando…'}</p></main>
+  const { featured, updated, newest } = home.data
 
   return (
     <main className="content">
-      {featured && <GameFeature game={featured} eyebrow="Destacado" linkTitle />}
+      {featured && <GameFeature detail={featured} eyebrow="Destacado" linkTitle />}
 
       <div className="cols">
         <section>
-          <div className="sec-head"><h2>Últimos proyectos actualizados</h2><button type="button" onClick={() => go({ name: 'discover' })}>Ver todos</button></div>
+          <div className="sec-head"><h2>Últimas releases con ejecutable Windows</h2><button type="button" onClick={() => go({ name: 'discover' })}>Ver todos</button></div>
           <ul className="list">
             {updated.map((p) => (
               <ProjectRow key={p.slug} project={p}
@@ -39,17 +29,13 @@ export function Home() {
 
         <section>
           <div className="sec-head"><h2>Nuevas recompilaciones y ports</h2><button type="button" onClick={() => go({ name: 'discover' })}>Descubrir</button></div>
-          {newest.length > 0 ? (
-            <ul className="list">
-              {newest.map((p) => (
-                <ProjectRow key={p.slug} project={p}
-                  sub={`${gameOf(p.game)?.title} · ${kindLabel[p.kind].toLowerCase()}`}
-                  end={<><span>Repositorio creado</span><span className="num">{fmtDate(p.createdAt)}</span></>} />
-              ))}
-            </ul>
-          ) : (
-            <p className="empty">Falta la fecha de creación de los repositorios. Se rellenará en la próxima comprobación del catálogo.</p>
-          )}
+          <ul className="list">
+            {newest.map((p) => (
+              <ProjectRow key={p.slug} project={p}
+                sub={`${p.gameTitle} · ${kindLabel[p.kind].toLowerCase()}`}
+                end={<><span>Repositorio creado</span><span className="num">{fmtDate(p.createdAt)}</span></>} />
+            ))}
+          </ul>
         </section>
       </div>
 
@@ -66,7 +52,7 @@ export function Home() {
       </div>
 
       <section>
-        <div className="sec-head"><h2>Explorar</h2><button type="button" onClick={() => go({ name: 'consoles' })}>Todas las consolas</button></div>
+        <div className="sec-head"><h2>Explorar por consola</h2><button type="button" onClick={() => go({ name: 'consoles' })}>Todas las consolas</button></div>
         <ConsoleIndex />
       </section>
     </main>

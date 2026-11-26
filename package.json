@@ -8,9 +8,11 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "oxlint",
-    "test": "vitest run",
+    "test": "cargo test -p native-hub-core",
     "tauri": "tauri",
-    "catalog:snapshot": "node scripts/snapshot-releases.mjs"
+    "catalog:import": "node scripts/import-recompendium.mjs",
+    "catalog:build": "node scripts/build-catalog.mjs",
+    "catalog:update": "node scripts/import-recompendium.mjs && node scripts/build-catalog.mjs"
   },
   "dependencies": {
     "@fontsource/geist-mono": "^5.3.0",
@@ -29,6 +31,6 @@
     "oxlint": "^1.94.0",
     "typescript": "~7.0.2",
     "vite": "^8.4.0",
-    "vitest": "^5.1.2"
+    "yaml": "^2.9.1"
   }
 }

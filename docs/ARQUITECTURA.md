@@ -198,33 +198,43 @@ El Installation Manager solo ejecuta `InstallPlan`: muestra el plan al usuario, 
 
 ```
 recomp-hub/
-├─ docs/                    Arquitectura, decisiones, guía de adaptadores
-├─ catalog/                 Catálogo curado (datos versionados)
-│  ├─ seed.json             Semilla de fase 1 (proyectos reales, datos comprobados)
-│  ├─ games/                (fase 2) un archivo por juego
-│  ├─ projects/             (fase 2) un archivo por proyecto
-│  └─ adapters/             (fase 5) un manifiesto por proyecto instalable
-├─ src/                     Frontend React + TypeScript
-│  ├─ app/                  Shell: barra lateral, cabecera, barra de estado, rutas
-│  ├─ views/                Inicio, Biblioteca, Descubrir, Consolas, ...
-│  ├─ components/           Piezas de interfaz reutilizables
-│  ├─ lib/                  api.ts (IPC), tipos del dominio, utilidades
-│  └─ styles/               Tokens de diseño y estilos globales
-├─ src-tauri/               App de escritorio (Rust)
-│  ├─ src/                  Comandos y arranque
-│  ├─ capabilities/         Permisos
-│  └─ tauri.conf.json
-└─ crates/core/             (fase 2) Núcleo de dominio en Rust
+├─ docs/                      Arquitectura y decisiones
+├─ catalog/
+│  ├─ sources/manual.json     Curado a mano: plataformas, proyectos extra y correcciones
+│  ├─ sources/recompendium.json  Importado de Recompendium (CC BY-SA 4.0)
+│  └─ catalog.json            Generado: fuentes unidas + releases comprobadas en GitHub
+├─ scripts/
+│  ├─ import-recompendium.mjs Convierte los datos de Recompendium
+│  └─ build-catalog.mjs       Une fuentes y comprueba releases y ejecutables Windows
+├─ src/                       Frontend React + TypeScript
+│  ├─ app/                    Shell, navegación, tema, contexto del catálogo
+│  ├─ views/                  Inicio, Biblioteca, Descubrir, Consolas, ...
+│  ├─ components/             Piezas de interfaz reutilizables
+│  ├─ lib/                    api.ts (IPC), web-backend.ts (modo navegador), tipos
+│  └─ styles/                 Tokens de diseño y estilos globales
+├─ src-tauri/                 App de escritorio: comandos y arranque
+├─ crates/core/               Núcleo en Rust: SQLite, migraciones, importación, consultas
+└─ Cargo.toml                 Workspace de Rust
 ```
 
-## 8. Estado real de cada función
+## 8. Catálogo (fase 2)
+
+Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.json` → comprobar en github.com la última release de cada repositorio → escribir `catalog/catalog.json`. La app incluye ese archivo al compilar y lo vuelca en SQLite (`%APPDATA%\dev.nativehub.app\native-hub.db`) cuando cambia de versión.
+
+- **Fuentes.** Recompendium (≈1.550 proyectos de 40 plataformas, datos bajo CC BY-SA 4.0: se muestran con atribución y el catálogo derivado mantiene esa licencia) y la lista manual de NATIVE HUB, que tiene prioridad (corrige repositorios movidos, fija el archivo Windows de un proyecto y añade proyectos que faltan, como Fire Emblem: Fortune’s Weave).
+- **Instalable.** Solo si la última release publica un archivo que se identifica como ejecutable Windows y el proyecto no está retirado por DMCA. Si la release tiene archivos genéricos (un `.zip` sin sistema en el nombre), queda «por verificar» hasta revisarlo a mano.
+- **Comprobación.** Se usan las páginas públicas de releases de github.com para no chocar con el límite de 60 consultas por hora de la API sin token. En la fase 3 la app lo hará con la API oficial, ETag y token opcional.
+- **Switch 2.** Se incluyen porque el catálogo debe ser completo, pero con aviso: juegos comerciales recientes, muchos forks y riesgo legal y de seguridad alto.
+
+## 9. Estado real de cada función
 
 | Función | Estado |
 |---|---|
-| Interfaz principal, navegación, tema claro/oscuro, ficha con selector | **Fase 1, en curso** |
-| Catálogo semilla con proyectos reales comprobados en GitHub el 26/11/2026 | Hecho (solo lectura, sin base de datos) |
-| Base de datos SQLite y clasificación por consolas | No implementado (fase 2) |
-| Escáner de GitHub/GitLab y detección de releases en vivo | No implementado (fase 3) |
+| Interfaz principal, navegación, tema claro/oscuro, ficha con selector | Hecho (fase 1) |
+| Catálogo de ≈1.550 proyectos con releases comprobadas en GitHub | Hecho (fase 2) |
+| Base de datos SQLite con migraciones, importación y consultas | Hecho (fase 2), con pruebas en `crates/core` |
+| Clasificación por consolas y familias | Hecho (fase 2) |
+| Escáner automático de GitHub/GitLab y cola de revisión | No implementado (fase 3) |
 | Descargas | No implementado (fase 4) |
 | Adaptadores e instalación | No implementado (fase 5) |
 | Biblioteca: ejecutar, actualizar, desinstalar | No implementado (fase 6). En la interfaz aparece vacía. |

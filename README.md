@@ -3,8 +3,9 @@
 Launcher universal de recompilaciones y ports nativos de videojuegos para PC (Windows 10/11, 64 bits).
 Tauri 2 + Rust + React + TypeScript + SQLite.
 
-> Estado: **fase 1, prototipo visual.** El catálogo usa datos reales comprobados en la API de GitHub.
-> Descargas, instalación, biblioteca y actualizaciones **todavía no están implementadas**.
+> Estado: **fase 2, catálogo.** ≈1.550 proyectos de 40 plataformas en una base de datos SQLite local,
+> con la última release de cada uno comprobada en GitHub. Descargas, instalación, biblioteca y
+> actualizaciones **todavía no están implementadas**.
 
 ## Documentación
 
@@ -26,17 +27,14 @@ npm install                 # dependencias
 npm run dev                 # interfaz en el navegador: http://localhost:1420
 npm run tauri dev           # app de escritorio (necesita Rust y C++ Build Tools)
 npm run tauri build         # instalador NSIS
-npm run catalog:snapshot    # refresca catalog/seed.json desde la API de GitHub
+npm run catalog:update      # reimporta Recompendium y comprueba releases en GitHub
+npm run catalog:build       # solo une fuentes y comprueba lo no revisado en 12 h
+npm test                    # pruebas del núcleo en Rust
 ```
 
-`catalog:snapshot` usa la API pública (60 consultas por hora). Con `GITHUB_TOKEN` en el entorno el límite sube.
 
 ## Catálogo
 
-- `catalog/curated.json`: datos curados a mano (juego, proyecto, tipo, requisitos, patrón del ejecutable Windows).
-- `catalog/seed.json`: generado. Añade versión, fecha, assets, licencia y SHA-256 publicado. No editar a mano.
-
-Un proyecto solo es instalable si su última release oficial tiene un asset Windows que encaja con su patrón.
-Los que no lo tienen aparecen en «Proyectos en desarrollo».
+Ver [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md#8-catálogo-fase-2). Incluye datos de [Recompendium](https://recompendium.com) bajo licencia CC BY-SA 4.0.
 
 NATIVE HUB no incluye ni descarga ROMs, ISOs, BIOS, firmware ni claves.

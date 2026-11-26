@@ -23,5 +23,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "catalog/seed.json"]
+  "include": ["src", "catalog/catalog.json"]
 }
