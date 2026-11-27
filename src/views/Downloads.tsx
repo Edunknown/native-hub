@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useDownloads } from '../app/downloads'
 import { useNav } from '../app/nav'
+import { useTask } from '../app/task'
 import { api, openExternal } from '../lib/api'
 import { fmtDateTime, fmtSize } from '../lib/format'
 import type { DownloadItem } from '../lib/types'
@@ -25,6 +26,7 @@ function Row({ d }: { d: DownloadItem }) {
   const { progress, reload } = useDownloads()
   const { go } = useNav()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const task = useTask()
   const p = progress[d.id]
   const done = d.state === 'running' && p ? p.done : d.done
   const total = (d.state === 'running' && p?.total) || d.total
@@ -78,7 +80,7 @@ function Row({ d }: { d: DownloadItem }) {
           {d.state === 'done' && !confirmDelete && <button type="button" className="link" onClick={() => setConfirmDelete(true)}>Borrar archivo</button>}
           {d.state === 'done' && confirmDelete && (
             <>
-              <button type="button" className="link err" onClick={act(() => api.downloadRemove(d.id, true))}>Sí, borrar</button>
+              <button type="button" className="link err" onClick={act(() => task({ title: `Borrando ${d.assetName ?? 'el archivo'}`, steps: ['Borrando el archivo descargado', 'Actualizando la lista de descargas'], minMs: 1400, done: 'Borrado' }, () => api.downloadRemove(d.id, true)))}>Sí, borrar</button>
               <button type="button" className="link" onClick={() => setConfirmDelete(false)}>No</button>
             </>
           )}

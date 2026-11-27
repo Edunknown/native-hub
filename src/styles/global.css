@@ -373,3 +373,49 @@ button.row:hover .game { color: var(--accent-ink); }
 .rel-assets .btn-primary, .rel-assets .btn-line { height: 30px; padding: 0 12px; justify-self: end; }
 .av { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; max-width: 760px; }
 .panel { max-width: 920px; }
+
+/* ---------- Fase 6.1: animación de inicio ---------- */
+.splash {
+  position: fixed; inset: 0; z-index: 100; background: var(--bg); color: var(--fg);
+  display: flex; align-items: center; justify-content: center; transition: opacity .45s ease;
+}
+.splash.out { opacity: 0; pointer-events: none; }
+.splash-inner { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.splash-mark { width: 88px; height: 88px; }
+.splash-n { stroke-dasharray: 1; stroke-dashoffset: 1; animation: nh-draw .7s cubic-bezier(.65,0,.35,1) .1s forwards; }
+.splash-dot { transform-origin: 22px 6px; transform: scale(0); animation: nh-pop .38s cubic-bezier(.34,1.56,.64,1) .72s forwards; }
+.splash-word { font-weight: 600; font-size: 18px; letter-spacing: .34em; opacity: 0; transform: translateY(6px); animation: nh-rise .5s ease .95s forwards; padding-left: .34em; }
+.splash-word span { color: var(--muted); font-weight: 500; }
+.splash-line { width: 140px; height: 1px; background: var(--line); position: relative; overflow: hidden; opacity: 0; animation: nh-fade .3s ease 1.2s forwards; }
+.splash-line i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent); animation: nh-grow 1s cubic-bezier(.65,0,.35,1) 1.25s forwards; }
+.splash-sub { font-size: 12px; color: var(--muted); letter-spacing: .04em; opacity: 0; animation: nh-fade .4s ease 1.4s forwards; }
+.splash.still .splash-n { stroke-dashoffset: 0; animation: none; }
+.splash.still .splash-dot { transform: scale(1); animation: none; }
+.splash.still .splash-word, .splash.still .splash-line, .splash.still .splash-sub { opacity: 1; transform: none; animation: none; }
+.splash.still .splash-line i { width: 100%; animation: none; }
+@keyframes nh-draw { to { stroke-dashoffset: 0; } }
+@keyframes nh-pop { to { transform: scale(1); } }
+@keyframes nh-rise { to { opacity: 1; transform: none; } }
+@keyframes nh-fade { to { opacity: 1; } }
+@keyframes nh-grow { to { width: 100%; } }
+
+/* ---------- Fase 6.1: progreso por pasos ---------- */
+.task-backdrop { position: fixed; inset: 0; z-index: 90; background: color-mix(in srgb, var(--bg) 72%, transparent); display: flex; align-items: center; justify-content: center; animation: nh-fade .15s ease both; opacity: 0; }
+.task { width: min(460px, calc(100vw - 48px)); background: var(--bg); border: 1px solid var(--line); border-radius: 3px; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px; }
+.task-title { font-weight: 500; font-size: 15px; }
+.task-bar { height: 2px; background: var(--line); position: relative; overflow: hidden; }
+.task-bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .5s cubic-bezier(.65,0,.35,1); }
+.task-running .task-bar i::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); animation: nh-shine 1.1s linear infinite; }
+.task-error .task-bar i { background: #E5484D; }
+.task-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--faint); }
+.task-steps li { padding-left: 20px; position: relative; transition: color .2s; }
+.task-steps li::before { content: ''; position: absolute; left: 2px; top: .55em; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--faint); }
+.task-steps li.now { color: var(--fg); }
+.task-steps li.now::before { border-color: var(--accent); animation: nh-pulse 1s ease-in-out infinite; }
+.task-steps li.ok { color: var(--muted); }
+.task-steps li.ok::before { border-color: var(--accent); background: var(--accent); }
+.task-steps li.bad { color: #E5484D; }
+.task-steps li.bad::before { border-color: #E5484D; }
+@keyframes nh-shine { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+@keyframes nh-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .task-running .task-bar i::after, .task-steps li.now::before { animation: none; } }

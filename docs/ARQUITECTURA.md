@@ -254,7 +254,13 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 - **Carpeta de juegos.** `Documentos\NATIVE HUB` por defecto; se cambia en Ajustes.
 - **Pruebas.** Siete con archivos ZIP generados (método, extracción, ruta maliciosa, instalar/ejecutar/desinstalar, instalador externo, ROM de N64, adaptador en el plan) y una real (`--ignored`) que descarga e instala SpaghettiKart.
 
-## 12. Estado real de cada función
+## 12. Fase 6.1: animación de inicio y cargas visibles
+
+- **Inicio.** Animación de ~2,3 s: se traza la N, aparece el punto lima, el nombre y una línea de carga. Cubre la carga del catálogo y se salta con un clic o una tecla. Suena un acorde corto generado con Web Audio (sin archivos de audio de terceros), que se desactiva en Ajustes › Música de inicio. WebView2 arranca con `--autoplay-policy=no-user-gesture-required` para poder reproducirlo.
+- **Cargas visibles.** `useTask()` muestra un panel con pasos y barra para instalar, desinstalar, borrar descargas, aprobar o descartar candidatos, comprobar releases, comprobar archivos, cambiar el ejecutable y guardar el token. La acción real se ejecuta a la vez; el panel garantiza una duración mínima (1–3 s según la acción) y, si falla, enseña el error.
+- **Accesibilidad.** Con «reducir movimiento» de Windows la animación es estática y las duraciones mínimas bajan a ~0,4 s.
+
+## 13. Estado real de cada función
 
 | Función | Estado |
 |---|---|
@@ -269,4 +275,5 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 | Descargas oficiales reanudables con SHA-256 | Hecho (fase 4) |
 | Instalación con plan, adaptadores declarativos y validación de archivos del usuario | Hecho (fase 5) |
 | Biblioteca: ejecutar, cambiar ejecutable, abrir carpeta, desinstalar | Hecho (fase 5) |
+| Animación de inicio con música y paneles de progreso | Hecho (fase 6.1) |
 | Actualizar instalaciones conservando partidas y configuración | No implementado (fase 6). Se avisa de que hay versión nueva. |

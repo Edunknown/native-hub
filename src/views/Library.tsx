@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLibrary } from '../app/library'
+import { useTask } from '../app/task'
 import { useNav } from '../app/nav'
 import { useCatalog } from '../app/catalog'
 import { UserFileChecker } from '../components/Install'
@@ -9,13 +10,17 @@ import type { Installation } from '../lib/types'
 import { ConsoleIcon } from '../components/ConsoleIcon'
 
 function Pending({ inst, onChange }: { inst: Installation; onChange: () => void }) {
+  const task = useTask()
   const [confirmInstaller, setConfirmInstaller] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const choose = async (path?: string) => {
     setErr(null)
     const p = path ?? await pickPath({ title: 'Elige el ejecutable del juego', extensions: ['exe'], defaultPath: inst.installDir })
     if (!p) return
-    try { await api.setExecutable(inst.id, p); onChange() } catch (e) { setErr(String(e)) }
+    try {
+      await task({ title: 'Guardando el ejecutable', steps: ['Comprobando el ejecutable', 'Guardándolo en la instalación'], minMs: 1000 }, () => api.setExecutable(inst.id, p))
+      onChange()
+    } catch (e) { setErr(String(e)) }
   }
   const pending = inst.config.pending
   return (
@@ -57,6 +62,7 @@ function Pending({ inst, onChange }: { inst: Installation; onChange: () => void 
 
 function InstallationRow({ inst }: { inst: Installation }) {
   const lib = useLibrary()
+  const task = useTask()
   const { go } = useNav()
   const { platformOf } = useCatalog()
   const [open, setOpen] = useState(false)
@@ -93,8 +99,8 @@ function InstallationRow({ inst }: { inst: Installation }) {
           <div className="pending">
             <p>¿Desinstalar {p?.name}? Se borrará la carpeta <span className="mono">{inst.installDir}</span>, <strong>incluidas las partidas guardadas y la configuración que el juego tenga dentro</strong>. No se puede deshacer.</p>
             <span className="cand-actions">
-              <button type="button" className="btn-line err" onClick={act(() => api.uninstall(inst.id, true))}>Sí, borrar la carpeta</button>
-              <button type="button" className="link" onClick={act(() => api.uninstall(inst.id, false))}>Quitar de la biblioteca sin borrar archivos</button>
+              <button type="button" className="btn-line err" onClick={act(() => task({ title: `Desinstalando ${p?.name ?? ''}`, steps: ['Cerrando la instalación', 'Borrando los archivos del juego', 'Actualizando la biblioteca'], minMs: 2400, done: 'Desinstalado' }, () => api.uninstall(inst.id, true)))}>Sí, borrar la carpeta</button>
+              <button type="button" className="link" onClick={act(() => task({ title: `Quitando ${p?.name ?? ''} de la biblioteca`, steps: ['Quitando la instalación de la biblioteca'], minMs: 1000 }, () => api.uninstall(inst.id, false)))}>Quitar de la biblioteca sin borrar archivos</button>
               <button type="button" className="link" onClick={() => setConfirm(false)}>Cancelar</button>
             </span>
           </div>
@@ -110,7 +116,7 @@ function InstallationRow({ inst }: { inst: Installation }) {
           {inst.state === 'ready' && (
             <button type="button" className="link" onClick={act(async () => {
               const path = await pickPath({ title: 'Cambiar ejecutable', extensions: ['exe'], defaultPath: inst.installDir })
-              if (path) await api.setExecutable(inst.id, path)
+              if (path) await task({ title: 'Cambiando el ejecutable', steps: ['Comprobando el ejecutable', 'Guardándolo en la instalación'], minMs: 1000 }, () => api.setExecutable(inst.id, path))
             })}>Cambiar ejecutable</button>
           )}
           <button type="button" className="link" onClick={() => setOpen(!open)}>{open ? 'Menos' : 'Más'}</button>

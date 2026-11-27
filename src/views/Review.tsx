@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useCatalog } from '../app/catalog'
 import { useLive } from '../app/live'
+import { useTask } from '../app/task'
 import { useNav } from '../app/nav'
 import { api, openExternal } from '../lib/api'
 import { fmtDate, fmtNum, kindLabel } from '../lib/format'
@@ -26,6 +27,7 @@ function ApproveForm({ c, onDone, onCancel }: { c: Candidate; onDone: () => void
   const [name, setName] = useState(c.fullName.split('/')[1])
   const [err, setErr] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const task = useTask()
 
   useEffect(() => {
     if (game || q.trim().length < 2) { setMatches([]); return }
@@ -40,7 +42,8 @@ function ApproveForm({ c, onDone, onCancel }: { c: Candidate; onDone: () => void
     if (!game && !q.trim()) return setErr('Elige un juego del catálogo o escribe el título de uno nuevo.')
     setSaving(true)
     try {
-      await api.approve({ candidateId: c.id, game: game?.slug, newGameTitle: game ? undefined : q.trim(), platform, kind, name })
+      await task({ title: `Añadiendo ${name} al catálogo`, steps: ['Creando la ficha del proyecto', 'Comprobando su release en GitHub', 'Buscando el ejecutable Windows', 'Añadiéndolo al catálogo'], minMs: 2600, done: 'Añadido al catálogo' },
+        () => api.approve({ candidateId: c.id, game: game?.slug, newGameTitle: game ? undefined : q.trim(), platform, kind, name }))
       onDone()
     } catch (e) {
       setErr(String(e))
@@ -97,6 +100,7 @@ function ApproveForm({ c, onDone, onCancel }: { c: Candidate; onDone: () => void
 function CandidateRow({ c, onChanged }: { c: Candidate; onChanged: () => void }) {
   const { go } = useNav()
   const [open, setOpen] = useState(false)
+  const task = useTask()
   const flags = [c.isFork && 'fork', c.archived && 'archivado', c.abandoned && 'sin cambios en más de un año'].filter(Boolean)
   return (
     <li className="cand">
@@ -120,7 +124,7 @@ function CandidateRow({ c, onChanged }: { c: Candidate; onChanged: () => void })
         {c.status === 'new' && !open && (
           <span className="cand-actions">
             <button type="button" className="btn-line" onClick={() => setOpen(true)}>Aprobar…</button>
-            <button type="button" className="link" onClick={() => api.reject(c.id).then(onChanged)}>Rechazar</button>
+            <button type="button" className="link" onClick={() => task({ title: `Descartando ${c.fullName}`, steps: ['Descartando el candidato'], minMs: 800 }, () => api.reject(c.id)).then(onChanged, () => {})}>Rechazar</button>
           </span>
         )}
         {c.status === 'approved' && c.projectSlug && c.projectGame && (

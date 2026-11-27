@@ -1,10 +1,26 @@
 import { useEffect, useState } from 'react'
 import { useCatalog } from '../app/catalog'
 import { useLive } from '../app/live'
+import { useTask } from '../app/task'
+import { playStartupChime, setStartupSound, startupSoundEnabled } from '../app/sound'
 
 import type { Theme } from '../app/theme'
 import { api, isTauri, openExternal, pickPath } from '../lib/api'
 import { fmtDateTime } from '../lib/format'
+
+function SoundSetting() {
+  const [on, setOn] = useState(startupSoundEnabled())
+  const set = (v: boolean) => { setStartupSound(v); setOn(v); if (v) playStartupChime() }
+  return (
+    <>
+      <span className="seg">
+        <button type="button" aria-pressed={on} onClick={() => set(true)}>Activada</button>
+        <button type="button" aria-pressed={!on} onClick={() => set(false)}>Desactivada</button>
+      </span>
+      <p className="note-line">Un acorde corto al abrir NATIVE HUB, generado por la propia app.</p>
+    </>
+  )
+}
 
 function InstallRootSetting() {
   const [root, setRoot] = useState<{ path: string; default: boolean } | null>(null)
@@ -31,13 +47,14 @@ function InstallRootSetting() {
 
 function TokenSetting() {
   const live = useLive()
+  const task = useTask()
   const [value, setValue] = useState('')
   const [msg, setMsg] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   if (live.status?.unsupported) return <span className="tbd">Solo en la app de escritorio</span>
   const save = async () => {
     setBusy(true); setMsg(null)
-    try { await api.setGithubToken(value); setValue(''); setMsg('Token guardado en el Administrador de credenciales de Windows.'); live.reload() }
+    try { await task({ title: 'Guardando el token de GitHub', steps: ['Comprobando el token con GitHub', 'Guardándolo en el Administrador de credenciales'], minMs: 1800, done: 'Token guardado' }, () => api.setGithubToken(value)); setValue(''); setMsg('Token guardado en el Administrador de credenciales de Windows.'); live.reload() }
     catch (e) { setMsg(String(e)) } finally { setBusy(false) }
   }
   const clear = async () => { await api.clearGithubToken(); setMsg('Token eliminado.'); live.reload() }
@@ -74,6 +91,10 @@ export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Them
               <button type="button" aria-pressed={theme === 'light'} onClick={() => setTheme('light')}>Claro</button>
             </span>
           </dd>
+        </div>
+        <div>
+          <dt>Música de inicio</dt>
+          <dd><SoundSetting /></dd>
         </div>
         <div>
           <dt>Carpeta de juegos</dt>

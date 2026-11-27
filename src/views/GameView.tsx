@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLive } from '../app/live'
+import { useTask } from '../app/task'
 import { useNav } from '../app/nav'
 import { IconBack } from '../app/icons'
 import { GameFeature } from '../components/GameFeature'
@@ -11,12 +12,13 @@ import { useAsync } from '../lib/useAsync'
 export function GameView({ slug, project }: { slug: string; project?: string }) {
   const { back, canGoBack } = useNav()
   const live = useLive()
+  const task = useTask()
   const loaded = useAsync(() => api.game(slug), [slug, live.version])
   const [fresh, setFresh] = useState<{ slug: string; detail: GameDetail } | null>(null)
   const detail = fresh?.slug === slug ? { status: 'ok' as const, data: fresh.detail } : loaded
   const live_ok = !live.status?.unsupported
   const refresh = async (projectSlug: string) => {
-    const r = await api.refreshProject(projectSlug)
+    const r = await task({ title: 'Comprobando la release', steps: ['Consultando el repositorio oficial', 'Leyendo la última release', 'Buscando el ejecutable Windows'], minMs: 1800 }, () => api.refreshProject(projectSlug))
     setFresh({ slug, detail: r.detail })
     live.reload()
     const ev = r.outcome.events

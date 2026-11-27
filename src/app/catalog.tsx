@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
 import { api } from '../lib/api'
 import type { Platform, Summary } from '../lib/types'
 import { useAsync } from '../lib/useAsync'
@@ -12,7 +12,7 @@ interface CatalogCtx {
 const Ctx = createContext<CatalogCtx | null>(null)
 
 /** Carga una vez el resumen del catálogo y las plataformas, que usan casi todas las vistas. */
-export function CatalogProvider({ children }: { children: ReactNode }) {
+export function CatalogProvider({ children, onReady }: { children: ReactNode; onReady?: () => void }) {
   const state = useAsync(() => Promise.all([api.summary(), api.platforms()]), [])
   const value = useMemo(() => {
     if (state.status !== 'ok') return null
@@ -21,10 +21,13 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
     return { summary, platforms, platformOf: (s: string) => map.get(s) }
   }, [state])
 
+  useEffect(() => { if (state.status !== 'loading') onReady?.() }, [state.status, onReady])
+
   if (state.status === 'error') {
     return <div className="boot"><p>No se pudo abrir el catálogo.</p><p className="mono muted">{state.error}</p></div>
   }
-  if (!value) return <div className="boot"><p className="muted">Abriendo el catálogo…</p></div>
+  // Mientras carga, la animación de inicio cubre la ventana.
+  if (!value) return <div className="boot" />
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 

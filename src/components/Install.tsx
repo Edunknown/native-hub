@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useLibrary } from '../app/library'
+import { useTask } from '../app/task'
 import { useNav } from '../app/nav'
 import { api, pickPath } from '../lib/api'
 import type { InstallPlan, Installation, UserFileCheck, UserFileRule } from '../lib/types'
@@ -15,13 +16,17 @@ const METHOD: Record<InstallPlan['method'], string> = {
 
 /** Comprueba un archivo del usuario (ROM, ISO…) contra las reglas del adaptador. No lo copia. */
 export function UserFileChecker({ slug, rule, installation }: { slug: string; rule: UserFileRule; installation?: number }) {
+  const task = useTask()
   const [res, setRes] = useState<{ path: string; r: UserFileCheck } | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const pick = async () => {
     setErr(null)
     const path = await pickPath({ title: rule.label, extensions: rule.extensions.length ? rule.extensions : undefined })
     if (!path) return
-    try { setRes({ path, r: await api.checkUserFile(slug, rule.key, path, installation) }) } catch (e) { setErr(String(e)) }
+    try {
+      const r = await task({ title: `Comprobando ${rule.label}`, steps: ['Leyendo el archivo', 'Comprobando la cabecera', 'Comprobando el tamaño'], minMs: 1500 }, () => api.checkUserFile(slug, rule.key, path, installation))
+      setRes({ path, r })
+    } catch (e) { setErr(String(e)) }
   }
   return (
     <div className="ufile">
@@ -51,6 +56,7 @@ export function InstallPanel({ slug, onClose, onInstalled }: { slug: string; onC
   const [done, setDone] = useState<Installation | null>(null)
   const lib = useLibrary()
   const { go } = useNav()
+  const task = useTask()
 
   useEffect(() => {
     api.installPlan(slug).then(setPlan, (e) => setErr(String(e)))
@@ -60,7 +66,12 @@ export function InstallPanel({ slug, onClose, onInstalled }: { slug: string; onC
     setBusy(true)
     setErr(null)
     try {
-      const i = await api.install(slug)
+      const steps = plan?.method === 'extract_zip'
+        ? ['Preparando la carpeta del juego', 'Extrayendo archivos', 'Comprobando el contenido', 'Buscando el ejecutable', 'Registrando en la biblioteca']
+        : plan?.method === 'copy_exe'
+          ? ['Preparando la carpeta del juego', 'Copiando el ejecutable', 'Registrando en la biblioteca']
+          : ['Preparando la carpeta del juego', 'Guardando el archivo descargado', 'Registrando en la biblioteca']
+      const i = await task({ title: `Instalando ${plan?.name ?? ''}`, steps, minMs: 3200, done: 'Instalado' }, () => api.install(slug))
       setDone(i)
       lib.reload()
       onInstalled?.(i)

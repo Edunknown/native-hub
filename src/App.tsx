@@ -1,4 +1,7 @@
+import { useCallback, useState } from 'react'
 import { CatalogProvider } from './app/catalog'
+import { Splash } from './app/Splash'
+import { TaskProvider } from './app/task'
 import { DownloadsProvider } from './app/downloads'
 import { LibraryProvider } from './app/library'
 import { LiveProvider } from './app/live'
@@ -32,8 +35,15 @@ function Router({ theme, setTheme }: ReturnType<typeof useTheme>) {
 
 export default function App() {
   const t = useTheme()
+  const [ready, setReady] = useState(false)
+  const [splash, setSplash] = useState(true)
+  const onReady = useCallback(() => setReady(true), [])
+  const onSplashDone = useCallback(() => setSplash(false), [])
   return (
-    <CatalogProvider>
+    <>
+    {splash && <Splash ready={ready} onDone={onSplashDone} />}
+    <TaskProvider>
+    <CatalogProvider onReady={onReady}>
       <LiveProvider>
       <DownloadsProvider>
       <LibraryProvider>
@@ -46,5 +56,7 @@ export default function App() {
       </DownloadsProvider>
       </LiveProvider>
     </CatalogProvider>
+    </TaskProvider>
+    </>
   )
 }
