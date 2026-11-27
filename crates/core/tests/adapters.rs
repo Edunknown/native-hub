@@ -26,7 +26,11 @@ fn setup() -> rusqlite::Connection {
 
 fn adapters() -> Vec<(String, Value)> {
     let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../../catalog/adapters");
-    let only: Option<Vec<String>> = std::env::var("ADAPTERS").ok().map(|v| v.split(',').map(|s| s.trim().to_owned()).collect());
+    // An empty ADAPTERS (as GitHub passes an empty input) means all.
+    let only: Option<Vec<String>> = std::env::var("ADAPTERS")
+        .ok()
+        .map(|v| v.split(',').map(|s| s.trim().to_owned()).filter(|s| !s.is_empty()).collect::<Vec<_>>())
+        .filter(|v| !v.is_empty());
     let mut out: Vec<(String, Value)> = std::fs::read_dir(dir)
         .unwrap()
         .filter_map(|e| e.ok())
@@ -126,6 +130,7 @@ fn every_adapter_installs_from_its_official_release() {
     let _ = std::fs::create_dir_all(std::path::Path::new(out).parent().unwrap());
     std::fs::write(out, serde_json::to_string_pretty(&report).unwrap()).unwrap();
     println!("report: target/adapter-report.json");
+    assert!(!results.is_empty(), "no adapters were tested");
     let failed: Vec<_> = results.iter().filter(|r| r["ok"] != true).map(|r| r["adapter"].clone()).collect();
     assert!(failed.is_empty(), "adapters that did not install: {failed:?}");
 }
