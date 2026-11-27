@@ -34,6 +34,9 @@ export const api = {
   home: () => call<Home>('catalog_home'),
   gamesLookup: (q: string) => call<{ slug: string; title: string; platform: string }[]>('catalog_games_lookup', { q }),
 
+  coversCacheSize: () => call<number>('covers_cache_size'),
+  coversClearCache: () => call<void>('covers_clear_cache'),
+
   releasesStatus: () => call<ReleasesStatus>('releases_status'),
   refreshProject: (slug: string) => call<RefreshResult>('refresh_project', { slug }),
   refreshStale: (maxAgeHours = 24, limit = 200) => call<boolean>('refresh_stale', { maxAgeHours, limit }),

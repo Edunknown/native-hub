@@ -48,6 +48,9 @@
   "games": [
     { "slug": "fire-emblem-fortunes-weave", "title": "Fire Emblem: Fortune’s Weave", "platform": "switch2", "year": 2026 }
   ],
+  "gameOverrides": {
+    "$comment": "Correcciones de juegos importados, por slug: { \"igdb\": 1234 } si falta o es erróneo el ID de IGDB, { \"cover\": \"co1abc\" } para fijar la portada (image_id de IGDB) o { \"cover\": null } para quitarla."
+  },
   "repoMoves": {
     "$comment": "Repositorios que cambiaron de dueño. Clave: como figura en la fuente; valor: dónde está ahora (comprobado en github.com el 26/11/2026).",
     "NotRexed/Hookshot": "ItsNotRexed/Hookshot"

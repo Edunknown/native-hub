@@ -8,8 +8,16 @@ use crate::{Error, Result, catalog, text::fold};
 
 fn project_data(row: &Row) -> rusqlite::Result<Value> {
     let data: String = row.get("data")?;
-    Ok(serde_json::from_str(&data).unwrap_or(Value::Null))
+    let mut v: Value = serde_json::from_str(&data).unwrap_or(Value::Null);
+    // La portada es la del juego principal: así también la tienen los proyectos aprobados
+    // a mano y siempre refleja el catálogo cargado.
+    if let Value::Object(m) = &mut v {
+        m.insert("cover".into(), json!(row.get::<_, Option<String>>("cover")?));
+    }
+    Ok(v)
 }
+
+const COVER: &str = "(SELECT cover FROM games WHERE games.slug = projects.game) AS cover";
 
 fn game_json(row: &Row) -> rusqlite::Result<Value> {
     Ok(json!({
@@ -17,11 +25,12 @@ fn game_json(row: &Row) -> rusqlite::Result<Value> {
         "title": row.get::<_, String>("title")?,
         "platform": row.get::<_, String>("platform")?,
         "year": row.get::<_, Option<i64>>("year")?,
+        "cover": row.get::<_, Option<String>>("cover")?,
     }))
 }
 
 fn projects_where(conn: &Connection, sql_where: &str, p: impl rusqlite::Params) -> Result<Vec<Value>> {
-    let sql = format!("SELECT data FROM projects {sql_where}");
+    let sql = format!("SELECT data, {COVER} FROM projects {sql_where}");
     let mut st = conn.prepare(&sql)?;
     let rows = st.query_map(p, project_data)?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
@@ -111,7 +120,7 @@ pub fn search(conn: &Connection, q: &str, limit: i64) -> Result<Vec<Value>> {
         ));
     }
     let sql = format!(
-        "SELECT pr.data FROM projects pr
+        "SELECT pr.data, g.cover FROM projects pr
          JOIN games g ON g.slug = pr.game JOIN platforms pl ON pl.slug = pr.platform
          WHERE {}
          ORDER BY pr.listing = 'library' DESC, COALESCE(pr.stars, 0) DESC LIMIT {}",
@@ -139,7 +148,7 @@ pub fn discover(conn: &Connection, f: &DiscoverFilter) -> Result<Value> {
         |r| r.get(0),
     )?;
     let mut st = conn.prepare(&format!(
-        "SELECT pr.data FROM projects pr JOIN games g ON g.slug = pr.game {w}
+        "SELECT pr.data, g.cover FROM projects pr JOIN games g ON g.slug = pr.game {w}
          ORDER BY g.title, pr.name LIMIT ?4 OFFSET ?5"
     ))?;
     let items = st
@@ -191,7 +200,7 @@ mod tests {
         {"slug": "ps4", "name": "PlayStation 4", "short": "PS4", "family": "PlayStation"}
       ],
       "games": [
-        {"slug": "mm", "title": "The Legend of Zelda: Majora’s Mask", "platform": "n64", "year": 2000},
+        {"slug": "mm", "title": "The Legend of Zelda: Majora’s Mask", "platform": "n64", "year": 2000, "cover": "co3pah"},
         {"slug": "pokopia", "title": "Pokémon Pokopia", "platform": "switch2", "year": 2026}
       ],
       "projects": [
@@ -221,7 +230,7 @@ mod tests {
         let s = summary(&conn).unwrap();
         assert_eq!(s["projectCount"], 3);
         assert_eq!(s["installableCount"], 2);
-        assert_eq!(s["schemaVersion"], 4);
+        assert_eq!(s["schemaVersion"], 5);
     }
 
     #[test]
@@ -242,6 +251,17 @@ mod tests {
         let names: Vec<_> = g["projects"].as_array().unwrap().iter().map(|p| p["name"].as_str().unwrap()).collect();
         assert_eq!(names, ["Zelda64Recomp", "2 Ship 2 Harkinian"]);
         assert!(game(&conn, "no-existe").is_err());
+    }
+
+    #[test]
+    fn portada_del_juego_en_ficha_y_proyectos() {
+        let conn = setup();
+        let g = game(&conn, "mm").unwrap();
+        assert_eq!(g["game"]["cover"], "co3pah");
+        assert!(g["projects"].as_array().unwrap().iter().all(|p| p["cover"] == "co3pah"));
+        assert_eq!(search(&conn, "pokemon", 10).unwrap()[0]["cover"], Value::Null);
+        let r = discover(&conn, &DiscoverFilter { listing: Some("library"), kind: None, platform: None, offset: 0, limit: 5 }).unwrap();
+        assert_eq!(r["items"][0]["cover"], "co3pah");
     }
 
     #[test]

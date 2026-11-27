@@ -3,6 +3,7 @@ import { useDownloads } from '../app/downloads'
 import { useLibrary } from '../app/library'
 import { InstallPanel } from './Install'
 import { ReleasePicker } from './ReleasePicker'
+import { CoverImage } from './CoverImage'
 import { api as liveApi } from '../lib/api'
 import { useCatalog } from '../app/catalog'
 import { useNav } from '../app/nav'
@@ -17,13 +18,15 @@ function initials(title: string) {
   return words.slice(0, 2).map((w) => w[0]).join('').toUpperCase() || title.slice(0, 2).toUpperCase()
 }
 
+/** Portada de IGDB sobre la portada tipográfica, que queda debajo si la imagen no carga. */
 export function Cover({ game }: { game: Game }) {
   const { platformOf } = useCatalog()
   return (
     <div className="cover" aria-hidden="true">
       <span className="plat">{platformOf(game.platform)?.name}{game.year ? ` · ${game.year}` : ''}</span>
       <span className="glyph">{initials(game.title)}</span>
-      <span className="cap">{tr('Portada: pendiente de fuente oficial', 'Cover: awaiting an official source')}</span>
+      <span className="cap">{game.cover ? tr('Cargando portada…', 'Loading cover…') : tr('Sin portada', 'No cover')}</span>
+      <CoverImage id={game.cover} size="big" className="cover-img" />
     </div>
   )
 }

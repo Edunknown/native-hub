@@ -113,6 +113,10 @@ const MIGRATIONS: &[&str] = &[
     ALTER TABLE scan_candidates ADD COLUMN suggestion TEXT;
     CREATE INDEX scan_candidates_source ON scan_candidates(source, status);
     "#,
+    // v5 · portadas: image_id de IGDB de cada juego (la imagen se descarga y cachea aparte).
+    r#"
+    ALTER TABLE games ADD COLUMN cover TEXT;
+    "#,
 ];
 
 pub fn open(path: &Path) -> Result<Connection> {

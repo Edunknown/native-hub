@@ -3,9 +3,10 @@ import { useCatalog } from '../app/catalog'
 import { useNav } from '../app/nav'
 import type { Project } from '../lib/types'
 import { ConsoleIcon } from './ConsoleIcon'
+import { CoverImage } from './CoverImage'
 import { tr } from '../lib/i18n'
 
-/** Fila editorial: silueta de la consola, juego/proyecto y un dato a la derecha. */
+/** Fila editorial: portada (o silueta de la consola), juego/proyecto y un dato a la derecha. */
 export function ProjectRow({ project, title, sub, end }: { project: Project; title?: ReactNode; sub?: ReactNode; end?: ReactNode }) {
   const { go } = useNav()
   const { platformOf } = useCatalog()
@@ -16,6 +17,7 @@ export function ProjectRow({ project, title, sub, end }: { project: Project; tit
         <span className="thumb" title={platform?.name}>
           <ConsoleIcon slug={project.platform} size={30} strokeWidth={1.6} />
           <span>{platform?.short ?? platform?.name}</span>
+          <CoverImage id={project.cover} size="small" className="thumb-img" />
         </span>
         <span className="t">
           <div className="game">{title ?? project.name}</div>

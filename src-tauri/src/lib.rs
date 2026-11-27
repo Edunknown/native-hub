@@ -13,6 +13,7 @@ use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
 use native_hub_core::http::UreqFetcher;
+use native_hub_core::cover::{self, UreqImages};
 use native_hub_core::{Error, Result, catalog, db, download, install, query, releases, scanner, sync, update};
 use rusqlite::Connection;
 use serde_json::{Value, json};
@@ -39,6 +40,9 @@ struct AppState {
     dl_worker: AtomicBool,
     /// Carpeta de juegos por defecto (Documentos\NATIVE HUB); se puede cambiar en Ajustes.
     default_install_root: PathBuf,
+    /// Caché de portadas (images.igdb.com), servida a la interfaz por el protocolo cover://.
+    covers_dir: PathBuf,
+    images: Arc<UreqImages>,
 }
 
 impl AppState {
@@ -130,6 +134,38 @@ fn catalog_games_lookup(s: State<AppState>, q: String) -> Result<Vec<Value>> {
         })?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     })
+}
+
+// ---------- Portadas ----------
+
+/// Responde a `cover://localhost/<tamaño>/<image_id>`: la portada desde la caché, o
+/// descargada de images.igdb.com la primera vez. Sin conexión y sin caché, 404 y la
+/// interfaz muestra la portada tipográfica.
+fn serve_cover(app: &AppHandle, path: &str) -> tauri::http::Response<Vec<u8>> {
+    let not_found = || tauri::http::Response::builder().status(404).body(Vec::new()).expect("respuesta");
+    let Some((size, id)) = cover::parse_request_path(path) else { return not_found() };
+    let s = app.state::<AppState>();
+    match cover::get(&s.covers_dir, s.images.as_ref(), size, &id) {
+        Ok(bytes) => tauri::http::Response::builder()
+            .header("Content-Type", "image/jpeg")
+            .header("Cache-Control", "max-age=31536000, immutable")
+            .body(bytes)
+            .expect("respuesta"),
+        Err(e) => {
+            log::warn!("portada {size}/{id}: {e}");
+            not_found()
+        }
+    }
+}
+
+#[tauri::command]
+fn covers_cache_size(s: State<AppState>) -> u64 {
+    cover::cache_size(&s.covers_dir)
+}
+
+#[tauri::command]
+fn covers_clear_cache(s: State<AppState>) -> Result<()> {
+    cover::clear_cache(&s.covers_dir)
 }
 
 // ---------- Releases en vivo (fase 3) ----------
@@ -720,6 +756,11 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .register_asynchronous_uri_scheme_protocol("cover", |ctx, request, responder| {
+            let app = ctx.app_handle().clone();
+            let path = request.uri().path().to_owned();
+            tauri::async_runtime::spawn_blocking(move || responder.respond(serve_cover(&app, &path)));
+        })
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -736,6 +777,10 @@ pub fn run() {
                 None => app.path().app_local_data_dir()?.join("downloads"),
             };
             std::fs::create_dir_all(&downloads_dir)?;
+            let covers_dir = match &portable {
+                Some(root) => root.join("data").join("covers"),
+                None => app.path().app_cache_dir()?.join("covers"),
+            };
             let default_install_root = match &portable {
                 Some(root) => root.join("Games"),
                 None => app.path().document_dir()?.join("NATIVE HUB"),
@@ -750,6 +795,8 @@ pub fn run() {
                 dl_controls: Mutex::new(HashMap::new()),
                 dl_worker: AtomicBool::new(false),
                 default_install_root,
+                covers_dir,
+                images: Arc::new(UreqImages::default()),
             });
             // Comprobación ligera en segundo plano de los proyectos menos recientes.
             let _ = refresh_stale(app.handle().clone(), Some(24), Some(STARTUP_REFRESH));
@@ -774,6 +821,8 @@ pub fn run() {
             catalog_discover,
             catalog_home,
             catalog_games_lookup,
+            covers_cache_size,
+            covers_clear_cache,
             releases_status,
             refresh_project,
             refresh_stale,
