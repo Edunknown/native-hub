@@ -18,13 +18,31 @@
         "key": "diabdat",
         "label": "DIABDAT.MPQ de tu Diablo (o spawn.mpq de la shareware)",
         "labelEn": "DIABDAT.MPQ from your Diablo (or spawn.mpq from the shareware)",
-        "extensions": ["mpq"],
-        "magic": ["4d50511a"],
+        "extensions": [
+          "mpq"
+        ],
+        "magic": [
+          "4d50511a"
+        ],
         "when": "manual",
         "help": "NATIVE HUB solo comprueba que es un archivo MPQ; no lo copia ni lo modifica.",
         "helpEn": "NATIVE HUB only checks that it is an MPQ archive; it does not copy or change it."
       }
     ],
-    "preserve": ["diablo.ini", "*.sv", "*.hsv", "*.mpq"]
+    "preserve": [
+      "diablo.ini",
+      "*.sv",
+      "*.hsv",
+      "*.mpq"
+    ],
+    "tested": [
+      {
+        "status": "install",
+        "version": "1.5.5",
+        "date": "2026-11-27",
+        "by": "CI",
+        "os": "windows-server"
+      }
+    ]
   }
 }

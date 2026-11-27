@@ -18,7 +18,11 @@
         "key": "rom",
         "label": "ROM de Pokémon (versión estadounidense en inglés): Rojo, Azul, Amarillo, Oro, Plata, Cristal; en beta FireRed, LeafGreen, Rubí, Zafiro y Esmeralda",
         "labelEn": "Pokémon ROM (US English): Red, Blue, Yellow, Gold, Silver, Crystal; in beta FireRed, LeafGreen, Ruby, Sapphire and Emerald",
-        "extensions": ["gb", "gbc", "gba"],
+        "extensions": [
+          "gb",
+          "gbc",
+          "gba"
+        ],
         "sha1": [
           "ea9bcae617fdf159b045185467ae58b2e4a48b9a",
           "d7037c83e1ae5b39bde3c30787637ba1d4c48ce2",
@@ -44,6 +48,26 @@
         "helpEn": "A dump of your own cartridge. NATIVE HUB checks the SHA-1 against the list the project publishes."
       }
     ],
-    "preserve": ["portable.txt", "save.lua", "save.lua.bak", "options.lua", "roms/**", "imports/**", "baseroms/**", "data/generated/**", "assets/generated/**", "prints/**"]
+    "preserve": [
+      "portable.txt",
+      "save.lua",
+      "save.lua.bak",
+      "options.lua",
+      "roms/**",
+      "imports/**",
+      "baseroms/**",
+      "data/generated/**",
+      "assets/generated/**",
+      "prints/**"
+    ],
+    "tested": [
+      {
+        "status": "install",
+        "version": "v0.4.8",
+        "date": "2026-11-27",
+        "by": "CI",
+        "os": "windows-server"
+      }
+    ]
   }
 }
