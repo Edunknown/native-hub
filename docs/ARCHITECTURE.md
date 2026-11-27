@@ -1,6 +1,6 @@
 # NATIVE HUB · Analysis and architecture
 
-Starting document, kept up to date with every phase. Updated: 27/11/2026, version 0.2.1. Spanish: [ARQUITECTURA.md](ARQUITECTURA.md).
+Starting document, kept up to date with every phase. Updated: 27/11/2026, version 0.3.0. Spanish: [ARQUITECTURA.md](ARQUITECTURA.md).
 
 ---
 
@@ -285,7 +285,14 @@ Flow: `npm run catalog:update` = import Recompendium → merge with `manual.json
 - **Catalog texts.** Recompendium publishes descriptions and requirements in Spanish and English: the catalog keeps both (`summary`/`summaryEn`, `requirementsText`/`requirementsTextEn`). The manual list and the adapters also carry English texts.
 - **Portable build.** If a file named `portable` (or `portable.txt`) sits next to the executable, the database, downloads and WebView profile go to `data\` and games to `Games\` beside it. The window is created at startup (not from `tauri.conf.json`) so its data folder can be set. The optional GitHub token stays in the current Windows user's Credential Manager.
 
-## 16. Actual status of each feature
+## 16. Self-updates (0.3.0)
+
+- **Plugin.** Official Tauri updater (`tauri-plugin-updater`) plus `tauri-plugin-process` to restart. Endpoint: `https://github.com/Edunknown/native-hub/releases/latest/download/latest.json`.
+- **Signing.** Every installer is signed with the updater key (minisign). The public key is in `tauri.conf.json`; the private key lives outside the repo (`%USERPROFILE%\.native-hub-keys\updater.key`) and must be backed up: without it, no further update can be published to existing installs.
+- **Flow.** Eight seconds after startup the app checks `latest.json`. If there is a newer version, a bar under the header offers "Update and restart", "What's new" and "Not now" (which hides that version until the next manual check). Nothing is downloaded without confirming. The NSIS installer runs in passive mode and the app restarts. Settings › NATIVE HUB version shows the current version and a manual check.
+- **Portable.** `is_portable` tells the UI it runs in portable mode: it only announces the new version and opens its release page.
+
+## 17. Actual status of each feature
 
 | Feature | Status |
 |---|---|
@@ -305,3 +312,4 @@ Flow: `npm run catalog:update` = import Recompendium → merge with `manual.json
 | Startup animation with music and progress panels | Done (phase 6.1) |
 | Updating installs while keeping saves and settings, with undo | Done (phase 6) |
 | English interface (Spanish available) and portable build | Done (0.2.1) |
+| Signed self-updates of the app | Done (0.3.0) |

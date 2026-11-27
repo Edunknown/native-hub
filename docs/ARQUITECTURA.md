@@ -1,6 +1,6 @@
 # NATIVE HUB · Análisis y arquitectura
 
-Documento de partida (apartado 19 del brief). Fecha: 26/11/2026. Actualizado: 27/11/2026, versión 0.2.1. En inglés: [ARCHITECTURE.md](ARCHITECTURE.md).
+Documento de partida (apartado 19 del brief). Fecha: 26/11/2026. Actualizado: 27/11/2026, versión 0.3.0. En inglés: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
@@ -284,7 +284,14 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 - **Textos del catálogo.** Recompendium publica descripciones y requisitos en español e inglés: el catálogo guarda ambos (`summary`/`summaryEn`, `requirementsText`/`requirementsTextEn`). La lista manual y los adaptadores también llevan textos en inglés.
 - **Versión portable.** Si junto al ejecutable hay un archivo llamado `portable` (o `portable.txt`), la base de datos, las descargas y el perfil de WebView van a `data\` y los juegos a `Games\` a su lado. La ventana se crea al arrancar (no desde `tauri.conf.json`) para poder fijar su carpeta de datos. El token opcional de GitHub sigue en el Administrador de credenciales del usuario de Windows.
 
-## 16. Estado real de cada función
+## 16. Actualizaciones de la propia app (0.3.0)
+
+- **Plugin.** Updater oficial de Tauri (`tauri-plugin-updater`) y `tauri-plugin-process` para reiniciar. Endpoint: `https://github.com/Edunknown/native-hub/releases/latest/download/latest.json`.
+- **Firma.** Cada instalador se firma con la clave del updater (minisign). La pública está en `tauri.conf.json`; la privada vive fuera del repo (`%USERPROFILE%\.native-hub-keys\updater.key`) y hay que respaldarla: sin ella no se puede publicar ninguna actualización para las instalaciones existentes.
+- **Flujo.** Ocho segundos después de arrancar, la app consulta `latest.json`. Si hay una versión nueva, una barra bajo la cabecera ofrece «Actualizar y reiniciar», «Novedades» y «Ahora no» (que oculta esa versión hasta la próxima comprobación manual). Nada se descarga sin confirmar. El instalador NSIS se ejecuta en modo pasivo y la app se reinicia. Ajustes › Versión de NATIVE HUB muestra la versión y una comprobación manual.
+- **Portable.** `is_portable` indica a la interfaz que está en modo portable: solo avisa de la versión nueva y abre su página de la release.
+
+## 17. Estado real de cada función
 
 | Función | Estado |
 |---|---|
@@ -304,3 +311,4 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 | Animación de inicio con música y paneles de progreso | Hecho (fase 6.1) |
 | Actualizar instalaciones conservando partidas y configuración, con deshacer | Hecho (fase 6) |
 | Interfaz en inglés (español disponible) y versión portable | Hecho (0.2.1) |
+| Actualizaciones firmadas de la propia app | Hecho (0.3.0) |

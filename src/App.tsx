@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { CatalogProvider } from './app/catalog'
 import { Splash } from './app/Splash'
 import { TaskProvider } from './app/task'
+import { AppUpdateProvider } from './app/appUpdate'
 import { DownloadsProvider } from './app/downloads'
 import { LibraryProvider } from './app/library'
 import { LiveProvider } from './app/live'
@@ -43,6 +44,7 @@ export default function App() {
     <>
     {splash && <Splash ready={ready} onDone={onSplashDone} />}
     <TaskProvider>
+    <AppUpdateProvider>
     <CatalogProvider onReady={onReady}>
       <LiveProvider>
       <DownloadsProvider>
@@ -56,6 +58,7 @@ export default function App() {
       </DownloadsProvider>
       </LiveProvider>
     </CatalogProvider>
+    </AppUpdateProvider>
     </TaskProvider>
     </>
   )

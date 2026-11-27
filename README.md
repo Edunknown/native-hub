@@ -11,10 +11,10 @@
 
 <p align="center"><b>English</b> · <a href="README.es.md">Español</a></p>
 
-> **Version 0.2.1 · phase 7, expansion.** A catalog of ≈1,550 projects across 40 platforms, live
+> **Version 0.3.0.** A catalog of ≈1,550 projects across 40 platforms, live
 > release checks, a GitHub and GitLab scanner with a review queue, Recompendium sync, official
 > downloads with SHA-256, installation with a plan and adapters, updates that keep your saves,
-> automatic checks every 6 or 24 hours, and a portable build.
+> automatic checks every 6 or 24 hours, game covers from IGDB, self-updates and a portable build.
 
 ## What it does
 
@@ -25,6 +25,7 @@
 - **Library and updates.** Launch, change the executable, open the folder and uninstall. Updates keep saves and settings, take a backup first and can be undone.
 - **Automation.** Release checks and project discovery every 6 h, every 24 h, or off (Settings).
 - **English and Spanish.** English by default; switch language in Settings.
+- **Self-updating.** On startup NATIVE HUB checks GitHub for a new version of itself and asks before installing it. Updates are signed; the portable build only tells you and opens the release page.
 
 NATIVE HUB **does not include or download ROMs, ISOs, BIOS, firmware or keys**. It only locates and validates files you already own.
 
@@ -62,6 +63,18 @@ npm run catalog:covers      # resolve IGDB covers (needs IGDB_CLIENT_ID / IGDB_C
 npm test                    # Rust core tests
 ```
 
+### Releasing
+
+Updates are signed with the Tauri updater key. Keep the private key outside the repo and build with it:
+
+```powershell
+$env:TAURI_SIGNING_PRIVATE_KEY = "$env:USERPROFILE\.native-hub-keys\updater.key"
+$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
+npm run tauri build
+```
+
+The build writes the installer and its `.sig`. Upload the installer, the portable ZIP and a `latest.json` (version, notes, date, and the installer URL and signature for `windows-x86_64`) to the GitHub release: the app reads `releases/latest/download/latest.json`.
+
 Layout: `src/` UI, `src-tauri/` desktop app, `crates/core/` Rust core (SQLite, releases, scanner, downloads, installation, updates, sync), `catalog/` catalog data and adapters, `scripts/` catalog generation.
 
 ## History
@@ -76,6 +89,7 @@ Layout: `src/` UI, `src-tauri/` desktop app, `crates/core/` Rust core (SQLite, r
 | 6 / 6.1 | Updates that keep saves; startup animation and progress panels |
 | 7 | Recompendium sync, GitLab scanner, automation |
 | 0.2.1 | English UI (Spanish available), portable build with data next to the executable |
+| 0.3.0 | IGDB game covers, signed self-updates from GitHub Releases |
 
 ## Licenses and attribution
 

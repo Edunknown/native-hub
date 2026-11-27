@@ -1,6 +1,7 @@
 import { tr } from '../lib/i18n'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useCatalog } from './catalog'
+import { AppUpdateBanner } from './appUpdate'
 import { useLive } from './live'
 import { useDownloads } from './downloads'
 import { fmtDateTime, fmtNum } from '../lib/format'
@@ -98,6 +99,7 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
         <div className="phase-note">
           <b>{tr('Fase 7 · expansión.', 'Phase 7 · expansion.')}</b> {tr('El catálogo crece desde Recompendium, GitHub y GitLab, siempre con tu revisión.', 'The catalog grows from Recompendium, GitHub and GitLab, always with your review.')}
         </div>
+        <AppUpdateBanner />
 
         <div className="scroll" ref={scroller}>{children}</div>
 

@@ -11,7 +11,7 @@
   Tauri 2 + Rust + React + TypeScript + SQLite.
 </p>
 
-> **Versión 0.2.1 · fase 7, expansión.** Catálogo de ≈1.550 proyectos de 40 plataformas, releases
+> **Versión 0.3.0.** Catálogo de ≈1.550 proyectos de 40 plataformas, releases
 > en vivo, escáner de GitHub y GitLab con cola de revisión, sincronización con Recompendium,
 > descargas oficiales con SHA-256, instalación con plan y adaptadores, actualizaciones que
 > conservan partidas y comprobaciones automáticas cada 6 o 24 h.
@@ -75,6 +75,7 @@ Estructura: `src/` interfaz, `src-tauri/` app de escritorio, `crates/core/` núc
 | 6 / 6.1 | Actualizaciones que conservan partidas; animación de inicio y paneles de progreso |
 | 7 | Sincronización con Recompendium, escáner de GitLab, automatización |
 | 0.2.1 | Interfaz en inglés (español disponible), versión portable con los datos junto al ejecutable |
+| 0.3.0 | Portadas de IGDB, actualizaciones firmadas de la propia app desde GitHub Releases |
 
 ## Licencias y atribución
 

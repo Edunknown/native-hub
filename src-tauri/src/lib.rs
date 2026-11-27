@@ -716,6 +716,12 @@ async fn set_github_token(app: AppHandle, value: String) -> Result<Value> {
     .map_err(|e| Error::Invalid(e.to_string()))?
 }
 
+/// Whether this copy runs in portable mode (it then only announces updates).
+#[tauri::command]
+fn is_portable() -> bool {
+    portable_root().is_some()
+}
+
 /// Language of the messages returned by the backend ("en" or "es").
 #[tauri::command]
 fn set_language(lang: String) {
@@ -756,6 +762,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .register_asynchronous_uri_scheme_protocol("cover", |ctx, request, responder| {
             let app = ctx.app_handle().clone();
             let path = request.uri().path().to_owned();
@@ -841,6 +849,7 @@ pub fn run() {
             set_github_token,
             clear_github_token,
             set_language,
+            is_portable,
             download_start,
             project_releases,
             download_asset,

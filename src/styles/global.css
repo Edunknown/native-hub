@@ -238,6 +238,8 @@ button.row:hover .game { color: var(--accent-ink); }
   padding: 10px 40px 10px var(--pad-x); font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line);
 }
 .phase-note b { color: var(--fg); font-weight: 500; }
+.phase-note.app-update { border-left: 2px solid var(--accent); }
+.phase-note.app-update .link { font-size: 12px; }
 
 @media (max-width: 1180px) {
   .feature { grid-template-columns: 220px minmax(0, 1fr); gap: 36px; }

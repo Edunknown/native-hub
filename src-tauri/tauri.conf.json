@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "NATIVE HUB",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "identifier": "dev.nativehub.app",
   "build": {
     "frontendDist": "../dist",
@@ -40,6 +40,18 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNCMUIzQkRFODI3OTI2QjgKUldTNEpubUMzanNiT3lURnA4SCtoS1E0VURqQnYxWnV1T28vRzlvTkxpdzU1KzluVXB2RTloVWMK",
+      "endpoints": [
+        "https://github.com/Edunknown/native-hub/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

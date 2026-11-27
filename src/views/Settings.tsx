@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useCatalog } from '../app/catalog'
 import { useLive } from '../app/live'
 import { useTask } from '../app/task'
+import { AppUpdateSetting } from '../app/appUpdate'
 import { playStartupChime, setStartupSound, startupSoundEnabled } from '../app/sound'
 
 import type { Theme } from '../app/theme'
@@ -130,6 +131,10 @@ export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Them
         <div>
           <dt>{tr('Automatización', 'Automation')}</dt>
           <dd><AutomationSetting /></dd>
+        </div>
+        <div>
+          <dt>{tr('Versión de NATIVE HUB', 'NATIVE HUB version')}</dt>
+          <dd><AppUpdateSetting /></dd>
         </div>
         <div>
           <dt>{tr('Idioma', 'Language')}</dt>
