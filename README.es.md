@@ -57,6 +57,7 @@ npm run tauri dev           # app de escritorio (necesita Rust y C++ Build Tools
 npm run tauri build         # instalador NSIS en target\release\bundle\nsis
 npm run catalog:update      # reimporta Recompendium y comprueba releases en GitHub
 npm run catalog:build       # solo une fuentes y comprueba lo no revisado en 12 h
+npm run catalog:covers      # resuelve portadas de IGDB (necesita IGDB_CLIENT_ID / IGDB_CLIENT_SECRET)
 npm test                    # pruebas del núcleo en Rust
 ```
 
@@ -78,5 +79,6 @@ Estructura: `src/` interfaz, `src-tauri/` app de escritorio, `crates/core/` núc
 ## Licencias y atribución
 
 - **Catálogo.** Incluye datos de [Recompendium](https://recompendium.com) bajo licencia [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.es). El catálogo derivado (`catalog/`) se distribuye bajo esa misma licencia; ver [catalog/LICENSE.md](catalog/LICENSE.md).
+- **Portadas.** Las portadas vienen de [IGDB](https://www.igdb.com). El catálogo guarda solo los identificadores de imagen de IGDB; la app descarga cada imagen de images.igdb.com la primera vez que se muestra y la guarda en caché local. Las imágenes pertenecen a sus editores.
 - **Proyectos enlazados.** Cada recompilación o port pertenece a sus autores y tiene su propia licencia; NATIVE HUB solo enlaza y descarga sus releases oficiales.
 - **Nombres de juegos y consolas.** Son marcas de sus respectivos propietarios. NATIVE HUB no está afiliado a ninguno.

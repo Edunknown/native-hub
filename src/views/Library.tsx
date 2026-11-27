@@ -8,6 +8,7 @@ import { api, isTauri, pickPath } from '../lib/api'
 import { fmtDateTime } from '../lib/format'
 import type { Installation } from '../lib/types'
 import { ConsoleIcon } from '../components/ConsoleIcon'
+import { CoverImage } from '../components/CoverImage'
 import { UpdatePanel } from '../components/UpdatePanel'
 import { tr } from '../lib/i18n'
 
@@ -77,7 +78,7 @@ function InstallationRow({ inst }: { inst: Installation }) {
 
   return (
     <li className="inst">
-      <div className="inst-icon"><ConsoleIcon slug={p?.platform ?? 'other'} size={42} /></div>
+      <div className="inst-icon"><ConsoleIcon slug={p?.platform ?? 'other'} size={42} /><CoverImage id={p?.cover} size="small" className="inst-cover" /></div>
       <div className="inst-main">
         <div>
           <span className="game">{p?.gameTitle ?? inst.project}</span>

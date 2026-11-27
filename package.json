@@ -12,6 +12,7 @@
     "tauri": "tauri",
     "catalog:import": "node scripts/import-recompendium.mjs",
     "catalog:build": "node scripts/build-catalog.mjs",
+    "catalog:covers": "node scripts/fetch-covers.mjs",
     "catalog:update": "node scripts/import-recompendium.mjs && node scripts/build-catalog.mjs"
   },
   "dependencies": {

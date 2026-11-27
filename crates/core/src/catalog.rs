@@ -37,6 +37,9 @@ pub struct Game {
     pub platform: String,
     pub year: Option<i64>,
     pub igdb: Option<i64>,
+    /// image_id de la portada en IGDB (scripts/fetch-covers.mjs).
+    #[serde(default)]
+    pub cover: Option<String>,
 }
 
 pub fn parse(json: &str) -> Result<CatalogFile> {
@@ -88,12 +91,15 @@ pub fn import(conn: &mut Connection, cat: &CatalogFile) -> Result<()> {
     }
     {
         let mut st = tx.prepare(
-            "INSERT INTO games (slug, title, platform, year, igdb, search) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+            "INSERT INTO games (slug, title, platform, year, igdb, search, cover) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
              ON CONFLICT(slug) DO UPDATE SET title = excluded.title, platform = excluded.platform,
-               year = excluded.year, igdb = excluded.igdb, search = excluded.search, origin = 'catalog'",
+               year = excluded.year, igdb = excluded.igdb, search = excluded.search, cover = excluded.cover,
+               origin = 'catalog'",
         )?;
         for g in &cat.games {
-            st.execute(params![g.slug, g.title, g.platform, g.year, g.igdb, fold(&g.title)])?;
+            // Solo se guardan identificadores válidos: el valor acaba en una URL.
+            let cover = g.cover.as_deref().filter(|c| crate::cover::valid_image_id(c));
+            st.execute(params![g.slug, g.title, g.platform, g.year, g.igdb, fold(&g.title), cover])?;
         }
     }
     {

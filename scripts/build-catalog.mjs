@@ -40,6 +40,22 @@ const games = new Map()
 for (const g of recomp.games) games.set(g.slug, { ...g, source: 'recompendium' })
 for (const g of manual.games) games.set(g.slug, { platforms: [g.platform], igdb: null, ...games.get(g.slug), ...g, source: 'manual' })
 
+// Correcciones puntuales de juegos importados (ID de IGDB o portada fijada a mano).
+for (const [slug, fix] of Object.entries(manual.gameOverrides ?? {})) {
+  if (slug.startsWith('$')) continue
+  const g = games.get(slug)
+  if (!g) { console.warn(`manual.gameOverrides: juego desconocido ${slug}`); continue }
+  Object.assign(g, fix)
+}
+
+// Portadas de IGDB (scripts/fetch-covers.mjs). Se guarda solo el image_id; la imagen la
+// descarga la app. Un `cover` fijado a mano manda; `cover: null` la quita a propósito.
+const igdbCovers = (await readJson(join(ROOT, 'catalog/sources/igdb-covers.json'), { covers: {} })).covers
+for (const g of games.values()) {
+  if (!('cover' in g)) g.cover = (g.igdb && igdbCovers[g.igdb]?.imageId) || null
+  if (g.cover != null && !/^[a-z0-9]{1,40}$/.test(g.cover)) throw new Error(`Juego ${g.slug}: portada no válida ${g.cover}`)
+}
+
 const key = (repo) => repo?.toLowerCase() ?? null
 const projects = new Map()
 for (const p of recomp.projects) {
@@ -200,6 +216,7 @@ for (const p of projects.values()) {
     sourceId: p.sourceId ?? null,
     game: p.game,
     gameTitle: games.get(p.game).title,
+    cover: games.get(p.game).cover ?? null,
     games: p.games,
     platform: p.platform,
     name: p.name,
@@ -241,6 +258,7 @@ const catalog = {
   sources: [
     { name: 'NATIVE HUB (curado a mano)', url: null, license: null },
     recomp.source && { name: recomp.source.name, url: recomp.source.url, data: recomp.source.data, license: recomp.source.license, commit: recomp.source.commit },
+    Object.keys(igdbCovers).length && { name: 'IGDB (portadas)', url: 'https://www.igdb.com', license: null },
   ].filter(Boolean),
   families: manual.families,
   platforms,

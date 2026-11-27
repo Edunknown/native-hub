@@ -421,3 +421,11 @@ button.row:hover .game { color: var(--accent-ink); }
 @media (prefers-reduced-motion: reduce) { .task-running .task-bar i::after, .task-steps li.now::before { animation: none; } }
 .small-list { font-size: 12px; max-height: 220px; overflow-y: auto; }
 .suggest-box { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+
+/* Portadas (IGDB). La imagen tapa la portada tipográfica o el icono de consola que hay
+   debajo; si no carga, se queda lo de debajo. Sin sombras ni marcos. */
+.cover-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.thumb { position: relative; overflow: hidden; }
+.thumb-img { position: absolute; top: 0; bottom: 0; left: 5.5px; width: 33px; height: 44px; object-fit: cover; background: var(--surface); border-radius: 1px; }
+.inst-icon { position: relative; width: 42px; }
+.inst-cover { position: absolute; top: 2px; left: 0; width: 42px; height: 56px; object-fit: cover; background: var(--surface); border-radius: 1px; }

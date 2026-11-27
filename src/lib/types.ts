@@ -15,6 +15,8 @@ export interface Game {
   title: string
   platform: string
   year: number | null
+  /** image_id de la portada en IGDB, si se conoce. */
+  cover?: string | null
 }
 
 export type ProjectKind =
@@ -50,6 +52,8 @@ export interface Project {
   slug: string
   game: string
   gameTitle: string
+  /** Portada del juego principal (image_id de IGDB). */
+  cover?: string | null
   games: string[]
   platform: string
   name: string

@@ -58,6 +58,7 @@ npm run tauri dev           # desktop app (needs Rust and C++ Build Tools)
 npm run tauri build         # NSIS installer in target\release\bundle\nsis
 npm run catalog:update      # re-import Recompendium and check releases on GitHub
 npm run catalog:build       # only merge sources and check entries not reviewed in 12 h
+npm run catalog:covers      # resolve IGDB covers (needs IGDB_CLIENT_ID / IGDB_CLIENT_SECRET)
 npm test                    # Rust core tests
 ```
 
@@ -79,5 +80,6 @@ Layout: `src/` UI, `src-tauri/` desktop app, `crates/core/` Rust core (SQLite, r
 ## Licenses and attribution
 
 - **Catalog.** Includes data from [Recompendium](https://recompendium.com) under the [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license. The derived catalog (`catalog/`) is distributed under the same license; see [catalog/LICENSE.md](catalog/LICENSE.md).
+- **Covers.** Cover art comes from [IGDB](https://www.igdb.com). The catalog only stores IGDB image IDs; the app downloads each image from images.igdb.com the first time it is shown and caches it locally. The images belong to their publishers.
 - **Linked projects.** Each recompilation or port belongs to its authors and has its own license; NATIVE HUB only links to and downloads their official releases.
 - **Game and console names.** They are trademarks of their respective owners. NATIVE HUB is not affiliated with any of them.

@@ -6,8 +6,21 @@ import { playStartupChime, setStartupSound, startupSoundEnabled } from '../app/s
 
 import type { Theme } from '../app/theme'
 import { api, isTauri, openExternal, pickPath } from '../lib/api'
-import { fmtDateTime } from '../lib/format'
+import { fmtDateTime, fmtSize } from '../lib/format'
 import { lang, setLang, tr } from '../lib/i18n'
+
+function CoverCacheSetting() {
+  const [size, setSize] = useState<number | null>(null)
+  useEffect(() => { if (isTauri) api.coversCacheSize().then(setSize, () => {}) }, [])
+  if (!isTauri) return <span className="tbd">{tr('Solo en la app de escritorio', 'Desktop app only')}</span>
+  return (
+    <>
+      <span className="num">{size == null ? '—' : size === 0 ? tr('Vacía', 'Empty') : fmtSize(size)}</span>
+      {size ? <> <button type="button" className="link" onClick={() => api.coversClearCache().then(() => setSize(0))}>{tr('Vaciar', 'Clear')}</button></> : null}
+      <p className="note-line">{tr('Las portadas se descargan una vez de images.igdb.com y se guardan aquí para verlas sin conexión.', 'Covers are downloaded once from images.igdb.com and kept here so they show offline.')}</p>
+    </>
+  )
+}
 
 const AUTO: { id: string; label: string }[] = [{ id: 'off', label: tr('Nunca', 'Never') }, { id: '6h', label: tr('Cada 6 h', 'Every 6 h') }, { id: '24h', label: tr('Cada día', 'Daily') }]
 
@@ -137,6 +150,10 @@ export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Them
           <dd><InstallRootSetting /></dd>
         </div>
         <div>
+          <dt>{tr('Caché de portadas', 'Cover cache')}</dt>
+          <dd><CoverCacheSetting /></dd>
+        </div>
+        <div>
           <dt>{tr('Token de GitHub', 'GitHub token')}</dt>
           <dd><TokenSetting /></dd>
         </div>
@@ -155,6 +172,7 @@ export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Them
               </p>
             ))}
             <p className="note-line">{tr('Las descripciones y requisitos importados de Recompendium se muestran con su atribución y su licencia (CC BY-SA 4.0).', 'Descriptions and requirements imported from Recompendium are shown with their attribution and license (CC BY-SA 4.0).')}</p>
+            <p className="note-line">{tr('Portadas de IGDB.com. Las imágenes pertenecen a sus editores y se descargan de images.igdb.com la primera vez que se muestran; después se guardan en la caché local.', 'Covers from IGDB.com. The images belong to their publishers and are downloaded from images.igdb.com the first time they are shown, then kept in the local cache.')}</p>
           </dd>
         </div>
         <div>
