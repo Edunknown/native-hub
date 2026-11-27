@@ -14,6 +14,7 @@ interface LiveCtx {
   reload: () => void
   startRefresh: () => Promise<void>
   startScan: () => Promise<void>
+  startSync: () => Promise<void>
   cancel: () => Promise<void>
   error: string | null
 }
@@ -61,6 +62,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     status, progress, lastFinished, version, reload, error,
     startRefresh: () => run(() => api.refreshStale(24, 200)),
     startScan: () => run(() => api.scan()),
+    startSync: () => run(() => api.syncRecompendium()),
     cancel: async () => { await api.cancelJob().catch(() => {}) },
   }), [status, progress, lastFinished, version, reload, error, run])
 

@@ -189,11 +189,17 @@ export interface Candidate {
   detectedAt: string
   projectSlug: string | null
   projectGame: string | null
+  source: 'github-search' | 'gitlab-search' | 'recompendium' | string
+  suggestion: {
+    game: string; gameTitle: string; platform: string; kind: ProjectKind; name: string
+    developers: string | null; devStatus: DevStatus; summary: string | null; takedown: boolean
+  } | null
 }
 
 export interface CandidateList {
   items: Candidate[]
   counts: { new: number; approved: number; rejected: number }
+  bySource?: Record<string, Partial<Record<'new' | 'approved' | 'rejected', number>>>
 }
 
 export interface Approval {
@@ -206,14 +212,14 @@ export interface Approval {
 }
 
 export interface JobProgress {
-  job: 'refresh' | 'scan'
+  job: 'refresh' | 'scan' | 'sync'
   done: number
   total: number
   current: string
 }
 
 export interface JobFinished {
-  job: 'refresh' | 'scan'
+  job: 'refresh' | 'scan' | 'sync'
   result: Record<string, unknown>
 }
 

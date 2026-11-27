@@ -157,15 +157,20 @@ pub fn probe_candidates(conn: &Connection, f: &dyn Fetcher, limit: i64) -> Resul
 }
 
 pub fn list_candidates(conn: &Connection, status: &str, limit: i64) -> Result<Vec<Value>> {
+    list_candidates_from(conn, status, None, limit)
+}
+
+/// Candidatos de una fuente concreta (`github-search`, `gitlab-search`, `recompendium`) o de todas.
+pub fn list_candidates_from(conn: &Connection, status: &str, source: Option<&str>, limit: i64) -> Result<Vec<Value>> {
     let mut st = conn.prepare(
         "SELECT id, repo_url, full_name, description, stars, language, topics, created_at, pushed_at,
                 is_fork, archived, reason, release_tag, windows_asset, release_checked_at, status, detected_at, project_slug,
-                (SELECT game FROM projects WHERE slug = project_slug)
-         FROM scan_candidates WHERE status = ?1
-         ORDER BY windows_asset IS NULL, COALESCE(stars, 0) DESC LIMIT ?2",
+                (SELECT game FROM projects WHERE slug = project_slug), source, suggestion
+         FROM scan_candidates WHERE status = ?1 AND (?3 IS NULL OR source = ?3) AND repo_url NOT LIKE '%#%'
+         ORDER BY windows_asset IS NULL, COALESCE(stars, 0) DESC, id LIMIT ?2",
     )?;
     let abandoned_before = time::iso(time::now_unix() - 365 * 86_400);
-    let rows = st.query_map(params![status, limit], |r| {
+    let rows = st.query_map(params![status, limit, source], |r| {
         let pushed: Option<String> = r.get(8)?;
         Ok(json!({
             "id": r.get::<_, i64>(0)?,
@@ -188,13 +193,15 @@ pub fn list_candidates(conn: &Connection, status: &str, limit: i64) -> Result<Ve
             "detectedAt": r.get::<_, String>(16)?,
             "projectSlug": r.get::<_, Option<String>>(17)?,
             "projectGame": r.get::<_, Option<String>>(18)?,
+            "source": r.get::<_, String>(19)?,
+            "suggestion": r.get::<_, Option<String>>(20)?.and_then(|s| serde_json::from_str::<Value>(&s).ok()),
         }))
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
 pub fn candidate_counts(conn: &Connection) -> Result<Value> {
-    let mut st = conn.prepare("SELECT status, COUNT(*) FROM scan_candidates GROUP BY status")?;
+    let mut st = conn.prepare("SELECT status, COUNT(*) FROM scan_candidates WHERE repo_url NOT LIKE '%#%' GROUP BY status")?;
     let mut out = json!({"new": 0, "approved": 0, "rejected": 0});
     for row in st.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?)))? {
         let (k, v) = row?;
@@ -296,7 +303,7 @@ pub fn approve(conn: &mut Connection, a: &Approval) -> Result<String> {
         "name": name, "developers": owner, "kind": a.kind, "devStatus": "unknown",
         "abandoned": false, "takedown": false, "forkOf": if is_fork == Some(true) { json!("(fork según GitHub)") } else { Value::Null },
         "toolchain": null,
-        "repo": {"host": "github", "owner": owner, "name": repo}, "repoUrl": repo_url, "repoMovedFrom": null, "homepage": null,
+        "repo": {"host": if repo_url.starts_with("https://gitlab.com/") { "gitlab" } else { "github" }, "owner": owner, "name": repo}, "repoUrl": repo_url, "repoMovedFrom": null, "homepage": null,
         "repoExists": true, "release": null, "windowsAsset": null, "hasWindowsExecutable": null, "listing": "in_development",
         "summary": description, "requirementsText": null, "requirements": null, "tags": [],
         "stars": stars, "createdAt": created, "pushedAt": pushed, "license": null,

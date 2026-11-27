@@ -131,3 +131,18 @@ fn actualizacion_real_de_starship() {
     let back = update::rollback(&conn, iid, &root).unwrap();
     println!("deshecha: {}", back["releaseTag"]);
 }
+
+#[test]
+#[ignore]
+fn sincronizacion_real_con_recompendium_y_gitlab() {
+    let conn = setup();
+    let f = UreqFetcher::new(std::env::var("GITHUB_TOKEN").ok());
+    let s = native_hub_core::sync::sync_recompendium(&conn, &f, 15);
+    println!("recompendium: {s:?}");
+    assert!(s.entries > 1000 && s.errors.is_empty());
+    for c in scanner::list_candidates_from(&conn, "new", Some("recompendium"), 15).unwrap() {
+        println!("  {} · {} · {}", c["fullName"], c["suggestion"]["gameTitle"], c["suggestion"]["platform"]);
+    }
+    let g = native_hub_core::sync::scan_gitlab(&conn, &f);
+    println!("gitlab: vistos {} nuevos {} errores {:?}", g.seen, g.new_candidates, g.errors);
+}

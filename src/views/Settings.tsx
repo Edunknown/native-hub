@@ -8,6 +8,27 @@ import type { Theme } from '../app/theme'
 import { api, isTauri, openExternal, pickPath } from '../lib/api'
 import { fmtDateTime } from '../lib/format'
 
+const AUTO: { id: string; label: string }[] = [{ id: 'off', label: 'Nunca' }, { id: '6h', label: 'Cada 6 h' }, { id: '24h', label: 'Cada día' }]
+
+function AutomationSetting() {
+  const [a, setA] = useState<{ releases: string; discover: string; lastScan: string | null; lastAutoRefresh: string | null } | null>(null)
+  useEffect(() => { if (isTauri) api.automation().then(setA, () => {}) }, [])
+  if (!isTauri) return <span className="tbd">Solo en la app de escritorio</span>
+  if (!a) return null
+  const set = (releases: string, discover: string) => api.setAutomation(releases, discover).then(setA)
+  return (
+    <>
+      <p className="muted">Comprobar versiones nuevas</p>
+      <span className="seg">{AUTO.map((o) => <button key={o.id} type="button" aria-pressed={a.releases === o.id} onClick={() => set(o.id, a.discover)}>{o.label}</button>)}</span>
+      <p className="muted" style={{ marginTop: 12 }}>Buscar proyectos nuevos (GitHub, GitLab y Recompendium)</p>
+      <span className="seg">{AUTO.map((o) => <button key={o.id} type="button" aria-pressed={a.discover === o.id} onClick={() => set(a.releases, o.id)}>{o.label}</button>)}</span>
+      <p className="note-line">Funciona mientras NATIVE HUB está abierto. Lo encontrado va a la cola de revisión; nada se descarga ni se instala solo.
+        {a.lastAutoRefresh && <> Última comprobación automática: {fmtDateTime(a.lastAutoRefresh)}.</>}
+        {a.lastScan && <> Última búsqueda: {fmtDateTime(a.lastScan)}.</>}</p>
+    </>
+  )
+}
+
 function SoundSetting() {
   const [on, setOn] = useState(startupSoundEnabled())
   const set = (v: boolean) => { setStartupSound(v); setOn(v); if (v) playStartupChime() }
@@ -91,6 +112,10 @@ export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Them
               <button type="button" aria-pressed={theme === 'light'} onClick={() => setTheme('light')}>Claro</button>
             </span>
           </dd>
+        </div>
+        <div>
+          <dt>Automatización</dt>
+          <dd><AutomationSetting /></dd>
         </div>
         <div>
           <dt>Música de inicio</dt>

@@ -420,3 +420,4 @@ button.row:hover .game { color: var(--accent-ink); }
 @keyframes nh-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .task-running .task-bar i::after, .task-steps li.now::before { animation: none; } }
 .small-list { font-size: 12px; max-height: 220px; overflow-y: auto; }
+.suggest-box { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 16px; }

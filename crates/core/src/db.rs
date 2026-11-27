@@ -107,6 +107,12 @@ const MIGRATIONS: &[&str] = &[
     ALTER TABLE downloads ADD COLUMN queued_at TEXT NOT NULL DEFAULT '1970-01-01T00:00:00Z';
     CREATE INDEX downloads_state ON downloads(state);
     "#,
+    // v4 · fase 7: candidatos de otras fuentes (Recompendium, GitLab) con datos sugeridos.
+    r#"
+    ALTER TABLE scan_candidates ADD COLUMN source TEXT NOT NULL DEFAULT 'github-search';
+    ALTER TABLE scan_candidates ADD COLUMN suggestion TEXT;
+    CREATE INDEX scan_candidates_source ON scan_candidates(source, status);
+    "#,
 ];
 
 pub fn open(path: &Path) -> Result<Connection> {

@@ -41,7 +41,12 @@ export const api = {
   markEventsSeen: () => call<number>('mark_events_seen'),
 
   scan: () => call<boolean>('scan_repositories'),
-  candidates: (status: 'new' | 'approved' | 'rejected' = 'new') => call<CandidateList>('candidates', { status }),
+  candidates: (status: 'new' | 'approved' | 'rejected' = 'new', source?: string) => call<CandidateList>('candidates', { status, source }),
+  syncRecompendium: () => call<boolean>('sync_recompendium'),
+  approveSuggested: (id: number) => call<string>('approve_suggested', { id }),
+  approveAllSuggested: (source: string) => call<number>('approve_all_suggested', { source }),
+  automation: () => call<{ releases: string; discover: string; lastScan: string | null; lastSync: string | null; lastAutoRefresh: string | null }>('automation_get'),
+  setAutomation: (releases: string, discover: string) => call<{ releases: string; discover: string; lastScan: string | null; lastSync: string | null; lastAutoRefresh: string | null }>('automation_set', { releases, discover }),
   approve: (approval: Approval) => call<string>('approve_candidate', { approval }),
   reject: (id: number) => call<void>('reject_candidate', { id }),
 

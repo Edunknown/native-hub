@@ -21,7 +21,7 @@ export function JobBar() {
   const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0
   return (
     <div className="jobbar">
-      <span>{progress.job === 'scan' ? 'Buscando proyectos nuevos' : 'Comprobando releases'}</span>
+      <span>{progress.job === 'scan' ? 'Buscando proyectos nuevos' : progress.job === 'sync' ? 'Sincronizando con Recompendium' : 'Comprobando releases'}</span>
       <span className="bar"><i style={{ width: `${pct}%` }} /></span>
       <span className="num">{progress.done} / {progress.total}</span>
       {progress.current && <span className="mono muted ellipsis">{progress.current}</span>}

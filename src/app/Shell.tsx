@@ -95,13 +95,13 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
         </header>
 
         <div className="phase-note">
-          <b>Fase 6 · actualizaciones.</b> Descarga, instala, ejecuta y actualiza conservando tus partidas.
+          <b>Fase 7 · expansión.</b> El catálogo crece desde Recompendium, GitHub y GitLab, siempre con tu revisión.
         </div>
 
         <div className="scroll" ref={scroller}>{children}</div>
 
         <footer className="status" aria-label="Estado">
-          <span>{live.progress ? `${live.progress.job === 'scan' ? 'Buscando proyectos' : 'Comprobando releases'} · ${live.progress.done}/${live.progress.total}` : running ? `Descargando ${running.projectName ?? running.project}${rPct != null ? ` · ${rPct} %` : ''}` : 'Sin descargas en curso'}</span>
+          <span>{live.progress ? `${live.progress.job === 'scan' ? 'Buscando proyectos' : live.progress.job === 'sync' ? 'Sincronizando catálogo' : 'Comprobando releases'} · ${live.progress.done}/${live.progress.total}` : running ? `Descargando ${running.projectName ?? running.project}${rPct != null ? ` · ${rPct} %` : ''}` : 'Sin descargas en curso'}</span>
           <span className="num">{fmtNum(summary.projectCount)} proyectos · {fmtNum(summary.installableCount)} con ejecutable Windows</span>
           <span className="push">Catálogo: última comprobación <span className="num">{fmtDateTime(summary.generatedAt)}</span></span>
         </footer>

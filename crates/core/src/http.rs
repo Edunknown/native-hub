@@ -9,7 +9,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::{Error, Result};
 
-pub const ALLOWED_HOSTS: &[&str] = &["api.github.com", "gitlab.com", "codeberg.org"];
+pub const ALLOWED_HOSTS: &[&str] = &["api.github.com", "gitlab.com", "codeberg.org", "raw.githubusercontent.com"];
 const USER_AGENT: &str = concat!("NATIVE-HUB/", env!("CARGO_PKG_VERSION"));
 
 #[derive(Debug, Clone)]

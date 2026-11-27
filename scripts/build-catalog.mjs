@@ -197,6 +197,7 @@ for (const p of projects.values()) {
   const ambiguous = !windowsAsset && (release?.assets ?? []).some((a) => /\.(zip|7z|rar|exe)$/i.test(a.name) && !NOT_WINDOWS.test(a.name))
   out.push({
     slug: p.slug,
+    sourceId: p.sourceId ?? null,
     game: p.game,
     gameTitle: games.get(p.game).title,
     games: p.games,

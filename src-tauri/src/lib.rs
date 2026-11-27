@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
 use native_hub_core::http::UreqFetcher;
-use native_hub_core::{Error, Result, catalog, db, download, install, query, releases, scanner, update};
+use native_hub_core::{Error, Result, catalog, db, download, install, query, releases, scanner, sync, update};
 use rusqlite::Connection;
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -213,20 +213,153 @@ fn scan_repositories(app: AppHandle) -> Result<bool> {
         let fetcher = s.fetcher();
         let _ = app.emit("job-progress", json!({ "job": "scan", "done": 0, "total": 2, "current": "búsqueda" }));
         let sum = scanner::scan(conn, fetcher.as_ref(), &scanner::default_queries(native_hub_core::time::now_unix()));
-        let _ = app.emit("job-progress", json!({ "job": "scan", "done": 1, "total": 2, "current": "releases de los candidatos" }));
+        let _ = app.emit("job-progress", json!({ "job": "scan", "done": 1, "total": 3, "current": "GitLab" }));
+        let gl = sync::scan_gitlab(conn, fetcher.as_ref());
+        let _ = app.emit("job-progress", json!({ "job": "scan", "done": 2, "total": 3, "current": "releases de los candidatos" }));
         let probed = scanner::probe_candidates(conn, fetcher.as_ref(), 30).unwrap_or(0);
-        json!({ "scan": sum, "probed": probed })
+        let _ = conn.execute("INSERT INTO settings (key, value) VALUES ('last_scan', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [native_hub_core::time::now_iso()]);
+        json!({ "scan": sum, "gitlab": gl, "probed": probed })
     })
 }
 
 #[tauri::command]
-fn candidates(s: State<AppState>, status: Option<String>, limit: Option<i64>) -> Result<Value> {
+fn candidates(s: State<AppState>, status: Option<String>, source: Option<String>, limit: Option<i64>) -> Result<Value> {
     s.with(|c| {
         Ok(json!({
-            "items": scanner::list_candidates(c, status.as_deref().unwrap_or("new"), limit.unwrap_or(200))?,
+            "items": scanner::list_candidates_from(c, status.as_deref().unwrap_or("new"), source.as_deref(), limit.unwrap_or(200))?,
             "counts": scanner::candidate_counts(c)?,
+            "bySource": sync::counts_by_source(c)?,
         }))
     })
+}
+
+#[tauri::command]
+fn sync_recompendium(app: AppHandle) -> Result<bool> {
+    start_job(&app, "sync", |app, s, conn| {
+        let _ = app.emit("job-progress", json!({ "job": "sync", "done": 0, "total": 1, "current": "Recompendium" }));
+        let sum = sync::sync_recompendium(conn, s.fetcher().as_ref(), 300);
+        json!({ "sync": sum })
+    })
+}
+
+#[tauri::command]
+async fn approve_suggested(app: AppHandle, id: i64) -> Result<String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let s = app.state::<AppState>();
+        let slug = s.with_mut(|c| sync::approve_suggested(c, id))?;
+        if let Ok(conn) = s.job_conn() {
+            let _ = releases::refresh_project(&conn, s.fetcher().as_ref(), &slug);
+        }
+        Ok(slug)
+    })
+    .await
+    .map_err(|e| Error::Invalid(e.to_string()))?
+}
+
+/// Aprueba en bloque los candidatos con datos sugeridos y después comprueba sus releases.
+#[tauri::command]
+fn approve_all_suggested(app: AppHandle, source: String) -> Result<usize> {
+    let s = app.state::<AppState>();
+    let slugs = s.with_mut(|c| sync::approve_all_suggested(c, &source))?;
+    let n = slugs.len();
+    let _ = start_job(&app, "refresh", move |app, s, conn| {
+        let items: Vec<(String, String)> = slugs
+            .iter()
+            .filter_map(|sl| conn.query_row("SELECT slug, repo_url FROM projects WHERE slug = ?1", [sl], |r| Ok((r.get(0)?, r.get(1)?))).ok())
+            .collect();
+        let sum = releases::refresh_batch(conn, s.fetcher().as_ref(), &items, &s.cancel, |done, total, slug| {
+            let _ = app.emit("job-progress", json!({ "job": "refresh", "done": done, "total": total, "current": slug }));
+        });
+        serde_json::to_value(sum).unwrap_or(Value::Null)
+    });
+    Ok(n)
+}
+
+// ---------- Automatización (fase 7) ----------
+
+fn setting(c: &Connection, key: &str) -> Option<String> {
+    c.query_row("SELECT value FROM settings WHERE key = ?1", [key], |r| r.get(0)).ok()
+}
+
+fn hours_of(mode: &str) -> Option<i64> {
+    match mode {
+        "6h" => Some(6),
+        "24h" => Some(24),
+        _ => None,
+    }
+}
+
+#[tauri::command]
+fn automation_get(s: State<AppState>) -> Result<Value> {
+    s.with(|c| {
+        Ok(json!({
+            "releases": setting(c, "auto_releases").unwrap_or_else(|| "24h".into()),
+            "discover": setting(c, "auto_discover").unwrap_or_else(|| "24h".into()),
+            "lastScan": setting(c, "last_scan"),
+            "lastSync": setting(c, "last_recompendium_sync"),
+            "lastAutoRefresh": setting(c, "last_auto_refresh"),
+        }))
+    })
+}
+
+#[tauri::command]
+fn automation_set(s: State<AppState>, releases: String, discover: String) -> Result<Value> {
+    for v in [&releases, &discover] {
+        if !["off", "6h", "24h"].contains(&v.as_str()) {
+            return Err(Error::Invalid(format!("valor no válido: {v}")));
+        }
+    }
+    s.with(|c| {
+        for (k, v) in [("auto_releases", &releases), ("auto_discover", &discover)] {
+            c.execute("INSERT INTO settings (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [k, v.as_str()])?;
+        }
+        Ok(())
+    })?;
+    automation_get(s)
+}
+
+/// Cada 15 minutos mira si toca comprobar releases o buscar proyectos nuevos.
+fn start_scheduler(app: AppHandle) {
+    std::thread::spawn(move || {
+        // Primera vuelta al cabo de un minuto, para no competir con el arranque.
+        std::thread::sleep(std::time::Duration::from_secs(60));
+        loop {
+            let s = app.state::<AppState>();
+            let now = native_hub_core::time::now_unix();
+            let due = |key: &str, mode: &str| -> bool {
+                let Some(h) = hours_of(mode) else { return false };
+                let last = s.with(|c| Ok(setting(c, key))).ok().flatten().and_then(|v| native_hub_core::time::parse_iso(&v)).unwrap_or(0);
+                now - last >= h * 3600
+            };
+            let (rel_mode, disc_mode) = s
+                .with(|c| Ok((setting(c, "auto_releases").unwrap_or_else(|| "24h".into()), setting(c, "auto_discover").unwrap_or_else(|| "24h".into()))))
+                .unwrap_or_else(|_| ("off".into(), "off".into()));
+            if !s.busy.load(Ordering::Relaxed) {
+                if due("last_auto_refresh", &rel_mode) {
+                    let _ = s.with(|c| {
+                        c.execute("INSERT INTO settings (key, value) VALUES ('last_auto_refresh', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [native_hub_core::time::now_iso()])?;
+                        Ok(())
+                    });
+                    // Con token hay cuota de sobra; sin él, un lote prudente.
+                    let limit = if token::get().is_some() { 1500 } else { 50 };
+                    let _ = refresh_stale(app.clone(), Some(hours_of(&rel_mode).unwrap_or(24)), Some(limit));
+                } else if due("last_scan", &disc_mode) {
+                    let _ = start_job(&app, "scan", |app, s, conn| {
+                        let f = s.fetcher();
+                        let _ = app.emit("job-progress", json!({ "job": "scan", "done": 0, "total": 3, "current": "búsqueda automática" }));
+                        let gh = scanner::scan(conn, f.as_ref(), &scanner::default_queries(native_hub_core::time::now_unix()));
+                        let _ = app.emit("job-progress", json!({ "job": "scan", "done": 1, "total": 3, "current": "GitLab" }));
+                        let gl = sync::scan_gitlab(conn, f.as_ref());
+                        let _ = app.emit("job-progress", json!({ "job": "scan", "done": 2, "total": 3, "current": "Recompendium" }));
+                        let rc = sync::sync_recompendium(conn, f.as_ref(), 300);
+                        let _ = conn.execute("INSERT INTO settings (key, value) VALUES ('last_scan', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [native_hub_core::time::now_iso()]);
+                        json!({ "scan": gh, "gitlab": gl, "sync": rc, "automatic": true })
+                    });
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_secs(15 * 60));
+        }
+    });
 }
 
 #[tauri::command]
@@ -597,6 +730,7 @@ pub fn run() {
             });
             // Comprobación ligera en segundo plano de los proyectos menos recientes.
             let _ = refresh_stale(app.handle().clone(), Some(24), Some(STARTUP_REFRESH));
+            start_scheduler(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -618,6 +752,11 @@ pub fn run() {
             candidates,
             approve_candidate,
             reject_candidate,
+            sync_recompendium,
+            approve_suggested,
+            approve_all_suggested,
+            automation_get,
+            automation_set,
             set_github_token,
             clear_github_token,
             download_start,

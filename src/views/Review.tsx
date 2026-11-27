@@ -11,6 +11,12 @@ import type { Candidate, CandidateList, ProjectKind } from '../lib/types'
 import { JobBar, QuotaLine } from './Updates'
 
 type Status = 'new' | 'approved' | 'rejected'
+const SOURCES: { id: string | undefined; label: string }[] = [
+  { id: undefined, label: 'Todas las fuentes' },
+  { id: 'recompendium', label: 'Recompendium' },
+  { id: 'github-search', label: 'GitHub' },
+  { id: 'gitlab-search', label: 'GitLab' },
+]
 const TABS: { id: Status; label: string }[] = [
   { id: 'new', label: 'Pendientes' },
   { id: 'approved', label: 'Aprobados' },
@@ -97,6 +103,18 @@ function ApproveForm({ c, onDone, onCancel }: { c: Candidate; onDone: () => void
   )
 }
 
+function Suggested({ c, onChanged }: { c: Candidate; onChanged: () => void }) {
+  const { platformOf } = useCatalog()
+  const task = useTask()
+  const s = c.suggestion!
+  return (
+    <div className="suggest-box">
+      <span className="note-line">Sugerido por Recompendium: <span className="fg">{s.gameTitle}</span> · {platformOf(s.platform)?.name ?? s.platform} · {kindLabel[s.kind] ?? s.kind}{s.takedown ? ' · retirado por DMCA' : ''}</span>
+      <button type="button" className="btn-line" onClick={() => task({ title: `Añadiendo ${s.name} al catálogo`, steps: ['Creando la ficha del juego y del proyecto', 'Comprobando su release', 'Buscando el ejecutable Windows'], minMs: 1800, done: 'Añadido' }, () => api.approveSuggested(c.id)).then(onChanged, () => {})}>Aprobar</button>
+    </div>
+  )
+}
+
 function CandidateRow({ c, onChanged }: { c: Candidate; onChanged: () => void }) {
   const { go } = useNav()
   const [open, setOpen] = useState(false)
@@ -123,7 +141,7 @@ function CandidateRow({ c, onChanged }: { c: Candidate; onChanged: () => void })
             : <span className="tbd">release sin comprobar</span>}
         {c.status === 'new' && !open && (
           <span className="cand-actions">
-            <button type="button" className="btn-line" onClick={() => setOpen(true)}>Aprobar…</button>
+            <button type="button" className={c.suggestion ? 'link' : 'btn-line'} onClick={() => setOpen(true)}>{c.suggestion ? 'Cambiar datos…' : 'Aprobar…'}</button>
             <button type="button" className="link" onClick={() => task({ title: `Descartando ${c.fullName}`, steps: ['Descartando el candidato'], minMs: 800 }, () => api.reject(c.id)).then(onChanged, () => {})}>Rechazar</button>
           </span>
         )}
@@ -131,6 +149,7 @@ function CandidateRow({ c, onChanged }: { c: Candidate; onChanged: () => void })
           <button type="button" className="link" onClick={() => go({ name: 'game', slug: c.projectGame!, project: c.projectSlug! })}>Ver ficha</button>
         )}
       </div>
+      {c.status === 'new' && c.suggestion && !open && <Suggested c={c} onChanged={onChanged} />}
       {open && <ApproveForm c={c} onDone={() => { setOpen(false); onChanged() }} onCancel={() => setOpen(false)} />}
     </li>
   )
@@ -139,12 +158,17 @@ function CandidateRow({ c, onChanged }: { c: Candidate; onChanged: () => void })
 export function Review() {
   const live = useLive()
   const [tab, setTab] = useState<Status>('new')
+  const [source, setSource] = useState<string | undefined>(undefined)
+  const [confirmAll, setConfirmAll] = useState(false)
+  const task = useTask()
   const [data, setData] = useState<CandidateList | null>(null)
   const [tick, setTick] = useState(0)
 
   useEffect(() => {
-    api.candidates(tab).then(setData, () => setData({ items: [], counts: { new: 0, approved: 0, rejected: 0 } }))
-  }, [tab, tick, live.version])
+    api.candidates(tab, source).then(setData, () => setData({ items: [], counts: { new: 0, approved: 0, rejected: 0 } }))
+  }, [tab, source, tick, live.version])
+
+  const pendingRecomp = data?.bySource?.recompendium?.new ?? 0
 
   if (live.status?.unsupported) {
     return <p className="empty">El escáner y la cola de revisión solo funcionan en la app de escritorio.</p>
@@ -156,10 +180,18 @@ export function Review() {
         <button type="button" className="btn-primary" disabled={live.status?.busy} onClick={live.startScan}>
           {live.status?.busy ? 'Trabajando…' : 'Buscar proyectos nuevos en GitHub'}
         </button>
+        <button type="button" className="btn-line" disabled={live.status?.busy} onClick={live.startSync}>Sincronizar con Recompendium</button>
         <span className="note-line"><QuotaLine /></span>
       </div>
+      <p className="note-line">La búsqueda mira GitHub y GitLab. La sincronización trae las fichas nuevas de Recompendium con juego, consola y tipo ya rellenos. Todo llega aquí y nada entra en el catálogo sin que lo apruebes.</p>
       {live.error && <p className="note-line err">{live.error}</p>}
       <JobBar />
+      {live.lastFinished?.job === 'sync' && live.lastFinished.result.sync != null && (
+        <p className="note-line">
+          Recompendium: {String((live.lastFinished.result.sync as { entries: number }).entries)} fichas, {String((live.lastFinished.result.sync as { newCandidates: number }).newCandidates)} nuevas en la cola
+          {(live.lastFinished.result.sync as { remaining: number }).remaining > 0 ? ` (quedan ${(live.lastFinished.result.sync as { remaining: number }).remaining} para la próxima)` : ''}.
+        </p>
+      )}
       {live.lastFinished?.job === 'scan' && live.lastFinished.result.scan != null && (
         <p className="note-line">
           Última búsqueda: {String((live.lastFinished.result.scan as { newCandidates: number }).newCandidates)} candidatos nuevos,
@@ -167,6 +199,26 @@ export function Review() {
         </p>
       )}
 
+      <div className="filters small" role="group" aria-label="Fuente">
+        {SOURCES.map((s) => (
+          <button key={s.label} type="button" aria-pressed={source === s.id} onClick={() => setSource(s.id)}>
+            {s.label}{s.id && data?.bySource?.[s.id]?.new ? ` (${fmtNum(data.bySource[s.id].new ?? 0)})` : ''}
+          </button>
+        ))}
+      </div>
+      {tab === 'new' && pendingRecomp > 0 && (
+        <div className="cand-actions">
+          {!confirmAll ? (
+            <button type="button" className="btn-line" onClick={() => setConfirmAll(true)}>Aprobar las {fmtNum(pendingRecomp)} fichas de Recompendium…</button>
+          ) : (
+            <>
+              <span>Se añadirán {fmtNum(pendingRecomp)} proyectos con los datos de Recompendium y después se comprobarán sus releases. ¿Seguir?</span>
+              <button type="button" className="btn-primary" onClick={() => { setConfirmAll(false); task({ title: `Añadiendo ${fmtNum(pendingRecomp)} proyectos`, steps: ['Creando las fichas de los juegos', 'Creando las fichas de los proyectos', 'Poniendo en cola la comprobación de releases'], minMs: 2600, done: 'Añadidos al catálogo' }, () => api.approveAllSuggested('recompendium')).then(() => { setTick((t) => t + 1); live.reload() }, () => {}) }}>Sí, aprobarlas</button>
+              <button type="button" className="link" onClick={() => setConfirmAll(false)}>No</button>
+            </>
+          )}
+        </div>
+      )}
       <div className="filters small" role="group" aria-label="Estado">
         {TABS.map((t) => (
           <button key={t.id} type="button" aria-pressed={tab === t.id} onClick={() => setTab(t.id)}>
