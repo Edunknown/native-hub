@@ -24,6 +24,7 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> 
 }
 
 export const api = {
+  setLanguage: (lang: string) => call<void>('set_language', { lang }),
   summary: () => call<Summary>('catalog_summary'),
   platforms: () => call<Platform[]>('catalog_platforms'),
   platformProjects: (platform: string) => call<Project[]>('catalog_platform_projects', { platform }),

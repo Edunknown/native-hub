@@ -61,9 +61,9 @@ fn header_i64(resp: &ureq::http::Response<ureq::Body>, name: &str) -> Option<i64
 
 impl Fetcher for UreqFetcher {
     fn get(&self, url: &str, etag: Option<&str>) -> Result<Response> {
-        let host = host_of(url).ok_or_else(|| Error::Http(format!("URL no válida: {url}")))?;
+        let host = host_of(url).ok_or_else(|| Error::Http(crate::t!("URL no válida: {url}", "invalid URL: {url}")))?;
         if !ALLOWED_HOSTS.contains(&host) {
-            return Err(Error::Http(format!("host no permitido: {host}")));
+            return Err(Error::Http(crate::t!("host no permitido: {host}", "host not allowed: {host}")));
         }
         let mut req = self.agent.get(url).header("User-Agent", USER_AGENT);
         if host == "api.github.com" {

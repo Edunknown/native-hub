@@ -3,6 +3,7 @@
 
 import catalogJson from '../../catalog/catalog.json'
 import type { Game, Platform, Project } from './types'
+import { tr } from './i18n'
 
 interface CatalogFile {
   generatedAt: string
@@ -81,7 +82,7 @@ const handlers: Record<string, (a: Record<string, unknown>) => unknown> = {
   },
 }
 
-const desktopOnly = () => { throw new Error('Disponible solo en la app de escritorio (npm run tauri dev).') }
+const desktopOnly = () => { throw new Error(tr('Disponible solo en la app de escritorio (npm run tauri dev).', 'Only available in the desktop app (npm run tauri dev).')) }
 Object.assign(handlers, {
   catalog_games_lookup: ({ q }: Record<string, unknown>) => {
     const t = fold(String(q))
@@ -95,7 +96,8 @@ Object.assign(handlers, {
   downloads_list: () => [],
   installations_list: () => [],
   update_plan: desktopOnly, update_apply: desktopOnly, update_rollback: desktopOnly, update_discard: desktopOnly,
-  install_root_get: () => ({ path: 'Documentos\NATIVE HUB', default: true }),
+  install_root_get: () => ({ path: tr('Documentos', 'Documents') + '\\NATIVE HUB', default: true }),
+  set_language: () => null,
   install_plan: desktopOnly, install_project: desktopOnly, install_root_set: desktopOnly, installation_set_exe: desktopOnly, installation_launch: desktopOnly,
   installation_open_folder: desktopOnly, installation_run_installer: desktopOnly, installation_uninstall: desktopOnly, user_file_check: desktopOnly, user_files_list: () => [],
   download_start: desktopOnly, project_releases: desktopOnly, download_asset: desktopOnly, download_pause: desktopOnly, download_resume: desktopOnly, download_cancel: desktopOnly, download_remove: desktopOnly, download_reveal: desktopOnly,

@@ -147,7 +147,7 @@ fn rate_limited(resp: &http::Response) -> bool {
 
 fn check(resp: &http::Response, url: &str) -> Result<()> {
     if rate_limited(resp) {
-        return Err(Error::Http("límite de consultas de GitHub agotado; vuelve a intentarlo más tarde o añade un token".into()));
+        return Err(Error::Http(crate::i18n::tr("límite de consultas de GitHub agotado; vuelve a intentarlo más tarde o añade un token", "GitHub request limit reached; try again later or add a token").into()));
     }
     if resp.status >= 400 && resp.status != 404 {
         return Err(Error::Http(format!("HTTP {} en {url}", resp.status)));
@@ -250,10 +250,10 @@ pub fn refresh_project(conn: &Connection, f: &dyn Fetcher, slug: &str) -> Result
     let (data, repo_url): (String, Option<String>) = conn
         .query_row("SELECT data, repo_url FROM projects WHERE slug = ?1", params![slug], |r| Ok((r.get(0)?, r.get(1)?)))
         .optional()?
-        .ok_or_else(|| Error::NotFound(format!("proyecto {slug}")))?;
+        .ok_or_else(|| Error::NotFound(crate::t!("proyecto {slug}", "project {slug}")))?;
     let mut data: Value = serde_json::from_str(&data)?;
-    let repo_url = repo_url.ok_or_else(|| Error::Invalid(format!("{slug} no tiene repositorio")))?;
-    let forge = Forge::from_repo_url(&repo_url).ok_or_else(|| Error::Invalid(format!("forja no soportada: {repo_url}")))?;
+    let repo_url = repo_url.ok_or_else(|| Error::Invalid(crate::t!("{slug} no tiene repositorio", "{slug} has no repository")))?;
+    let forge = Forge::from_repo_url(&repo_url).ok_or_else(|| Error::Invalid(crate::t!("forja no soportada: {repo_url}", "unsupported forge: {repo_url}")))?;
 
     let latest = fetch_latest(conn, f, &forge)?;
     let prev_tag = data.pointer("/release/tag").and_then(Value::as_str).map(str::to_owned);
@@ -498,7 +498,7 @@ pub fn list_releases(conn: &Connection, f: &dyn Fetcher, forge: &Forge, limit: u
     let r = http::cached_get(conn, f, &url)?;
     check(&r, &url)?;
     if r.status == 404 {
-        return Err(Error::NotFound("el repositorio ya no existe".into()));
+        return Err(Error::NotFound(crate::i18n::tr("el repositorio ya no existe", "the repository no longer exists").into()));
     }
     let list: Value = serde_json::from_str(&r.body)?;
     Ok(list.as_array().map(|a| a.iter().map(|v| parse(v)).collect()).unwrap_or_default())
@@ -530,10 +530,10 @@ pub fn project_releases(conn: &Connection, f: &dyn Fetcher, slug: &str, limit: u
     let (data, repo_url): (String, Option<String>) = conn
         .query_row("SELECT data, repo_url FROM projects WHERE slug = ?1", params![slug], |r| Ok((r.get(0)?, r.get(1)?)))
         .optional()?
-        .ok_or_else(|| Error::NotFound(format!("proyecto {slug}")))?;
+        .ok_or_else(|| Error::NotFound(crate::t!("proyecto {slug}", "project {slug}")))?;
     let data: Value = serde_json::from_str(&data)?;
-    let repo_url = repo_url.ok_or_else(|| Error::Invalid("el proyecto no tiene repositorio".into()))?;
-    let forge = Forge::from_repo_url(&repo_url).ok_or_else(|| Error::Invalid(format!("forja no soportada: {repo_url}")))?;
+    let repo_url = repo_url.ok_or_else(|| Error::Invalid(crate::i18n::tr("el proyecto no tiene repositorio", "the project has no repository").into()))?;
+    let forge = Forge::from_repo_url(&repo_url).ok_or_else(|| Error::Invalid(crate::t!("forja no soportada: {repo_url}", "unsupported forge: {repo_url}")))?;
     let pattern = data["windowsAssetPattern"].as_str().map(str::to_owned);
     let releases = list_releases(conn, f, &forge, limit)?;
     Ok(json!({
@@ -559,12 +559,12 @@ pub fn find_release_asset(conn: &Connection, f: &dyn Fetcher, slug: &str, url: &
         .query_row("SELECT repo_url FROM projects WHERE slug = ?1", params![slug], |r| r.get(0))
         .optional()?
         .flatten()
-        .ok_or_else(|| Error::NotFound(format!("proyecto {slug}")))?;
-    let forge = Forge::from_repo_url(&repo_url).ok_or_else(|| Error::Invalid("forja no soportada".into()))?;
+        .ok_or_else(|| Error::NotFound(crate::t!("proyecto {slug}", "project {slug}")))?;
+    let forge = Forge::from_repo_url(&repo_url).ok_or_else(|| Error::Invalid(crate::i18n::tr("forja no soportada", "unsupported forge").into()))?;
     for r in list_releases(conn, f, &forge, 30)? {
         if let Some(a) = r.assets.iter().find(|a| a.url == url).cloned() {
             return Ok((r, a));
         }
     }
-    Err(Error::Invalid("ese archivo no está en las releases del proyecto".into()))
+    Err(Error::Invalid(crate::i18n::tr("ese archivo no está en las releases del proyecto", "that file is not in the project's releases").into()))
 }

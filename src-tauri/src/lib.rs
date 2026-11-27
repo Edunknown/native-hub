@@ -211,11 +211,11 @@ fn mark_events_seen(s: State<AppState>) -> Result<usize> {
 fn scan_repositories(app: AppHandle) -> Result<bool> {
     start_job(&app, "scan", |app, s, conn| {
         let fetcher = s.fetcher();
-        let _ = app.emit("job-progress", json!({ "job": "scan", "done": 0, "total": 2, "current": "búsqueda" }));
+        let _ = app.emit("job-progress", json!({ "job": "scan", "done": 0, "total": 2, "current": native_hub_core::i18n::tr("búsqueda", "search") }));
         let sum = scanner::scan(conn, fetcher.as_ref(), &scanner::default_queries(native_hub_core::time::now_unix()));
         let _ = app.emit("job-progress", json!({ "job": "scan", "done": 1, "total": 3, "current": "GitLab" }));
         let gl = sync::scan_gitlab(conn, fetcher.as_ref());
-        let _ = app.emit("job-progress", json!({ "job": "scan", "done": 2, "total": 3, "current": "releases de los candidatos" }));
+        let _ = app.emit("job-progress", json!({ "job": "scan", "done": 2, "total": 3, "current": native_hub_core::i18n::tr("releases de los candidatos", "candidate releases") }));
         let probed = scanner::probe_candidates(conn, fetcher.as_ref(), 30).unwrap_or(0);
         let _ = conn.execute("INSERT INTO settings (key, value) VALUES ('last_scan', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [native_hub_core::time::now_iso()]);
         json!({ "scan": sum, "gitlab": gl, "probed": probed })
@@ -306,7 +306,7 @@ fn automation_get(s: State<AppState>) -> Result<Value> {
 fn automation_set(s: State<AppState>, releases: String, discover: String) -> Result<Value> {
     for v in [&releases, &discover] {
         if !["off", "6h", "24h"].contains(&v.as_str()) {
-            return Err(Error::Invalid(format!("valor no válido: {v}")));
+            return Err(Error::Invalid(native_hub_core::t!("valor no válido: {v}", "invalid value: {v}")));
         }
     }
     s.with(|c| {
@@ -346,7 +346,7 @@ fn start_scheduler(app: AppHandle) {
                 } else if due("last_scan", &disc_mode) {
                     let _ = start_job(&app, "scan", |app, s, conn| {
                         let f = s.fetcher();
-                        let _ = app.emit("job-progress", json!({ "job": "scan", "done": 0, "total": 3, "current": "búsqueda automática" }));
+                        let _ = app.emit("job-progress", json!({ "job": "scan", "done": 0, "total": 3, "current": native_hub_core::i18n::tr("búsqueda automática", "automatic search") }));
                         let gh = scanner::scan(conn, f.as_ref(), &scanner::default_queries(native_hub_core::time::now_unix()));
                         let _ = app.emit("job-progress", json!({ "job": "scan", "done": 1, "total": 3, "current": "GitLab" }));
                         let gl = sync::scan_gitlab(conn, f.as_ref());
@@ -524,9 +524,9 @@ fn install_root_set(s: State<AppState>, path: Option<String>) -> Result<Value> {
         Some(p) => {
             let pb = PathBuf::from(&p);
             if !pb.is_absolute() {
-                return Err(Error::Invalid("elige una carpeta completa".into()));
+                return Err(Error::Invalid(native_hub_core::i18n::tr("elige una carpeta completa", "choose a full folder path").into()));
             }
-            std::fs::create_dir_all(&pb).map_err(|e| Error::Invalid(format!("no se puede usar esa carpeta: {e}")))?;
+            std::fs::create_dir_all(&pb).map_err(|e| Error::Invalid(native_hub_core::t!("no se puede usar esa carpeta: {e}", "cannot use that folder: {e}")))?;
             s.with(|c| {
                 c.execute("INSERT INTO settings (key, value) VALUES ('install_root', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [&p])?;
                 Ok(())
@@ -551,7 +551,7 @@ async fn install_project(app: AppHandle, slug: String) -> Result<Value> {
     tauri::async_runtime::spawn_blocking(move || {
         let s = app.state::<AppState>();
         let root = s.install_root()?;
-        std::fs::create_dir_all(&root).map_err(|e| Error::Invalid(format!("no se puede crear la carpeta de juegos: {e}")))?;
+        std::fs::create_dir_all(&root).map_err(|e| Error::Invalid(native_hub_core::t!("no se puede crear la carpeta de juegos: {e}", "cannot create the games folder: {e}")))?;
         let conn = s.job_conn()?;
         install::install(&conn, &slug, &root)
     })
@@ -575,7 +575,7 @@ fn installation_launch(s: State<AppState>, id: i64) -> Result<()> {
     std::process::Command::new(&exe)
         .current_dir(&wd)
         .spawn()
-        .map_err(|e| Error::Invalid(format!("no se pudo abrir {}: {e}", exe.display())))?;
+        .map_err(|e| Error::Invalid(native_hub_core::t!("no se pudo abrir {}: {e}", "could not open {}: {e}", exe.display())))?;
     Ok(())
 }
 
@@ -666,7 +666,7 @@ async fn set_github_token(app: AppHandle, value: String) -> Result<Value> {
         let probe = UreqFetcher::new(Some(value.clone()));
         let r = native_hub_core::http::Fetcher::get(&probe, "https://api.github.com/rate_limit", None)?;
         if r.status != 200 {
-            return Err(Error::Invalid(format!("GitHub no acepta el token (HTTP {})", r.status)));
+            return Err(Error::Invalid(native_hub_core::t!("GitHub no acepta el token (HTTP {})", "GitHub does not accept the token (HTTP {})", r.status)));
         }
         token::set(&value)?;
         let s = app.state::<AppState>();
@@ -678,6 +678,12 @@ async fn set_github_token(app: AppHandle, value: String) -> Result<Value> {
     })
     .await
     .map_err(|e| Error::Invalid(e.to_string()))?
+}
+
+/// Language of the messages returned by the backend ("en" or "es").
+#[tauri::command]
+fn set_language(lang: String) {
+    native_hub_core::i18n::set_english(lang != "es");
 }
 
 #[tauri::command]
@@ -785,6 +791,7 @@ pub fn run() {
             automation_set,
             set_github_token,
             clear_github_token,
+            set_language,
             download_start,
             project_releases,
             download_asset,

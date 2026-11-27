@@ -43,6 +43,7 @@ const KIND_BY_CATEGORY = {
 const STATUS = { fully: 'complete', playable: 'playable', experimental: 'experimental', stable: 'stable', usable: 'playable', beta: 'beta' }
 
 const es = (v) => (v == null ? null : typeof v === 'string' ? v : (v.es ?? v.en ?? null))
+const en = (v) => (v == null ? null : typeof v === 'string' ? v : (v.en ?? v.es ?? null))
 
 const projects = []
 const usedGames = new Set()
@@ -76,7 +77,9 @@ for (const folder of ['recomps', 'ports', 'decomps']) {
       toolchain: y.toolchain ?? null,
       homepage: y.homepage ?? null,
       summary: es(y.desc),
+      summaryEn: en(y.desc),
       requirementsText: es(y.requirements),
+      requirementsTextEn: en(y.requirements),
       tags: y.tags ?? [],
       stars: stats[y.repo]?.stars ?? null,
       createdAt: stats[y.repo]?.createdAt ?? null,

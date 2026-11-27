@@ -25,8 +25,14 @@
         "minSize": 4194304,
         "maxSize": 67108864,
         "when": "first_launch",
-        "help": "Un volcado de tu propio cartucho. NATIVE HUB solo comprueba que es una ROM de N64 válida; el juego verifica la versión exacta."
+        "help": "Un volcado de tu propio cartucho. NATIVE HUB solo comprueba que es una ROM de N64 válida; el juego verifica la versión exacta.",
+        "labelEn": "Star Fox 64 ROM (N64)",
+        "helpEn": "A dump of your own cartridge. NATIVE HUB only checks that it is a valid N64 ROM; the game verifies the exact version."
       }
-    ]
+    ],
+    "notesEn": [
+      "Adapter reviewed against the project’s public documentation; not yet tested with a real install."
+    ],
+    "firstRunEn": "The first time you open it, it will ask for your Star Fox 64 ROM and prepare its files from it."
   }
 }

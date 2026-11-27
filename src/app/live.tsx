@@ -4,6 +4,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, onJobs } from '../lib/api'
 import type { JobFinished, JobProgress, ReleasesStatus } from '../lib/types'
+import { tr } from '../lib/i18n'
 
 interface LiveCtx {
   status: ReleasesStatus | null
@@ -51,7 +52,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     setError(null)
     try {
       const started = await fn()
-      if (!started) setError('Ya hay una comprobación en marcha.')
+      if (!started) setError(tr('Ya hay una comprobación en marcha.', 'A check is already running.'))
       reload()
     } catch (e) {
       setError(String(e))

@@ -3,6 +3,7 @@
 // garantiza una duración mínima y enseña en qué paso está. Si la acción falla, lo dice.
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
+import { tr } from '../lib/i18n'
 
 export interface TaskSpec {
   title: string
@@ -69,7 +70,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       {s && (
         <div className="task-backdrop" role="dialog" aria-modal="true" aria-labelledby="task-title">
           <div className={`task task-${s.phase}`}>
-            <div className="eyebrow">{s.phase === 'error' ? 'No se pudo completar' : s.phase === 'done' ? 'Hecho' : 'Trabajando'}</div>
+            <div className="eyebrow">{s.phase === 'error' ? tr('No se pudo completar', 'Could not complete') : s.phase === 'done' ? tr('Hecho', 'Done') : tr('Trabajando', 'Working')}</div>
             <p id="task-title" className="task-title">{s.spec.title}</p>
             <div className="task-bar"><i style={{ width: `${pct}%` }} /></div>
             <ol className="task-steps">
@@ -81,7 +82,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             {s.phase === 'error' && (
               <>
                 <p className="note-line err">{s.error}</p>
-                <div className="actions"><button type="button" className="btn-line" onClick={() => closeRef.current?.()}>Cerrar</button></div>
+                <div className="actions"><button type="button" className="btn-line" onClick={() => closeRef.current?.()}>{tr('Cerrar', 'Close')}</button></div>
               </>
             )}
           </div>

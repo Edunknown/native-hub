@@ -6,22 +6,23 @@ import { ProjectTable } from '../components/ProjectTable'
 import { api } from '../lib/api'
 import { fmtNum } from '../lib/format'
 import type { DiscoverFilter, Listing, Project, ProjectKind } from '../lib/types'
+import { tr } from '../lib/i18n'
 
 const LISTINGS: { id: Listing | undefined; label: string }[] = [
-  { id: 'library', label: 'Con ejecutable Windows' },
-  { id: 'in_development', label: 'En desarrollo o sin ejecutable' },
-  { id: undefined, label: 'Todos' },
+  { id: 'library', label: tr('Con ejecutable Windows', 'With a Windows executable') },
+  { id: 'in_development', label: tr('En desarrollo o sin ejecutable', 'In development or no executable') },
+  { id: undefined, label: tr('Todos', 'All') },
 ]
 
 const KINDS: { id: ProjectKind | undefined; label: string }[] = [
-  { id: undefined, label: 'Todos los tipos' },
-  { id: 'static_recomp', label: 'Recompilaciones' },
-  { id: 'decomp_port', label: 'Ports de decompilación' },
-  { id: 'native_layer', label: 'Capas nativas' },
-  { id: 'engine_reimpl', label: 'Reimplementaciones' },
+  { id: undefined, label: tr('Todos los tipos', 'All types') },
+  { id: 'static_recomp', label: tr('Recompilaciones', 'Recompilations') },
+  { id: 'decomp_port', label: tr('Ports de decompilación', 'Decompilation ports') },
+  { id: 'native_layer', label: tr('Capas nativas', 'Native layers') },
+  { id: 'engine_reimpl', label: tr('Reimplementaciones', 'Reimplementations') },
   { id: 'source_port', label: 'Source ports' },
-  { id: 'fan_remake', label: 'Remakes de fans' },
-  { id: 'decompilation', label: 'Decompilaciones' },
+  { id: 'fan_remake', label: tr('Remakes de fans', 'Fan remakes') },
+  { id: 'decompilation', label: tr('Decompilaciones', 'Decompilations') },
 ]
 
 const PAGE = 100
@@ -52,38 +53,38 @@ export function Discover() {
   return (
     <main className="content tight">
       <div>
-        <div className="eyebrow">Descubrir</div>
-        <h1 className="page-title">Catálogo</h1>
+        <div className="eyebrow">{tr('Descubrir', 'Discover')}</div>
+        <h1 className="page-title">{tr('Catálogo', 'Catalog')}</h1>
         <p className="page-lede">
-          {fmtNum(summary.projectCount)} proyectos de {fmtNum(summary.gameCount)} juegos. Un proyecto solo cuenta como instalable si su última release oficial publica un ejecutable para Windows que se ha podido identificar.
+          {fmtNum(summary.projectCount)} {tr('proyectos de', 'projects for')} {fmtNum(summary.gameCount)} {tr('juegos. Un proyecto solo cuenta como instalable si su última release oficial publica un ejecutable para Windows que se ha podido identificar.', 'games. A project only counts as installable if its latest official release publishes a Windows executable that could be identified.')}
         </p>
       </div>
 
-      <div className="filters" role="group" aria-label="Sección">
-        <button type="button" aria-pressed={mode === 'catalog'} onClick={() => setMode('catalog')}>Catálogo</button>
-        <button type="button" aria-pressed={mode === 'review'} onClick={() => setMode('review')}>Cola de revisión</button>
+      <div className="filters" role="group" aria-label={tr('Sección', 'Section')}>
+        <button type="button" aria-pressed={mode === 'catalog'} onClick={() => setMode('catalog')}>{tr('Catálogo', 'Catalog')}</button>
+        <button type="button" aria-pressed={mode === 'review'} onClick={() => setMode('review')}>{tr('Cola de revisión', 'Review queue')}</button>
       </div>
 
       {mode === 'review' ? <Review /> : <>
-      <div className="filters" role="group" aria-label="Disponibilidad">
+      <div className="filters" role="group" aria-label={tr('Disponibilidad', 'Availability')}>
         {LISTINGS.map((f) => (
           <button key={f.label} type="button" aria-pressed={listing === f.id} onClick={() => setListing(f.id)}>{f.label}</button>
         ))}
       </div>
-      <div className="filters small" role="group" aria-label="Tipo">
+      <div className="filters small" role="group" aria-label={tr('Tipo', 'Type')}>
         {KINDS.map((f) => (
           <button key={f.label} type="button" aria-pressed={kind === f.id} onClick={() => setKind(f.id)}>{f.label}</button>
         ))}
       </div>
 
-      {total != null && <p className="muted num">{fmtNum(total)} resultados</p>}
+      {total != null && <p className="muted num">{fmtNum(total)} {tr('resultados', 'results')}</p>}
       <ProjectTable items={items} />
-      {total === 0 && <p className="empty">Ningún proyecto del catálogo encaja con estos filtros.</p>}
+      {total === 0 && <p className="empty">{tr('Ningún proyecto del catálogo encaja con estos filtros.', 'No catalog project matches these filters.')}</p>}
       {total != null && items.length < total && (
-        <div><button type="button" className="btn-line" onClick={more}>Cargar {Math.min(PAGE, total - items.length)} más</button></div>
+        <div><button type="button" className="btn-line" onClick={more}>{tr('Cargar', 'Load')} {Math.min(PAGE, total - items.length)} {tr('más', 'more')}</button></div>
       )}
 
-      <p className="devnote">Lo que encuentra el escáner va a la cola de revisión y no entra en el catálogo sin tu aprobación.</p>
+      <p className="devnote">{tr('Lo que encuentra el escáner va a la cola de revisión y no entra en el catálogo sin tu aprobación.', 'Whatever the scanner finds goes to the review queue and does not enter the catalog without your approval.')}</p>
       </>}
     </main>
   )

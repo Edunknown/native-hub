@@ -37,6 +37,14 @@ fn es(v: &Value) -> Option<String> {
     }
 }
 
+fn en(v: &Value) -> Option<String> {
+    match v {
+        Value::String(s) => Some(s.clone()),
+        Value::Object(o) => o.get("en").or_else(|| o.get("es")).and_then(Value::as_str).map(str::to_owned),
+        _ => None,
+    }
+}
+
 fn kind_for(folder: &str, category: Option<&str>) -> &'static str {
     match (folder, category) {
         ("recomps", _) => "static_recomp",
@@ -100,7 +108,9 @@ pub fn suggestion_from_yaml(source_id: &str, yaml: &Value, games: &Value) -> Opt
         "toolchain": yaml["toolchain"].as_str(),
         "homepage": yaml["homepage"].as_str(),
         "summary": es(&yaml["desc"]),
+        "summaryEn": en(&yaml["desc"]),
         "requirementsText": es(&yaml["requirements"]),
+        "requirementsTextEn": en(&yaml["requirements"]),
         "tags": yaml["tags"].clone(),
     }))
 }
@@ -186,7 +196,7 @@ pub fn sync_recompendium(conn: &Connection, f: &dyn Fetcher, max_new: usize) -> 
     let games: Value = match http::cached_get(conn, f, &format!("{RECOMPENDIUM_RAW}src/data/games.yaml")) {
         Ok(r) if r.status == 200 => serde_yaml_ng::from_str(&r.body).unwrap_or(Value::Null),
         _ => {
-            sum.errors.push("no se pudo leer games.yaml".into());
+            sum.errors.push(crate::i18n::tr("no se pudo leer games.yaml", "could not read games.yaml").into());
             return sum;
         }
     };
@@ -207,7 +217,7 @@ pub fn sync_recompendium(conn: &Connection, f: &dyn Fetcher, max_new: usize) -> 
         let yaml: Value = match serde_yaml_ng::from_str(&r.body) {
             Ok(v) => v,
             Err(e) => {
-                sum.errors.push(format!("{id}: YAML no válido: {e}"));
+                sum.errors.push(crate::t!("{id}: YAML no válido: {e}", "{id}: invalid YAML: {e}"));
                 continue;
             }
         };
@@ -308,9 +318,9 @@ pub fn approve_suggested(conn: &mut Connection, id: i64) -> Result<String> {
         .optional()?
         .ok_or_else(|| Error::NotFound(format!("candidato {id}")))?;
     if status != "new" {
-        return Err(Error::Invalid("el candidato ya está revisado".into()));
+        return Err(Error::Invalid(crate::i18n::tr("el candidato ya está revisado", "the candidate has already been reviewed").into()));
     }
-    let s: Value = serde_json::from_str(&sug.ok_or_else(|| Error::Invalid("este candidato no trae datos sugeridos".into()))?)?;
+    let s: Value = serde_json::from_str(&sug.ok_or_else(|| Error::Invalid(crate::i18n::tr("este candidato no trae datos sugeridos", "this candidate has no suggested details").into()))?)?;
     let tx = conn.transaction()?;
     let mut platform = s["platform"].as_str().unwrap_or("other").to_owned();
     if tx.query_row("SELECT 1 FROM platforms WHERE slug = ?1", params![platform], |_| Ok(())).optional()?.is_none() {
@@ -349,7 +359,7 @@ pub fn approve_suggested(conn: &mut Connection, id: i64) -> Result<String> {
         "abandoned": s["abandoned"], "takedown": takedown, "forkOf": s["forkOf"], "toolchain": s["toolchain"],
         "repo": {"host": host, "owner": owner, "name": repo}, "repoUrl": repo_url, "repoMovedFrom": null, "homepage": s["homepage"],
         "repoExists": null, "release": null, "windowsAsset": null, "hasWindowsExecutable": null, "listing": "in_development",
-        "summary": s["summary"], "requirementsText": s["requirementsText"], "requirements": null, "tags": s["tags"],
+        "summary": s["summary"], "summaryEn": s["summaryEn"], "requirementsText": s["requirementsText"], "requirementsTextEn": s["requirementsTextEn"], "requirements": null, "tags": s["tags"],
         "adapter": null, "stars": null, "createdAt": null, "pushedAt": null, "license": null,
         "source": "Recompendium (sincronizado y aprobado)", "checkedAt": null,
     });

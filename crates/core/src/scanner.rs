@@ -20,10 +20,10 @@ pub fn default_queries(now_unix: i64) -> Vec<(String, &'static str)> {
         ("topic:recompilation".into(), "tema recompilation"),
         ("topic:n64-recomp".into(), "tema n64-recomp"),
         ("topic:xenon-recomp".into(), "tema xenon-recomp"),
-        (format!("recomp in:name pushed:>{since}"), "«recomp» en el nombre"),
-        (format!("\"native pc port\" in:description pushed:>{since}"), "«native pc port» en la descripción"),
-        (format!("\"static recompilation\" in:description pushed:>{since}"), "«static recompilation» en la descripción"),
-        (format!("\"decompilation\" \"pc port\" in:description pushed:>{since}"), "decompilación y port a PC"),
+        (format!("recomp in:name pushed:>{since}"), crate::i18n::tr("«recomp» en el nombre", "\"recomp\" in the name")),
+        (format!("\"native pc port\" in:description pushed:>{since}"), crate::i18n::tr("«native pc port» en la descripción", "\"native pc port\" in the description")),
+        (format!("\"static recompilation\" in:description pushed:>{since}"), crate::i18n::tr("«static recompilation» en la descripción", "\"static recompilation\" in the description")),
+        (format!("\"decompilation\" \"pc port\" in:description pushed:>{since}"), crate::i18n::tr("decompilación y port a PC", "decompilation and PC port")),
     ]
 }
 
@@ -266,7 +266,7 @@ pub fn approve(conn: &mut Connection, a: &Approval) -> Result<String> {
             let title: String = tx
                 .query_row("SELECT title FROM games WHERE slug = ?1", params![g], |r| r.get(0))
                 .optional()?
-                .ok_or_else(|| Error::NotFound(format!("juego {g}")))?;
+                .ok_or_else(|| Error::NotFound(crate::t!("juego {g}", "game {g}")))?;
             (g.clone(), title)
         }
         (None, Some(t)) if !t.trim().is_empty() => {
@@ -283,7 +283,7 @@ pub fn approve(conn: &mut Connection, a: &Approval) -> Result<String> {
             )?;
             (slug, t.trim().to_owned())
         }
-        _ => return Err(Error::Invalid("falta el juego".into())),
+        _ => return Err(Error::Invalid(crate::i18n::tr("falta el juego", "the game is missing").into())),
     };
 
     let (owner, repo) = full_name.split_once('/').unwrap_or((&full_name, &full_name));

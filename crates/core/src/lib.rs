@@ -13,6 +13,7 @@ pub mod db;
 pub mod download;
 pub mod error;
 pub mod http;
+pub mod i18n;
 pub mod install;
 pub mod query;
 pub mod releases;

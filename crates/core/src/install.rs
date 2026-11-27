@@ -44,6 +44,9 @@ pub struct UserFileRule {
     /// "first_launch": el propio juego lo pide al abrirlo; NATIVE HUB solo ayuda a comprobarlo.
     pub when: String,
     pub help: Option<String>,
+    /// English texts (optional; Spanish is used when missing).
+    pub label_en: Option<String>,
+    pub help_en: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -59,6 +62,31 @@ pub struct Adapter {
     /// Rutas que una actualización no debe tocar (fase 6).
     pub preserve: Vec<String>,
     pub notes: Vec<String>,
+    pub first_run_en: Option<String>,
+    pub notes_en: Vec<String>,
+}
+
+impl Adapter {
+    /// Puts the texts of the interface language in the main fields.
+    pub fn localized(mut self) -> Self {
+        if crate::i18n::en() {
+            if self.first_run_en.is_some() {
+                self.first_run = self.first_run_en.clone();
+            }
+            if !self.notes_en.is_empty() {
+                self.notes = self.notes_en.clone();
+            }
+            for f in &mut self.user_files {
+                if let Some(l) = &f.label_en {
+                    f.label = l.clone();
+                }
+                if f.help_en.is_some() {
+                    f.help = f.help_en.clone();
+                }
+            }
+        }
+        self
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -97,9 +125,9 @@ fn project(conn: &Connection, slug: &str) -> Result<ProjectInfo> {
     let data: String = conn
         .query_row("SELECT data FROM projects WHERE slug = ?1", params![slug], |r| r.get(0))
         .optional()?
-        .ok_or_else(|| Error::NotFound(format!("proyecto {slug}")))?;
+        .ok_or_else(|| Error::NotFound(crate::t!("proyecto {slug}", "project {slug}")))?;
     let data: Value = serde_json::from_str(&data)?;
-    let adapter = data.get("adapter").filter(|a| a.is_object()).and_then(|a| serde_json::from_value(a.clone()).ok());
+    let adapter = data.get("adapter").filter(|a| a.is_object()).and_then(|a| serde_json::from_value::<Adapter>(a.clone()).ok()).map(Adapter::localized);
     Ok(ProjectInfo { data, adapter })
 }
 
@@ -123,7 +151,7 @@ pub fn plan(conn: &Connection, slug: &str, root: &Path) -> Result<Value> {
     let url = p.data.pointer("/windowsAsset/url").and_then(Value::as_str).unwrap_or_default().to_owned();
     let dl = finished_download(conn, slug, &url)?;
     if dl.is_none() && p.data["listing"].as_str() != Some("library") {
-        return Err(Error::Invalid("el proyecto no tiene un ejecutable Windows comprobado; elige un archivo de sus releases".into()));
+        return Err(Error::Invalid(crate::i18n::tr("el proyecto no tiene un ejecutable Windows comprobado; elige un archivo de sus releases", "the project has no verified Windows executable; choose a file from its releases").into()));
     }
     let asset_name = match &dl {
         Some((_, _, _, n)) if !n.is_empty() => n.clone(),
@@ -135,28 +163,28 @@ pub fn plan(conn: &Connection, slug: &str, root: &Path) -> Result<Value> {
         conn.query_row("SELECT id FROM installations WHERE project = ?1", params![slug], |r| r.get(0)).optional()?;
 
     let mut steps: Vec<Value> = Vec::new();
-    steps.push(json!({"kind": "download", "text": format!("Usar el archivo descargado de la release oficial: {asset_name}"), "done": dl.is_some()}));
+    steps.push(json!({"kind": "download", "text": crate::t!("Usar el archivo descargado de la release oficial: {asset_name}", "Use the file downloaded from the official release: {asset_name}"), "done": dl.is_some()}));
     match method {
-        Method::ExtractZip => steps.push(json!({"kind": "extract", "text": format!("Extraer el ZIP en {}", dir.display())})),
-        Method::CopyExe => steps.push(json!({"kind": "copy", "text": format!("Copiar el ejecutable portable a {}", dir.display())})),
-        Method::Installer => steps.push(json!({"kind": "installer", "text": "Es un instalador: NATIVE HUB lo abrirá solo cuando tú lo pidas, y después eliges el ejecutable que haya instalado."})),
-        Method::Manual => steps.push(json!({"kind": "manual", "text": "Este formato (7z, RAR u otro) no se extrae automáticamente: se abrirá la carpeta para que lo hagas tú y después eliges el ejecutable."})),
+        Method::ExtractZip => steps.push(json!({"kind": "extract", "text": crate::t!("Extraer el ZIP en {}", "Extract the ZIP into {}", dir.display())})),
+        Method::CopyExe => steps.push(json!({"kind": "copy", "text": crate::t!("Copiar el ejecutable portable a {}", "Copy the portable executable to {}", dir.display())})),
+        Method::Installer => steps.push(json!({"kind": "installer", "text": crate::i18n::tr("Es un instalador: NATIVE HUB lo abrirá solo cuando tú lo pidas, y después eliges el ejecutable que haya instalado.", "It is an installer: NATIVE HUB will only run it when you ask, and then you choose the executable it installed.")})),
+        Method::Manual => steps.push(json!({"kind": "manual", "text": crate::i18n::tr("Este formato (7z, RAR u otro) no se extrae automáticamente: se abrirá la carpeta para que lo hagas tú y después eliges el ejecutable.", "This format (7z, RAR or other) is not extracted automatically: the folder will open so you can do it, and then you choose the executable.")})),
     }
     if matches!(method, Method::ExtractZip | Method::CopyExe) {
-        steps.push(json!({"kind": "exe", "text": "Buscar el ejecutable del juego. Si hay varios, te pediré que elijas."}));
+        steps.push(json!({"kind": "exe", "text": crate::i18n::tr("Buscar el ejecutable del juego. Si hay varios, te pediré que elijas.", "Find the game executable. If there are several, you will be asked to choose.")}));
     }
     if let Some(a) = &p.adapter {
         for f in &a.user_files {
-            let when = if f.when == "first_launch" { "El juego te lo pedirá al abrirlo por primera vez; aquí puedes comprobar antes que es el correcto." } else { "Te lo pediré durante la instalación." };
+            let when = if f.when == "first_launch" { crate::i18n::tr("El juego te lo pedirá al abrirlo por primera vez; aquí puedes comprobar antes que es el correcto.", "The game will ask for it the first time you open it; here you can check beforehand that it is the right one.") } else { crate::i18n::tr("Te lo pediré durante la instalación.", "You will be asked for it during installation.") };
             steps.push(json!({"kind": "user_file", "text": format!("{}. {when}", f.label)}));
         }
         if let Some(fr) = &a.first_run {
             steps.push(json!({"kind": "first_run", "text": fr}));
         }
-    } else if let Some(req) = p.data["requirementsText"].as_str() {
-        steps.push(json!({"kind": "requirements", "text": format!("Requisitos según el proyecto: {req}")}));
+    } else if let Some(req) = (if crate::i18n::en() { p.data["requirementsTextEn"].as_str() } else { None }).or(p.data["requirementsText"].as_str()) {
+        steps.push(json!({"kind": "requirements", "text": crate::t!("Requisitos según el proyecto: {req}", "Requirements according to the project: {req}")}));
     }
-    steps.push(json!({"kind": "nothing_runs", "text": "Nada se ejecuta durante la instalación. El juego solo se abre cuando pulses «Ejecutar»."}));
+    steps.push(json!({"kind": "nothing_runs", "text": crate::i18n::tr("Nada se ejecuta durante la instalación. El juego solo se abre cuando pulses «Ejecutar».", "Nothing runs during installation. The game only opens when you press \"Launch\".")}));
 
     Ok(json!({
         "project": slug,
@@ -180,10 +208,10 @@ pub fn plan(conn: &Connection, slug: &str, root: &Path) -> Result<Value> {
 /// Extrae un ZIP dentro de `dest`. Rechaza rutas absolutas o con `..`, enlaces simbólicos y
 /// tamaños desproporcionados. Si todo cuelga de una sola carpeta raíz, la quita.
 pub fn extract_zip(zip_path: &Path, dest: &Path) -> Result<usize> {
-    let f = File::open(zip_path).map_err(|e| Error::Invalid(format!("no se puede abrir el ZIP: {e}")))?;
-    let mut zip = zip::ZipArchive::new(f).map_err(|e| Error::Invalid(format!("ZIP no válido: {e}")))?;
+    let f = File::open(zip_path).map_err(|e| Error::Invalid(crate::t!("no se puede abrir el ZIP: {e}", "cannot open the ZIP: {e}")))?;
+    let mut zip = zip::ZipArchive::new(f).map_err(|e| Error::Invalid(crate::t!("ZIP no válido: {e}", "invalid ZIP: {e}")))?;
     if zip.len() > MAX_ENTRIES {
-        return Err(Error::Invalid("el ZIP tiene demasiados archivos".into()));
+        return Err(Error::Invalid(crate::i18n::tr("el ZIP tiene demasiados archivos", "the ZIP has too many files").into()));
     }
     // ¿Raíz común?
     let mut names = Vec::with_capacity(zip.len());
@@ -191,13 +219,13 @@ pub fn extract_zip(zip_path: &Path, dest: &Path) -> Result<usize> {
     for i in 0..zip.len() {
         let e = zip.by_index(i).map_err(|e| Error::Invalid(e.to_string()))?;
         let Some(p) = e.enclosed_name() else {
-            return Err(Error::Invalid(format!("ruta no permitida dentro del ZIP: {}", e.name().map(|c| c.to_string()).unwrap_or_default())));
+            return Err(Error::Invalid(crate::t!("ruta no permitida dentro del ZIP: {}", "path not allowed inside the ZIP: {}", e.name().map(|c| c.to_string()).unwrap_or_default())));
         };
         total = total.saturating_add(e.size());
         names.push(p);
     }
     if total > MAX_UNPACKED {
-        return Err(Error::Invalid("el ZIP descomprimido ocupa demasiado".into()));
+        return Err(Error::Invalid(crate::i18n::tr("el ZIP descomprimido ocupa demasiado", "the unpacked ZIP is too large").into()));
     }
     let first = |p: &PathBuf| p.components().next().map(|c| c.as_os_str().to_owned());
     let root = names.first().and_then(first);
@@ -205,7 +233,7 @@ pub fn extract_zip(zip_path: &Path, dest: &Path) -> Result<usize> {
         names.iter().all(|n| first(n).as_ref() == Some(r) && (n.components().count() > 1 || zip_is_dir_name(n)))
     }) && names.iter().any(|n| n.components().count() > 1);
 
-    fs::create_dir_all(dest).map_err(|e| Error::Invalid(format!("no se puede crear la carpeta: {e}")))?;
+    fs::create_dir_all(dest).map_err(|e| Error::Invalid(crate::t!("no se puede crear la carpeta: {e}", "cannot create the folder: {e}")))?;
     let mut written = 0;
     for i in 0..zip.len() {
         let mut e = zip.by_index(i).map_err(|e| Error::Invalid(e.to_string()))?;
@@ -215,7 +243,7 @@ pub fn extract_zip(zip_path: &Path, dest: &Path) -> Result<usize> {
             continue;
         }
         if rel.components().any(|c| !matches!(c, Component::Normal(_))) {
-            return Err(Error::Invalid(format!("ruta no permitida dentro del ZIP: {}", rel.display())));
+            return Err(Error::Invalid(crate::t!("ruta no permitida dentro del ZIP: {}", "path not allowed inside the ZIP: {}", rel.display())));
         }
         if e.is_symlink() {
             continue; // los enlaces simbólicos no se crean
@@ -228,14 +256,14 @@ pub fn extract_zip(zip_path: &Path, dest: &Path) -> Result<usize> {
         if let Some(parent) = out.parent() {
             fs::create_dir_all(parent).map_err(|e| Error::Invalid(e.to_string()))?;
         }
-        let mut w = File::create(&out).map_err(|e| av_or(e, &format!("no se puede escribir {}", out.display())))?;
+        let mut w = File::create(&out).map_err(|e| av_or(e, &crate::t!("no se puede escribir {}", "cannot write {}", out.display())))?;
         let mut buf = vec![0u8; 1 << 16];
         loop {
-            let n = e.read(&mut buf).map_err(|err| Error::Invalid(format!("ZIP dañado: {err}")))?;
+            let n = e.read(&mut buf).map_err(|err| Error::Invalid(crate::t!("ZIP dañado: {err}", "damaged ZIP: {err}")))?;
             if n == 0 {
                 break;
             }
-            w.write_all(&buf[..n]).map_err(|err| av_or(err, "no se puede escribir"))?;
+            w.write_all(&buf[..n]).map_err(|err| av_or(err, crate::i18n::tr("no se puede escribir", "cannot write")))?;
         }
         written += 1;
     }
@@ -245,8 +273,9 @@ pub fn extract_zip(zip_path: &Path, dest: &Path) -> Result<usize> {
 /// El antivirus de Windows puede bloquear un ejecutable al extraerlo (error 225/226).
 fn av_or(e: std::io::Error, context: &str) -> Error {
     match e.raw_os_error() {
-        Some(225) | Some(226) => Error::Invalid(format!(
+        Some(225) | Some(226) => Error::Invalid(crate::t!(
             "{}Windows ha bloqueado un archivo del ZIP porque su antivirus lo considera peligroso. La instalación se ha cancelado.",
+            "{}Windows blocked a file in the ZIP because its antivirus considers it dangerous. The installation was cancelled.",
             download::AV_PREFIX
         )),
         _ => Error::Invalid(format!("{context}: {e}")),
@@ -302,13 +331,13 @@ fn is_inside(path: &Path, dir: &Path) -> bool {
 pub fn install(conn: &Connection, slug: &str, root: &Path) -> Result<Value> {
     let p = project(conn, slug)?;
     if p.data["takedown"].as_bool() == Some(true) {
-        return Err(Error::Invalid("el proyecto está retirado por DMCA".into()));
+        return Err(Error::Invalid(crate::i18n::tr("el proyecto está retirado por DMCA", "the project was taken down by DMCA").into()));
     }
     if conn.query_row("SELECT 1 FROM installations WHERE project = ?1", params![slug], |_| Ok(())).optional()?.is_some() {
-        return Err(Error::Invalid("ya está instalado".into()));
+        return Err(Error::Invalid(crate::i18n::tr("ya está instalado", "already installed").into()));
     }
     let url = p.data.pointer("/windowsAsset/url").and_then(Value::as_str).unwrap_or_default().to_owned();
-    let (_, file, tag, dl_name) = finished_download(conn, slug, &url)?.ok_or_else(|| Error::Invalid("primero descarga el archivo".into()))?;
+    let (_, file, tag, dl_name) = finished_download(conn, slug, &url)?.ok_or_else(|| Error::Invalid(crate::i18n::tr("primero descarga el archivo", "download the file first").into()))?;
     let asset_name = if dl_name.is_empty() {
         p.data.pointer("/windowsAsset/name").and_then(Value::as_str).unwrap_or_default().to_owned()
     } else {
@@ -316,13 +345,13 @@ pub fn install(conn: &Connection, slug: &str, root: &Path) -> Result<Value> {
     };
     let file = PathBuf::from(file);
     if !file.exists() {
-        return Err(Error::Invalid("el archivo descargado ya no está en disco; vuelve a descargarlo".into()));
+        return Err(Error::Invalid(crate::i18n::tr("el archivo descargado ya no está en disco; vuelve a descargarlo", "the downloaded file is no longer on disk; download it again").into()));
     }
     let dir = install_dir_for(root, slug);
     if dir.exists() && fs::read_dir(&dir).map(|mut d| d.next().is_some()).unwrap_or(false) {
-        return Err(Error::Invalid(format!("la carpeta {} ya existe y no está vacía", dir.display())));
+        return Err(Error::Invalid(crate::t!("la carpeta {} ya existe y no está vacía", "the folder {} already exists and is not empty", dir.display())));
     }
-    fs::create_dir_all(&dir).map_err(|e| Error::Invalid(format!("no se puede crear la carpeta: {e}")))?;
+    fs::create_dir_all(&dir).map_err(|e| Error::Invalid(crate::t!("no se puede crear la carpeta: {e}", "cannot create the folder: {e}")))?;
 
     let method = method_for(&asset_name);
     let hint = p.adapter.as_ref().and_then(|a| a.exe_hint.clone());
@@ -344,9 +373,9 @@ pub fn install(conn: &Connection, slug: &str, root: &Path) -> Result<Value> {
             }
         }
         Method::CopyExe => {
-            let name = download::safe_file_name(&asset_name).ok_or_else(|| Error::Invalid("nombre de archivo no válido".into()))?;
+            let name = download::safe_file_name(&asset_name).ok_or_else(|| Error::Invalid(crate::i18n::tr("nombre de archivo no válido", "invalid file name").into()))?;
             let to = dir.join(name);
-            fs::copy(&file, &to).map_err(|e| Error::Invalid(format!("no se puede copiar: {e}")))?;
+            fs::copy(&file, &to).map_err(|e| Error::Invalid(crate::t!("no se puede copiar: {e}", "cannot copy: {e}")))?;
             (Some(to.clone()), vec![to], None)
         }
         Method::Installer => (None, vec![], Some("run_installer")),
@@ -376,7 +405,7 @@ pub fn install(conn: &Connection, slug: &str, root: &Path) -> Result<Value> {
 }
 
 pub fn get(conn: &Connection, id: i64) -> Result<Value> {
-    list_where(conn, "WHERE i.id = ?1", params![id])?.into_iter().next().ok_or_else(|| Error::NotFound(format!("instalación {id}")))
+    list_where(conn, "WHERE i.id = ?1", params![id])?.into_iter().next().ok_or_else(|| Error::NotFound(crate::t!("instalación {id}", "installation {id}")))
 }
 
 pub fn list(conn: &Connection) -> Result<Vec<Value>> {
@@ -423,7 +452,7 @@ fn row(conn: &Connection, id: i64) -> Result<(String, String, Option<String>, Va
         },
     )
     .optional()?
-    .ok_or_else(|| Error::NotFound(format!("instalación {id}")))
+    .ok_or_else(|| Error::NotFound(crate::t!("instalación {id}", "installation {id}")))
 }
 
 /// Fija el ejecutable que se abrirá con «Ejecutar». Debe estar dentro de la carpeta del juego,
@@ -431,11 +460,11 @@ fn row(conn: &Connection, id: i64) -> Result<(String, String, Option<String>, Va
 pub fn set_executable(conn: &Connection, id: i64, exe: &Path) -> Result<Value> {
     let (_, dir, _, mut config) = row(conn, id)?;
     if !exe.is_file() || !exe.extension().is_some_and(|x| x.eq_ignore_ascii_case("exe")) {
-        return Err(Error::Invalid("elige un archivo .exe que exista".into()));
+        return Err(Error::Invalid(crate::i18n::tr("elige un archivo .exe que exista", "choose an existing .exe file").into()));
     }
     let external = matches!(config["method"].as_str(), Some("installer") | Some("manual"));
     if !external && !is_inside(exe, Path::new(&dir)) {
-        return Err(Error::Invalid("el ejecutable tiene que estar dentro de la carpeta del juego".into()));
+        return Err(Error::Invalid(crate::i18n::tr("el ejecutable tiene que estar dentro de la carpeta del juego", "the executable must be inside the game folder").into()));
     }
     config["pending"] = Value::Null;
     conn.execute(
@@ -448,13 +477,13 @@ pub fn set_executable(conn: &Connection, id: i64, exe: &Path) -> Result<Value> {
 /// Lo que hay que lanzar para «Ejecutar»: ejecutable y carpeta de trabajo, ya validados.
 pub fn launch_target(conn: &Connection, id: i64) -> Result<(PathBuf, PathBuf)> {
     let (_, dir, exe, config) = row(conn, id)?;
-    let exe = PathBuf::from(exe.ok_or_else(|| Error::Invalid("todavía no hay ejecutable elegido".into()))?);
+    let exe = PathBuf::from(exe.ok_or_else(|| Error::Invalid(crate::i18n::tr("todavía no hay ejecutable elegido", "no executable chosen yet").into()))?);
     if !exe.is_file() {
-        return Err(Error::Invalid(format!("no se encuentra {}", exe.display())));
+        return Err(Error::Invalid(crate::t!("no se encuentra {}", "cannot find {}", exe.display())));
     }
     let external = matches!(config["method"].as_str(), Some("installer") | Some("manual"));
     if !external && !is_inside(&exe, Path::new(&dir)) {
-        return Err(Error::Invalid("el ejecutable está fuera de la carpeta del juego".into()));
+        return Err(Error::Invalid(crate::i18n::tr("el ejecutable está fuera de la carpeta del juego", "the executable is outside the game folder").into()));
     }
     let wd = exe.parent().map(Path::to_path_buf).unwrap_or_else(|| PathBuf::from(&dir));
     conn.execute("UPDATE installations SET updated_at = ?2 WHERE id = ?1", params![id, time::now_iso()])?;
@@ -465,7 +494,7 @@ pub fn launch_target(conn: &Connection, id: i64) -> Result<(PathBuf, PathBuf)> {
 /// Instalador descargado de una instalación de tipo «installer».
 pub fn installer_path(conn: &Connection, id: i64) -> Result<PathBuf> {
     let (_, _, _, config) = row(conn, id)?;
-    let p = config["installerPath"].as_str().ok_or_else(|| Error::Invalid("esta instalación no usa instalador".into()))?;
+    let p = config["installerPath"].as_str().ok_or_else(|| Error::Invalid(crate::i18n::tr("esta instalación no usa instalador", "this installation does not use an installer").into()))?;
     Ok(PathBuf::from(p))
 }
 
@@ -477,9 +506,9 @@ pub fn uninstall(conn: &Connection, id: i64, root: &Path, delete_files: bool) ->
         let d = PathBuf::from(&dir);
         if d.exists() {
             if !is_inside(&d, root) || d.canonicalize().ok() == root.canonicalize().ok() {
-                return Err(Error::Invalid("la carpeta no está dentro de la carpeta de juegos de NATIVE HUB; bórrala a mano".into()));
+                return Err(Error::Invalid(crate::i18n::tr("la carpeta no está dentro de la carpeta de juegos de NATIVE HUB; bórrala a mano", "the folder is not inside the NATIVE HUB games folder; delete it by hand").into()));
             }
-            fs::remove_dir_all(&d).map_err(|e| Error::Invalid(format!("no se pudo borrar la carpeta: {e}")))?;
+            fs::remove_dir_all(&d).map_err(|e| Error::Invalid(crate::t!("no se pudo borrar la carpeta: {e}", "could not delete the folder: {e}")))?;
         }
     }
     conn.execute("DELETE FROM installations WHERE id = ?1", params![id])?;
@@ -491,9 +520,9 @@ pub fn uninstall(conn: &Connection, id: i64, root: &Path, delete_files: bool) ->
 
 /// Comprueba un archivo del usuario contra las reglas del adaptador. No lo copia ni lo modifica.
 pub fn validate_user_file(path: &Path, rule: &UserFileRule) -> Result<Value> {
-    let meta = fs::metadata(path).map_err(|e| Error::Invalid(format!("no se puede leer el archivo: {e}")))?;
+    let meta = fs::metadata(path).map_err(|e| Error::Invalid(crate::t!("no se puede leer el archivo: {e}", "cannot read the file: {e}")))?;
     if !meta.is_file() {
-        return Err(Error::Invalid("eso no es un archivo".into()));
+        return Err(Error::Invalid(crate::i18n::tr("eso no es un archivo", "that is not a file").into()));
     }
     let size = meta.len();
     let ext = path.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
@@ -503,14 +532,14 @@ pub fn validate_user_file(path: &Path, rule: &UserFileRule) -> Result<Value> {
 
     let mut checks = Vec::new();
     let ext_ok = rule.extensions.is_empty() || rule.extensions.iter().any(|e| e.trim_start_matches('.').eq_ignore_ascii_case(&ext));
-    checks.push(json!({"check": "extension", "ok": ext_ok, "text": format!("Extensión .{ext}")}));
+    checks.push(json!({"check": "extension", "ok": ext_ok, "text": crate::t!("Extensión .{ext}", "Extension .{ext}")}));
     let magic_ok = rule.magic.is_empty() || rule.magic.iter().any(|m| head_hex.starts_with(&m.to_lowercase()));
     if !rule.magic.is_empty() {
-        checks.push(json!({"check": "header", "ok": magic_ok, "text": if magic_ok { "La cabecera corresponde al tipo de archivo esperado" } else { "La cabecera no es la esperada" }}));
+        checks.push(json!({"check": "header", "ok": magic_ok, "text": if magic_ok { crate::i18n::tr("La cabecera corresponde al tipo de archivo esperado", "The header matches the expected file type") } else { crate::i18n::tr("La cabecera no es la esperada", "The header is not the expected one") }}));
     }
     let size_ok = rule.min_size.is_none_or(|m| size >= m) && rule.max_size.is_none_or(|m| size <= m);
     if rule.min_size.is_some() || rule.max_size.is_some() {
-        checks.push(json!({"check": "size", "ok": size_ok, "text": format!("Tamaño: {size} bytes")}));
+        checks.push(json!({"check": "size", "ok": size_ok, "text": crate::t!("Tamaño: {size} bytes", "Size: {size} bytes")}));
     }
     let mut sha1_ok = true;
     if !rule.sha1.is_empty() {
@@ -557,6 +586,6 @@ pub fn adapter_rule(conn: &Connection, slug: &str, key: &str) -> Result<UserFile
     let p = project(conn, slug)?;
     p.adapter
         .and_then(|a| a.user_files.into_iter().find(|f| f.key == key))
-        .ok_or_else(|| Error::NotFound(format!("requisito {key}")))
+        .ok_or_else(|| Error::NotFound(crate::t!("requisito {key}", "requirement {key}")))
 }
 

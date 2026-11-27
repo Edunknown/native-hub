@@ -109,8 +109,8 @@ pub fn import(conn: &mut Connection, cat: &CatalogFile) -> Result<()> {
             "DELETE FROM projects WHERE origin = 'local' AND (slug = ?1 OR LOWER(repo_url) = LOWER(?2))",
         )?;
         for p in &cat.projects {
-            let slug = s(p, "slug").ok_or_else(|| Error::Catalog("proyecto sin slug".into()))?;
-            let game = s(p, "game").ok_or_else(|| Error::Catalog(format!("{slug} sin juego")))?;
+            let slug = s(p, "slug").ok_or_else(|| Error::Catalog(crate::i18n::tr("proyecto sin slug", "project without a slug").into()))?;
+            let game = s(p, "game").ok_or_else(|| Error::Catalog(crate::t!("{slug} sin juego", "{slug} has no game")))?;
             let release = p.get("release").filter(|r| !r.is_null());
             drop_local.execute(params![slug, s(p, "repoUrl")])?;
             let search = fold(&format!(

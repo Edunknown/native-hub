@@ -70,7 +70,10 @@ export interface Project {
   hasWindowsExecutable: boolean | null
   listing: Listing
   summary: string | null
+  /** English text from Recompendium (falls back to `summary`). */
+  summaryEn?: string | null
   requirementsText: string | null
+  requirementsTextEn?: string | null
   requirements: Requirements | null
   tags: string[]
   adapter?: { id: string; version: number; reviewedAt: string | null; firstRun?: string | null; userFiles: UserFileRule[] } | null
@@ -192,7 +195,7 @@ export interface Candidate {
   source: 'github-search' | 'gitlab-search' | 'recompendium' | string
   suggestion: {
     game: string; gameTitle: string; platform: string; kind: ProjectKind; name: string
-    developers: string | null; devStatus: DevStatus; summary: string | null; takedown: boolean
+    developers: string | null; devStatus: DevStatus; summary: string | null; summaryEn?: string | null; takedown: boolean
   } | null
 }
 
@@ -270,6 +273,8 @@ export interface UserFileRule {
   magic: string[]
   when: string
   help?: string | null
+  labelEn?: string | null
+  helpEn?: string | null
 }
 
 export interface InstallPlan {

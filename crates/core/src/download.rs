@@ -115,8 +115,9 @@ pub const AV_PREFIX: &str = "ANTIVIRUS: ";
 fn io_err(context: &str, e: std::io::Error) -> Error {
     // 225 = ERROR_VIRUS_INFECTED, 226 = ERROR_VIRUS_DELETED (Windows).
     match e.raw_os_error() {
-        Some(225) | Some(226) => Error::Invalid(format!(
-            "{AV_PREFIX}Windows ha bloqueado el archivo porque su antivirus lo considera peligroso. NATIVE HUB no lo ha guardado."
+        Some(225) | Some(226) => Error::Invalid(crate::t!(
+            "{AV_PREFIX}Windows ha bloqueado el archivo porque su antivirus lo considera peligroso. NATIVE HUB no lo ha guardado.",
+            "{AV_PREFIX}Windows blocked the file because its antivirus considers it dangerous. NATIVE HUB did not save it."
         )),
         _ => Error::Invalid(format!("{context}: {e}")),
     }
@@ -158,19 +159,19 @@ pub fn enqueue_asset(conn: &Connection, downloads_dir: &Path, slug: &str, chosen
     let data: String = conn
         .query_row("SELECT data FROM projects WHERE slug = ?1", params![slug], |r| r.get(0))
         .optional()?
-        .ok_or_else(|| Error::NotFound(format!("proyecto {slug}")))?;
+        .ok_or_else(|| Error::NotFound(crate::t!("proyecto {slug}", "project {slug}")))?;
     let p: Value = serde_json::from_str(&data)?;
     if p["takedown"].as_bool() == Some(true) {
-        return Err(Error::Invalid("el proyecto está retirado por DMCA".into()));
+        return Err(Error::Invalid(crate::i18n::tr("el proyecto está retirado por DMCA", "the project was taken down by DMCA").into()));
     }
     if chosen.is_none() && p["listing"].as_str() != Some("library") {
-        return Err(Error::Invalid("el proyecto no tiene un ejecutable Windows comprobado".into()));
+        return Err(Error::Invalid(crate::i18n::tr("el proyecto no tiene un ejecutable Windows comprobado", "the project has no verified Windows executable").into()));
     }
     let default_asset = &p["windowsAsset"];
     let (url, raw_name, size, sha, tag) = match &chosen {
         Some(c) => (c.url.clone(), c.name.clone(), c.size, c.sha256.clone(), c.tag.clone()),
         None => (
-            default_asset["url"].as_str().ok_or_else(|| Error::Invalid("falta la URL del archivo".into()))?.to_owned(),
+            default_asset["url"].as_str().ok_or_else(|| Error::Invalid(crate::i18n::tr("falta la URL del archivo", "the file URL is missing").into()))?.to_owned(),
             default_asset["name"].as_str().unwrap_or_default().to_owned(),
             default_asset["size"].as_i64(),
             default_asset["sha256"].as_str().map(str::to_owned),
@@ -180,9 +181,9 @@ pub fn enqueue_asset(conn: &Connection, downloads_dir: &Path, slug: &str, chosen
     let url = url.as_str();
     let repo_url = p["repoUrl"].as_str().unwrap_or_default();
     if !url.starts_with("https://") || !host_allowed(url) || !url_belongs_to_repo(url, repo_url) {
-        return Err(Error::Invalid(format!("origen no permitido para la descarga: {url}")));
+        return Err(Error::Invalid(crate::t!("origen no permitido para la descarga: {url}", "download origin not allowed: {url}")));
     }
-    let name = safe_file_name(&raw_name).ok_or_else(|| Error::Invalid("nombre de archivo no válido".into()))?;
+    let name = safe_file_name(&raw_name).ok_or_else(|| Error::Invalid(crate::i18n::tr("nombre de archivo no válido", "invalid file name").into()))?;
     let tag = tag.as_str();
     let tag_dir = safe_file_name(tag).unwrap_or_else(|| "version".into());
     let dest = downloads_dir.join(slug).join(tag_dir).join(&name);
@@ -243,11 +244,11 @@ fn part_path(dest: &Path) -> PathBuf {
 }
 
 pub fn sha256_file(path: &Path) -> Result<String> {
-    let mut f = File::open(path).map_err(|e| io_err(&format!("no se puede leer {}", path.display()), e))?;
+    let mut f = File::open(path).map_err(|e| io_err(&crate::t!("no se puede leer {}", "cannot read {}", path.display()), e))?;
     let mut h = Sha256::new();
     let mut buf = vec![0u8; 1 << 16];
     loop {
-        let n = f.read(&mut buf).map_err(|e| io_err("no se puede leer", e))?;
+        let n = f.read(&mut buf).map_err(|e| io_err(crate::i18n::tr("no se puede leer", "cannot read"), e))?;
         if n == 0 {
             break;
         }
@@ -279,7 +280,7 @@ pub fn run(
 
     let result = (|| -> Result<String> {
         if let Some(dir) = part.parent() {
-            fs::create_dir_all(dir).map_err(|e| Error::Invalid(format!("no se puede crear la carpeta: {e}")))?;
+            fs::create_dir_all(dir).map_err(|e| Error::Invalid(crate::t!("no se puede crear la carpeta: {e}", "cannot create the folder: {e}")))?;
         }
         let have = fs::metadata(&part).map(|m| m.len()).unwrap_or(0);
 
@@ -288,11 +289,11 @@ pub fn run(
         let mut opened = None;
         for _ in 0..=MAX_REDIRECTS {
             if !current.starts_with("https://") || !host_allowed(&current) {
-                return Err(Error::Invalid(format!("redirección a un origen no permitido: {current}")));
+                return Err(Error::Invalid(crate::t!("redirección a un origen no permitido: {current}", "redirect to an origin that is not allowed: {current}")));
             }
             let o = t.open(&current, Some(have))?;
             if (300..400).contains(&o.status) {
-                current = o.location.ok_or_else(|| Error::Http("redirección sin destino".into()))?;
+                current = o.location.ok_or_else(|| Error::Http(crate::i18n::tr("redirección sin destino", "redirect without a target").into()))?;
                 continue;
             }
             opened = Some(o);
@@ -300,14 +301,14 @@ pub fn run(
         }
         let mut o = opened.ok_or_else(|| Error::Http("demasiadas redirecciones".into()))?;
         let (mut done, mut file) = match o.status {
-            206 if have > 0 => (have, OpenOptions::new().append(true).open(&part).map_err(|e| io_err("no se puede abrir", e))?),
-            200 => (0, File::create(&part).map_err(|e| io_err("no se puede crear el archivo", e))?),
-            416 if have > 0 && total_hint == Some(have as i64) => (have, OpenOptions::new().append(true).open(&part).map_err(|e| io_err("no se puede abrir", e))?),
-            s => return Err(Error::Http(format!("HTTP {s} al descargar"))),
+            206 if have > 0 => (have, OpenOptions::new().append(true).open(&part).map_err(|e| io_err(crate::i18n::tr("no se puede abrir", "cannot open"), e))?),
+            200 => (0, File::create(&part).map_err(|e| io_err(crate::i18n::tr("no se puede crear el archivo", "cannot create the file"), e))?),
+            416 if have > 0 && total_hint == Some(have as i64) => (have, OpenOptions::new().append(true).open(&part).map_err(|e| io_err(crate::i18n::tr("no se puede abrir", "cannot open"), e))?),
+            s => return Err(Error::Http(crate::t!("HTTP {s} al descargar", "HTTP {s} while downloading"))),
         };
         let total = o.range_total.or(o.content_length.map(|l| l + done)).or(total_hint.map(|t| t as u64));
         if total.is_some_and(|t| t > MAX_SIZE) {
-            return Err(Error::Invalid("archivo demasiado grande".into()));
+            return Err(Error::Invalid(crate::i18n::tr("archivo demasiado grande", "file too large").into()));
         }
         conn.execute("UPDATE downloads SET bytes_total = ?2 WHERE id = ?1", params![id, total.map(|t| t as i64)])?;
 
@@ -325,14 +326,14 @@ pub fn run(
                     CANCEL => return Ok("cancelled".into()),
                     _ => {}
                 }
-                let n = o.body.read(&mut buf).map_err(|e| Error::Http(format!("conexión interrumpida: {e}")))?;
+                let n = o.body.read(&mut buf).map_err(|e| Error::Http(crate::t!("conexión interrumpida: {e}", "connection interrupted: {e}")))?;
                 if n == 0 {
                     break;
                 }
-                file.write_all(&buf[..n]).map_err(|e| io_err("no se puede escribir", e))?;
+                file.write_all(&buf[..n]).map_err(|e| io_err(crate::i18n::tr("no se puede escribir", "cannot write"), e))?;
                 done += n as u64;
                 if done > MAX_SIZE {
-                    return Err(Error::Invalid("archivo demasiado grande".into()));
+                    return Err(Error::Invalid(crate::i18n::tr("archivo demasiado grande", "file too large").into()));
                 }
                 if last.elapsed() >= Duration::from_millis(250) {
                     last = Instant::now();
@@ -343,7 +344,7 @@ pub fn run(
                 }
             }
         }
-        file.flush().map_err(|e| io_err("no se puede escribir", e))?;
+        file.flush().map_err(|e| io_err(crate::i18n::tr("no se puede escribir", "cannot write"), e))?;
         drop(file);
         if total.is_some_and(|t| t != done) {
             return Err(Error::Http(format!("descarga incompleta: {done} de {} bytes", total.unwrap_or(0))));
@@ -354,17 +355,17 @@ pub fn run(
         if let Some(exp) = expected.as_deref().filter(|e| !e.is_empty()) {
             if !exp.eq_ignore_ascii_case(&local) {
                 let _ = fs::remove_file(&part);
-                return Err(Error::Invalid("el SHA-256 no coincide con el publicado: archivo descartado".into()));
+                return Err(Error::Invalid(crate::i18n::tr("el SHA-256 no coincide con el publicado: archivo descartado", "the SHA-256 does not match the published one: file discarded").into()));
             }
         }
         if dest.exists() {
             let _ = fs::remove_file(&dest);
         }
-        fs::rename(&part, &dest).map_err(|e| io_err("no se puede mover el archivo", e))?;
+        fs::rename(&part, &dest).map_err(|e| io_err(crate::i18n::tr("no se puede mover el archivo", "cannot move the file"), e))?;
         // Si el antivirus lo pone en cuarentena justo después, el archivo desaparece.
         std::thread::sleep(Duration::from_millis(300));
         if !dest.exists() {
-            return Err(Error::Invalid(format!("{AV_PREFIX}El archivo desapareció nada más descargarlo: es probable que el antivirus de Windows lo haya puesto en cuarentena.")));
+            return Err(Error::Invalid(crate::t!("{AV_PREFIX}El archivo desapareció nada más descargarlo: es probable que el antivirus de Windows lo haya puesto en cuarentena.", "{AV_PREFIX}The file disappeared right after downloading: Windows antivirus probably quarantined it.")));
         }
         progress(Progress { id, done, total: Some(done), bytes_per_sec: 0 });
         Ok("done".into())
@@ -465,7 +466,7 @@ pub fn remove(conn: &Connection, downloads_dir: &Path, id: i64, delete_file: boo
         .optional()?
         .ok_or_else(|| Error::NotFound(format!("descarga {id}")))?;
     if state == "running" || state == "queued" {
-        return Err(Error::Invalid("primero cancela la descarga".into()));
+        return Err(Error::Invalid(crate::i18n::tr("primero cancela la descarga", "cancel the download first").into()));
     }
     if delete_file {
         let p = PathBuf::from(&dest);

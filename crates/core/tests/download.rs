@@ -107,7 +107,7 @@ fn redireccion_a_un_host_no_permitido() {
     fake.route(ASSET, 302, Some("https://evil.example/x.zip"), b"");
     let id = download::enqueue(&conn, dir.path(), "p").unwrap();
     assert_eq!(download::run(&conn, &fake, id, &AtomicU8::new(download::RUN), |_| {}).unwrap(), "failed");
-    assert!(download::list(&conn).unwrap()[0]["error"].as_str().unwrap().contains("no permitido"));
+    assert!(download::list(&conn).unwrap()[0]["error"].as_str().unwrap().contains("not allowed"));
 }
 
 #[test]

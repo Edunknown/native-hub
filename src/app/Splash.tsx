@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import { playStartupChime, startupSoundEnabled } from './sound'
+import { tr } from '../lib/i18n'
 
 const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
@@ -46,7 +47,7 @@ export function Splash({ ready, onDone }: { ready: boolean; onDone: () => void }
         </svg>
         <div className="splash-word">NATIVE <span>HUB</span></div>
         <div className="splash-line"><i /></div>
-        <div className="splash-sub">{ready ? 'Recompilaciones y ports nativos' : 'Abriendo el catálogo…'}</div>
+        <div className="splash-sub">{ready ? tr('Recompilaciones y ports nativos', 'Native recompilations and ports') : tr('Abriendo el catálogo…', 'Opening the catalog…')}</div>
       </div>
     </div>
   )

@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useCatalog } from './catalog'
 import { useLive } from './live'
@@ -13,12 +14,12 @@ import {
 type Section = Exclude<View['name'], 'game' | 'search'>
 
 const NAV: { name: Section; label: string; Icon: typeof IconHome }[] = [
-  { name: 'home', label: 'Inicio', Icon: IconHome },
-  { name: 'library', label: 'Biblioteca', Icon: IconLibrary },
-  { name: 'discover', label: 'Descubrir', Icon: IconDiscover },
-  { name: 'consoles', label: 'Consolas', Icon: IconConsoles },
-  { name: 'updates', label: 'Actualiz.', Icon: IconUpdates },
-  { name: 'downloads', label: 'Descargas', Icon: IconDownload },
+  { name: 'home', label: tr('Inicio', 'Home'), Icon: IconHome },
+  { name: 'library', label: tr('Biblioteca', 'Library'), Icon: IconLibrary },
+  { name: 'discover', label: tr('Descubrir', 'Discover'), Icon: IconDiscover },
+  { name: 'consoles', label: tr('Consolas', 'Consoles'), Icon: IconConsoles },
+  { name: 'updates', label: tr('Actualiz.', 'Updates'), Icon: IconUpdates },
+  { name: 'downloads', label: tr('Descargas', 'Downloads'), Icon: IconDownload },
 ]
 
 function sectionOf(v: View): Section | null {
@@ -69,11 +70,11 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
 
   return (
     <div className="app">
-      <aside className="rail" aria-label="Navegación principal">
+      <aside className="rail" aria-label={tr('Navegación principal', 'Main navigation')}>
         <Mark className="mark" aria-label="NATIVE HUB" />
         <nav className="nav">{NAV.map((n) => item(n.name, n.label, n.Icon))}</nav>
         <div className="spacer" />
-        {item('settings', 'Ajustes', IconSettings)}
+        {item('settings', tr('Ajustes', 'Settings'), IconSettings)}
       </aside>
 
       <div className="main">
@@ -81,29 +82,29 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
           <button type="button" className="wordmark" onClick={() => go({ name: 'home' })}>NATIVE <span>HUB</span></button>
           <label className="search" htmlFor="q">
             <IconSearch />
-            <input id="q" ref={input} type="search" placeholder="Buscar juego, proyecto o consola" autoComplete="off"
+            <input id="q" ref={input} type="search" placeholder={tr('Buscar juego, proyecto o consola', 'Search games, projects or consoles')} autoComplete="off"
               value={q} onChange={(e) => onSearch(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Escape') { if (view.name === 'search') back(); input.current?.blur() } }} />
             <span className="kbd">Ctrl K</span>
           </label>
           <div className="top-actions">
-            <button type="button" onClick={onToggleTheme} aria-label="Cambiar tema">
+            <button type="button" onClick={onToggleTheme} aria-label={tr('Cambiar tema', 'Toggle theme')}>
               <IconTheme />
-              <span className="lbl">{theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}</span>
+              <span className="lbl">{theme === 'dark' ? tr('Tema claro', 'Light theme') : tr('Tema oscuro', 'Dark theme')}</span>
             </button>
           </div>
         </header>
 
         <div className="phase-note">
-          <b>Fase 7 · expansión.</b> El catálogo crece desde Recompendium, GitHub y GitLab, siempre con tu revisión.
+          <b>{tr('Fase 7 · expansión.', 'Phase 7 · expansion.')}</b> {tr('El catálogo crece desde Recompendium, GitHub y GitLab, siempre con tu revisión.', 'The catalog grows from Recompendium, GitHub and GitLab, always with your review.')}
         </div>
 
         <div className="scroll" ref={scroller}>{children}</div>
 
-        <footer className="status" aria-label="Estado">
-          <span>{live.progress ? `${live.progress.job === 'scan' ? 'Buscando proyectos' : live.progress.job === 'sync' ? 'Sincronizando catálogo' : 'Comprobando releases'} · ${live.progress.done}/${live.progress.total}` : running ? `Descargando ${running.projectName ?? running.project}${rPct != null ? ` · ${rPct} %` : ''}` : 'Sin descargas en curso'}</span>
-          <span className="num">{fmtNum(summary.projectCount)} proyectos · {fmtNum(summary.installableCount)} con ejecutable Windows</span>
-          <span className="push">Catálogo: última comprobación <span className="num">{fmtDateTime(summary.generatedAt)}</span></span>
+        <footer className="status" aria-label={tr('Estado', 'Status')}>
+          <span>{live.progress ? `${live.progress.job === 'scan' ? tr('Buscando proyectos', 'Searching for projects') : live.progress.job === 'sync' ? tr('Sincronizando catálogo', 'Syncing catalog') : tr('Comprobando releases', 'Checking releases')} · ${live.progress.done}/${live.progress.total}` : running ? `${tr('Descargando', 'Downloading')} ${running.projectName ?? running.project}${rPct != null ? ` · ${rPct} %` : ''}` : tr('Sin descargas en curso', 'No downloads in progress')}</span>
+          <span className="num">{fmtNum(summary.projectCount)} {tr('proyectos', 'projects')} · {fmtNum(summary.installableCount)} {tr('con ejecutable Windows', 'with a Windows executable')}</span>
+          <span className="push">{tr('Catálogo: última comprobación', 'Catalog: last checked')} <span className="num">{fmtDateTime(summary.generatedAt)}</span></span>
         </footer>
       </div>
     </div>

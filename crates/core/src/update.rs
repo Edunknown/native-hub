@@ -114,7 +114,7 @@ fn load(conn: &Connection, id: i64) -> Result<Inst> {
             |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?)),
         )
         .optional()?
-        .ok_or_else(|| Error::NotFound(format!("instalación {id}")))?;
+        .ok_or_else(|| Error::NotFound(crate::t!("instalación {id}", "installation {id}")))?;
     let config: Value = config.and_then(|c| serde_json::from_str(&c).ok()).unwrap_or(json!({}));
     let data: Value = data.and_then(|d| serde_json::from_str(&d).ok()).unwrap_or(Value::Null);
     let preserve = data
@@ -200,7 +200,7 @@ pub fn plan(conn: &Connection, id: i64, root: &Path) -> Result<Value> {
         }
         _ => {
             fs::create_dir_all(&staging).map_err(|e| Error::Invalid(e.to_string()))?;
-            let name = crate::download::safe_file_name(&asset).ok_or_else(|| Error::Invalid("nombre de archivo no válido".into()))?;
+            let name = crate::download::safe_file_name(&asset).ok_or_else(|| Error::Invalid(crate::i18n::tr("nombre de archivo no válido", "invalid file name").into()))?;
             fs::copy(&file, staging.join(name)).map_err(|e| Error::Invalid(e.to_string()))?;
         }
     }
@@ -224,15 +224,15 @@ pub fn plan(conn: &Connection, id: i64, root: &Path) -> Result<Value> {
 /// Aplica la actualización preparada por `plan`. Si algo falla, deja la instalación como estaba.
 pub fn apply(conn: &Connection, id: i64, root: &Path) -> Result<Value> {
     let mut inst = load(conn, id)?;
-    let (_, _, new_tag, _) = update_download(conn, &inst)?.ok_or_else(|| Error::Invalid("primero descarga la versión nueva".into()))?;
+    let (_, _, new_tag, _) = update_download(conn, &inst)?.ok_or_else(|| Error::Invalid(crate::i18n::tr("primero descarga la versión nueva", "download the new version first").into()))?;
     let staging = staging_dir(root, &inst.project);
     if !staging.is_dir() {
-        return Err(Error::Invalid("prepara la actualización otra vez".into()));
+        return Err(Error::Invalid(crate::i18n::tr("prepara la actualización otra vez", "prepare the update again").into()));
     }
     let d = diff(&inst, &staging);
     let old_tag = inst.tag.clone().unwrap_or_else(|| "sin-version".into());
     let backup = backup_dir(root, &inst.project, &old_tag);
-    fs::create_dir_all(&backup).map_err(|e| Error::Invalid(format!("no se puede crear la copia de seguridad: {e}")))?;
+    fs::create_dir_all(&backup).map_err(|e| Error::Invalid(crate::t!("no se puede crear la copia de seguridad: {e}", "cannot create the backup: {e}")))?;
 
     let mut done_replaced: Vec<String> = Vec::new();
     let mut done_added: Vec<String> = Vec::new();
@@ -244,7 +244,7 @@ pub fn apply(conn: &Connection, id: i64, root: &Path) -> Result<Value> {
                 fs::create_dir_all(p).map_err(|e| Error::Invalid(e.to_string()))?;
             }
             fs::copy(&cur, &bak).map_err(|e| Error::Invalid(format!("copia de seguridad de {rel}: {e}")))?;
-            fs::copy(staging.join(rel), &cur).map_err(|e| Error::Invalid(format!("no se pudo reemplazar {rel}: {e}")))?;
+            fs::copy(staging.join(rel), &cur).map_err(|e| Error::Invalid(crate::t!("no se pudo reemplazar {rel}: {e}", "could not replace {rel}: {e}")))?;
             done_replaced.push(rel.clone());
         }
         for rel in &d.added {
@@ -252,7 +252,7 @@ pub fn apply(conn: &Connection, id: i64, root: &Path) -> Result<Value> {
             if let Some(p) = to.parent() {
                 fs::create_dir_all(p).map_err(|e| Error::Invalid(e.to_string()))?;
             }
-            fs::copy(staging.join(rel), &to).map_err(|e| Error::Invalid(format!("no se pudo añadir {rel}: {e}")))?;
+            fs::copy(staging.join(rel), &to).map_err(|e| Error::Invalid(crate::t!("no se pudo añadir {rel}: {e}", "could not add {rel}: {e}")))?;
             done_added.push(rel.clone());
         }
         Ok(())
@@ -267,7 +267,7 @@ pub fn apply(conn: &Connection, id: i64, root: &Path) -> Result<Value> {
             let _ = fs::remove_file(inst.dir.join(rel));
         }
         let _ = fs::remove_dir_all(&backup);
-        return Err(Error::Invalid(format!("la actualización no se completó y se ha dejado todo como estaba: {e}")));
+        return Err(Error::Invalid(crate::t!("la actualización no se completó y se ha dejado todo como estaba: {e}", "the update did not complete and everything was left as it was: {e}")));
     }
 
     // Borrar la copia de la actualización anterior: solo se guarda una para deshacer.
@@ -307,7 +307,7 @@ pub fn apply(conn: &Connection, id: i64, root: &Path) -> Result<Value> {
     )?;
     conn.execute(
         "INSERT INTO audit_log (action, subject, detail) VALUES ('update', ?1, ?2)",
-        params![inst.project, format!("{old_tag} → {new_tag}: {} reemplazados, {} añadidos, {} conservados", d.replaced.len(), d.added.len(), d.preserved.len())],
+        params![inst.project, crate::t!("{old_tag} → {new_tag}: {} reemplazados, {} añadidos, {} conservados", "{old_tag} → {new_tag}: {} replaced, {} added, {} kept", d.replaced.len(), d.added.len(), d.preserved.len())],
     )?;
     Ok(json!({
         "fromTag": old_tag, "toTag": new_tag,
@@ -320,12 +320,12 @@ pub fn apply(conn: &Connection, id: i64, root: &Path) -> Result<Value> {
 pub fn rollback(conn: &Connection, id: i64, root: &Path) -> Result<Value> {
     let mut inst = load(conn, id)?;
     let b = inst.config["updateBackup"].clone();
-    let path = PathBuf::from(b["path"].as_str().ok_or_else(|| Error::Invalid("no hay ninguna actualización que deshacer".into()))?);
+    let path = PathBuf::from(b["path"].as_str().ok_or_else(|| Error::Invalid(crate::i18n::tr("no hay ninguna actualización que deshacer", "there is no update to undo").into()))?);
     if !path.starts_with(root.join(".native-hub").join("backups")) || !path.is_dir() {
-        return Err(Error::Invalid("la copia de seguridad ya no está disponible".into()));
+        return Err(Error::Invalid(crate::i18n::tr("la copia de seguridad ya no está disponible", "the backup is no longer available").into()));
     }
     for rel in b["replaced"].as_array().into_iter().flatten().filter_map(Value::as_str) {
-        fs::copy(path.join(rel), inst.dir.join(rel)).map_err(|e| Error::Invalid(format!("no se pudo restaurar {rel}: {e}")))?;
+        fs::copy(path.join(rel), inst.dir.join(rel)).map_err(|e| Error::Invalid(crate::t!("no se pudo restaurar {rel}: {e}", "could not restore {rel}: {e}")))?;
     }
     for rel in b["added"].as_array().into_iter().flatten().filter_map(Value::as_str) {
         let _ = fs::remove_file(inst.dir.join(rel));

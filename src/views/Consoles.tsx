@@ -4,8 +4,9 @@ import { useNav } from '../app/nav'
 import { ConsoleIcon } from '../components/ConsoleIcon'
 import { ProjectTable } from '../components/ProjectTable'
 import { api } from '../lib/api'
-import { fmtNum } from '../lib/format'
+import { familyLabel, fmtNum } from '../lib/format'
 import { useAsync } from '../lib/useAsync'
+import { tr } from '../lib/i18n'
 
 /** Mini cards de todas las plataformas, agrupadas por familia. */
 function ConsoleCards({ current }: { current?: string }) {
@@ -21,8 +22,8 @@ function ConsoleCards({ current }: { current?: string }) {
         return (
           <section key={fam} className="fam">
             <div className="sec-head">
-              <h2>{fam}</h2>
-              <span className="aside num">{list.length} plataformas · {fmtNum(total)} proyectos · {fmtNum(win)} con Windows</span>
+              <h2>{familyLabel(fam)}</h2>
+              <span className="aside num">{list.length} {tr('plataformas', 'platforms')} · {fmtNum(total)} {tr('proyectos', 'projects')} · {fmtNum(win)} {tr('con Windows', 'with Windows')}</span>
             </div>
             <div className="cards">
               {list.map((p) => {
@@ -35,7 +36,7 @@ function ConsoleCards({ current }: { current?: string }) {
                     <span className="ccard-t">
                       <span className="nm">{p.name}</span>
                       <span className="mt num">
-                        <span>{fmtNum(p.projectCount)} proy.</span>
+                        <span>{fmtNum(p.projectCount)} {tr('proy.', 'proj.')}</span>
                         <span className={p.installableCount > 0 ? 'yes-plain' : 'faint'}>{fmtNum(p.installableCount)} Win</span>
                       </span>
                     </span>
@@ -63,15 +64,15 @@ export function Consoles({ platform }: { platform?: string }) {
       {p ? (
         <section className="csel" aria-labelledby="csel-title">
           <div className="csel-side">
-            <div className="eyebrow">Consolas · {p.family}</div>
+            <div className="eyebrow">{tr('Consolas', 'Consoles')} · {familyLabel(p.family)}</div>
             <div className="csel-art"><ConsoleIcon slug={p.slug} size={144} strokeWidth={1.1} /></div>
           </div>
           <div className="csel-body">
             <h1 id="csel-title" className="f-title">{p.name}</h1>
             <div className="f-meta">
-              <span><span className="fg num">{fmtNum(p.projectCount)}</span> proyectos</span>
-              <span><span className="yes-plain num">{fmtNum(p.installableCount)}</span> con ejecutable Windows</span>
-              <span>{fmtNum(p.projectCount - p.installableCount)} en desarrollo o sin ejecutable</span>
+              <span><span className="fg num">{fmtNum(p.projectCount)}</span> {tr('proyectos', 'projects')}</span>
+              <span><span className="yes-plain num">{fmtNum(p.installableCount)}</span> {tr('con ejecutable Windows', 'with a Windows executable')}</span>
+              <span>{fmtNum(p.projectCount - p.installableCount)} {tr('en desarrollo o sin ejecutable', 'in development or without an executable')}</span>
             </div>
             {projects.status === 'ok' && (
               projects.data.length > 0
@@ -79,19 +80,19 @@ export function Consoles({ platform }: { platform?: string }) {
                     <ProjectTable items={all ? projects.data : projects.data.slice(0, PREVIEW)} showPlatform={false} />
                     {projects.data.length > PREVIEW && (
                       <div><button type="button" className="link" onClick={() => setExpanded(all ? null : platform!)}>
-                        {all ? 'Mostrar menos' : `Ver los ${fmtNum(projects.data.length)} proyectos de ${p.name}`}
+                        {all ? tr('Mostrar menos', 'Show less') : tr(`Ver los ${fmtNum(projects.data.length)} proyectos de ${p.name}`, `See all ${fmtNum(projects.data.length)} ${p.name} projects`)}
                       </button></div>
                     )}
                   </>
-                : <p className="empty">Aún no hay proyectos para {p.name}. Cuando se incorporen aparecerán aquí.</p>
+                : <p className="empty">{tr('Aún no hay proyectos para', 'No projects yet for')} {p.name}. {tr('Cuando se incorporen aparecerán aquí.', 'They will show up here once added.')}</p>
             )}
           </div>
         </section>
       ) : (
         <div>
-          <div className="eyebrow">Consolas</div>
-          <h1 className="page-title">Todas las consolas</h1>
-          <p className="page-lede">Elige una consola para ver sus recompilaciones y ports. La lista crece a medida que se incorporan proyectos nuevos.</p>
+          <div className="eyebrow">{tr('Consolas', 'Consoles')}</div>
+          <h1 className="page-title">{tr('Todas las consolas', 'All consoles')}</h1>
+          <p className="page-lede">{tr('Elige una consola para ver sus recompilaciones y ports. La lista crece a medida que se incorporan proyectos nuevos.', 'Pick a console to see its recompilations and ports. The list grows as new projects are added.')}</p>
         </div>
       )}
 

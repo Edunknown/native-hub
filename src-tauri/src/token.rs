@@ -7,7 +7,7 @@ const SERVICE: &str = "NATIVE HUB";
 const USER: &str = "github-token";
 
 fn entry() -> Result<keyring::Entry> {
-    keyring::Entry::new(SERVICE, USER).map_err(|e| Error::Invalid(format!("almacén de credenciales: {e}")))
+    keyring::Entry::new(SERVICE, USER).map_err(|e| Error::Invalid(native_hub_core::t!("almacén de credenciales: {e}", "credential store: {e}")))
 }
 
 pub fn get() -> Option<String> {
@@ -15,13 +15,13 @@ pub fn get() -> Option<String> {
 }
 
 pub fn set(token: &str) -> Result<()> {
-    entry()?.set_password(token).map_err(|e| Error::Invalid(format!("no se pudo guardar el token: {e}")))
+    entry()?.set_password(token).map_err(|e| Error::Invalid(native_hub_core::t!("no se pudo guardar el token: {e}", "could not save the token: {e}")))
 }
 
 pub fn clear() -> Result<()> {
     match entry()?.delete_credential() {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-        Err(e) => Err(Error::Invalid(format!("no se pudo borrar el token: {e}"))),
+        Err(e) => Err(Error::Invalid(native_hub_core::t!("no se pudo borrar el token: {e}", "could not delete the token: {e}"))),
     }
 }
 
@@ -32,6 +32,6 @@ pub fn validate_format(token: &str) -> Result<()> {
     if ok_prefix && ok_chars && (20..=255).contains(&token.len()) {
         Ok(())
     } else {
-        Err(Error::Invalid("eso no parece un token de GitHub (empieza por ghp_ o github_pat_)".into()))
+        Err(Error::Invalid(native_hub_core::i18n::tr("eso no parece un token de GitHub (empieza por ghp_ o github_pat_)", "that does not look like a GitHub token (it starts with ghp_ or github_pat_)").into()))
     }
 }

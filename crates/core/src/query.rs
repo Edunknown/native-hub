@@ -79,7 +79,7 @@ pub fn game(conn: &Connection, slug: &str) -> Result<Value> {
     let game = conn
         .query_row("SELECT * FROM games WHERE slug = ?1", params![slug], game_json)
         .optional()?
-        .ok_or_else(|| Error::NotFound(format!("juego {slug}")))?;
+        .ok_or_else(|| Error::NotFound(crate::t!("juego {slug}", "game {slug}")))?;
     let projects = projects_where(
         conn,
         "WHERE slug IN (SELECT project FROM project_games WHERE game = ?1)

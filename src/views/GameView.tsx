@@ -8,6 +8,7 @@ import { api } from '../lib/api'
 import { fmtDate, fmtDateTime, fmtNum } from '../lib/format'
 import type { GameDetail } from '../lib/types'
 import { useAsync } from '../lib/useAsync'
+import { tr } from '../lib/i18n'
 
 export function GameView({ slug, project }: { slug: string; project?: string }) {
   const { back, canGoBack } = useNav()
@@ -18,40 +19,40 @@ export function GameView({ slug, project }: { slug: string; project?: string }) 
   const detail = fresh?.slug === slug ? { status: 'ok' as const, data: fresh.detail } : loaded
   const live_ok = !live.status?.unsupported
   const refresh = async (projectSlug: string) => {
-    const r = await task({ title: 'Comprobando la release', steps: ['Consultando el repositorio oficial', 'Leyendo la última release', 'Buscando el ejecutable Windows'], minMs: 1800 }, () => api.refreshProject(projectSlug))
+    const r = await task({ title: tr('Comprobando la release', 'Checking the release'), steps: [tr('Consultando el repositorio oficial', 'Querying the official repository'), tr('Leyendo la última release', 'Reading the latest release'), tr('Buscando el ejecutable Windows', 'Looking for the Windows executable')], minMs: 1800 }, () => api.refreshProject(projectSlug))
     setFresh({ slug, detail: r.detail })
     live.reload()
     const ev = r.outcome.events
-    if (r.outcome.status === 'repo_missing') return 'El repositorio ya no existe.'
-    if (r.outcome.status === 'no_release') return 'El proyecto no tiene releases publicadas.'
-    if (ev.includes('new_version')) return `Hay una versión nueva: ${r.outcome.tag}.`
-    return `Sin cambios: la última release sigue siendo ${r.outcome.tag}.`
+    if (r.outcome.status === 'repo_missing') return tr('El repositorio ya no existe.', 'The repository no longer exists.')
+    if (r.outcome.status === 'no_release') return tr('El proyecto no tiene releases publicadas.', 'The project has no published releases.')
+    if (ev.includes('new_version')) return `${tr('Hay una versión nueva', 'A new version is available')}: ${r.outcome.tag}.`
+    return `${tr('Sin cambios: la última release sigue siendo', 'No changes: the latest release is still')} ${r.outcome.tag}.`
   }
-  if (detail.status === 'loading') return <main className="content"><p className="empty">Cargando…</p></main>
-  if (detail.status === 'error') return <main className="content"><p className="empty">No se encontró el juego en el catálogo.</p></main>
+  if (detail.status === 'loading') return <main className="content"><p className="empty">{tr('Cargando…', 'Loading…')}</p></main>
+  if (detail.status === 'error') return <main className="content"><p className="empty">{tr('No se encontró el juego en el catálogo.', 'Game not found in the catalog.')}</p></main>
   const { projects } = detail.data
 
   return (
     <main className="content tight">
       {canGoBack && (
-        <div><button type="button" className="link" onClick={back}><IconBack width={14} height={14} />Volver</button></div>
+        <div><button type="button" className="link" onClick={back}><IconBack width={14} height={14} />{tr('Volver', 'Back')}</button></div>
       )}
       {/* key: reinicia el selector al cambiar de juego */}
-      <GameFeature key={`${slug}:${project ?? ''}`} detail={detail.data} eyebrow="Ficha del juego" initialProject={project}
+      <GameFeature key={`${slug}:${project ?? ''}`} detail={detail.data} eyebrow={tr('Ficha del juego', 'Game page')} initialProject={project}
         onRefresh={live_ok ? refresh : undefined} />
 
       <section>
-        <div className="sec-head"><h2>Proyectos para este juego</h2><span className="aside">Datos de GitHub</span></div>
+        <div className="sec-head"><h2>{tr('Proyectos para este juego', 'Projects for this game')}</h2><span className="aside">{tr('Datos de GitHub', 'GitHub data')}</span></div>
         <table className="table">
           <thead>
-            <tr><th>Proyecto</th><th>Repositorio</th><th>Última release</th><th>Último commit</th><th className="r">Estrellas</th><th className="r">Comprobado</th></tr>
+            <tr><th>{tr('Proyecto', 'Project')}</th><th>{tr('Repositorio', 'Repository')}</th><th>{tr('Última release', 'Latest release')}</th><th>{tr('Último commit', 'Last commit')}</th><th className="r">{tr('Estrellas', 'Stars')}</th><th className="r">{tr('Comprobado', 'Checked')}</th></tr>
           </thead>
           <tbody>
             {projects.map((p) => (
               <tr key={p.slug}>
-                <td>{p.name}{p.takedown && <span className="muted"> · retirado</span>}{p.abandoned && <span className="muted"> · abandonado</span>}</td>
+                <td>{p.name}{p.takedown && <span className="muted">{tr(' · retirado', ' · taken down')}</span>}{p.abandoned && <span className="muted">{tr(' · abandonado', ' · abandoned')}</span>}</td>
                 <td className="mono">{p.repoUrl.replace(/^https?:\/\/(github\.com\/)?/, '')}</td>
-                <td>{p.release ? <><span className="mono">{p.release.tag}</span> <span className="muted num">· {fmtDate(p.release.publishedAt)}</span></> : <span className="tbd">sin release</span>}</td>
+                <td>{p.release ? <><span className="mono">{p.release.tag}</span> <span className="muted num">· {fmtDate(p.release.publishedAt)}</span></> : <span className="tbd">{tr('sin release', 'no release')}</span>}</td>
                 <td className="num">{fmtDate(p.pushedAt) ?? <span className="tbd">—</span>}</td>
                 <td className="r num">{p.stars != null ? fmtNum(p.stars) : <span className="tbd">—</span>}</td>
                 <td className="r num muted">{fmtDateTime(p.checkedAt) ?? '—'}</td>
