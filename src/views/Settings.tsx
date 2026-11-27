@@ -3,6 +3,7 @@ import { useCatalog } from '../app/catalog'
 import { useLive } from '../app/live'
 import { useTask } from '../app/task'
 import { AppUpdateSetting } from '../app/appUpdate'
+import { showWelcome } from '../app/Welcome'
 import { playStartupChime, setStartupSound, startupSoundEnabled } from '../app/sound'
 
 import type { Theme } from '../app/theme'
@@ -27,7 +28,7 @@ function CoverCacheSetting() {
 
 const AUTO: { id: string; label: string }[] = [{ id: 'off', label: tr('Nunca', 'Never') }, { id: '6h', label: tr('Cada 6 h', 'Every 6 h') }, { id: '24h', label: tr('Cada día', 'Daily') }]
 
-function AutomationSetting() {
+export function AutomationSetting() {
   const [a, setA] = useState<Automation | null>(null)
   useEffect(() => { if (isTauri) api.automation().then(setA, () => {}) }, [])
   if (!isTauri) return <span className="tbd">{tr('Solo en la app de escritorio', 'Desktop app only')}</span>
@@ -112,7 +113,7 @@ function SoundSetting() {
   )
 }
 
-function InstallRootSetting() {
+export function InstallRootSetting() {
   const [root, setRoot] = useState<{ path: string; default: boolean } | null>(null)
   const [err, setErr] = useState<string | null>(null)
   useEffect(() => { api.installRoot().then(setRoot, () => {}) }, [])
@@ -198,6 +199,12 @@ export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Them
               <button type="button" aria-pressed={lang === 'es'} onClick={() => lang !== 'es' && setLang('es')}>Español</button>
             </span>
             <p className="note-line">{tr('La ventana se recarga al cambiar de idioma.', 'The window reloads when you change the language.')}</p>
+          </dd>
+        </div>
+        <div>
+          <dt>{tr('Guía de bienvenida', 'Welcome guide')}</dt>
+          <dd>
+            <button type="button" className="link" onClick={showWelcome}>{tr('Ver otra vez la guía de bienvenida', 'Show the welcome guide again')}</button>
           </dd>
         </div>
         <div>

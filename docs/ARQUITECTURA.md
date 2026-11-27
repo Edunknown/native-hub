@@ -321,6 +321,10 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 - **Seguridad.** El texto y los valores van como parámetros SQL; los estados se comprueban contra una lista cerrada.
 - **Pruebas.** `query::tests::descubrir_con_texto_familia_estado_y_orden` y `src/lib/discover.test.ts` (el backend del navegador replica la consulta de Rust).
 
+### Primer arranque guiado
+
+- Se enseña una vez por instalación tras la animación de inicio (`onboarding_done` en SQLite, así la portable tiene el suyo). Cinco pasos a ventana completa, sin tarjetas: idioma y tema; qué hace y qué no hace NATIVE HUB (fuentes oficiales, sin ROMs/ISOs/BIOS/claves, plan antes de instalar, solo es instalable lo que tiene ejecutable Windows); carpeta de juegos; comprobaciones automáticas; y un resumen con los instalables. «Saltar» en cada paso; Ajustes › Guía de bienvenida la enseña otra vez.
+
 ## 18. Estado real de cada función
 
 | Función | Estado |
@@ -345,3 +349,4 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 | Catálogo servido desde GitHub, importado solo si es más nuevo | Hecho (1.0) |
 | Registro, errores explicados y «Copiar detalles» | Hecho (1.0) |
 | Búsqueda y filtros (consola, familia, tipo, estado, inactivos, orden) | Hecho (1.0) |
+| Primer arranque guiado | Hecho (1.0) |

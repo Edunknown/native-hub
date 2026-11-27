@@ -93,6 +93,10 @@ export const api = {
   updateRollback: (id: number) => call<Installation>('update_rollback', { id }),
   updateDiscard: (id: number) => call<void>('update_discard', { id }),
 
+  onboardingDone: () => call<boolean>('onboarding_done'),
+  setOnboarding: (done: boolean) => call<void>('onboarding_set', { done }),
+  isPortable: () => call<boolean>('is_portable'),
+
   logReport: (error?: string) => call<string>('log_report', { error }),
   openLogFolder: () => call<void>('log_open_folder'),
 

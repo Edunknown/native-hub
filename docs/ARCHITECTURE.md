@@ -322,6 +322,10 @@ Flow: `npm run catalog:update` = import Recompendium → merge with `manual.json
 - **Safety.** Text and values go in as SQL parameters; statuses are checked against a closed list.
 - **Tests.** `query::tests::descubrir_con_texto_familia_estado_y_orden` and `src/lib/discover.test.ts` (the browser backend mirrors the Rust query).
 
+### First-run guide
+
+- Shown once per install after the startup animation (`onboarding_done` in SQLite, so the portable build has its own). Five full-window steps, no cards: language and theme; what NATIVE HUB does and does not do (official sources, no ROMs/ISOs/BIOS/keys, a plan before installing, only Windows executables are installable); games folder; automatic checks; and a summary with the installable count. "Skip" on every step; Settings › Welcome guide shows it again.
+
 ## 18. Actual status of each feature
 
 | Feature | Status |
@@ -346,3 +350,4 @@ Flow: `npm run catalog:update` = import Recompendium → merge with `manual.json
 | Catalog served from GitHub, imported only if newer | Done (1.0) |
 | Log file, plain error explanations and "Copy details" | Done (1.0) |
 | Search and filters (console, family, type, status, inactive, sort) | Done (1.0) |
+| First-run guide | Done (1.0) |
