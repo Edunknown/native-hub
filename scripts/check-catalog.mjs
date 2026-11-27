@@ -64,7 +64,8 @@ const repos = new Map(
 )
 const adapterDir = join(root, 'catalog/adapters')
 const ids = new Set()
-const TEST_STATUS = new Set(['untested', 'install', 'played', 'issues'])
+const TEST_STATUS = new Set(['install', 'played', 'issues'])
+const WHEN = new Set(['first_launch', 'manual', 'install'])
 for (const file of readdirSync(adapterDir).filter((f) => f.endsWith('.json'))) {
   const where = `adapter ${file}`
   let doc
@@ -79,7 +80,9 @@ for (const file of readdirSync(adapterDir).filter((f) => f.endsWith('.json'))) {
     fail(`${where}: needs "repo" and "adapter"`)
     continue
   }
-  if (!repos.has(doc.repo.toLowerCase())) fail(`${where}: repo ${doc.repo} is not in the catalog`)
+  const project = repos.get(doc.repo.toLowerCase())
+  if (!project) fail(`${where}: repo ${doc.repo} is not in the catalog`)
+  else if (JSON.stringify(project.adapter) !== JSON.stringify(a)) fail(`${where}: catalog.json has a different copy; run node scripts/apply-adapters.mjs`)
   if (ids.has(a.id)) fail(`${where}: duplicate id ${a.id}`)
   ids.add(a.id)
   if (!Number.isInteger(a.version) || a.version < 1) fail(`${where}: version must be a positive integer`)
@@ -100,12 +103,15 @@ for (const file of readdirSync(adapterDir).filter((f) => f.endsWith('.json'))) {
     for (const m of f.magic ?? []) if (!/^([0-9a-fA-F]{2})+$/.test(m)) fail(`${w}: magic ${m} is not hex`)
     for (const h of f.sha1 ?? []) if (!/^[0-9a-fA-F]{40}$/.test(h)) fail(`${w}: sha1 ${h} is not valid`)
     if (f.minSize && f.maxSize && f.minSize > f.maxSize) fail(`${w}: minSize > maxSize`)
+    if (f.when && !WHEN.has(f.when)) fail(`${w}: when must be one of ${[...WHEN].join(', ')}`)
   }
-  if (a.tested) {
-    for (const t of Array.isArray(a.tested) ? a.tested : [a.tested]) {
-      if (!TEST_STATUS.has(t.status)) fail(`${where}: tested.status must be one of ${[...TEST_STATUS].join(', ')}`)
-      if (t.status !== 'untested' && !/^\d{4}-\d{2}-\d{2}$/.test(t.date ?? '')) fail(`${where}: tested.date must be YYYY-MM-DD`)
-    }
+  for (const t of a.tested ?? []) {
+    const w = `${where} tested`
+    if (!TEST_STATUS.has(t.status)) fail(`${w}: status must be one of ${[...TEST_STATUS].join(', ')}`)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(t.date ?? '')) fail(`${w}: date must be YYYY-MM-DD`)
+    if (!t.version) fail(`${w}: version (release tag) is required`)
+    if (!t.by) fail(`${w}: by (who tested it: CI or a name) is required`)
+    if (t.notes && !t.notesEn) fail(`${w}: notes without notesEn`)
   }
 }
 

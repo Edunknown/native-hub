@@ -5,7 +5,7 @@
     "version": 1,
     "reviewedAt": "2026-11-27",
     "notes": [
-      "Adaptador revisado con la documentación pública del proyecto; todavía no probado con una instalación real."
+      "Adaptador revisado con la documentación pública del proyecto. La descarga y la instalación se prueban en CI con la release oficial."
     ],
     "firstRun": "Al abrirlo por primera vez te pedirá tu ROM de Ocarina of Time y preparará sus archivos a partir de ella.",
     "userFiles": [
@@ -31,8 +31,17 @@
       }
     ],
     "notesEn": [
-      "Adapter reviewed against the project’s public documentation; not yet tested with a real install."
+      "Adapter reviewed against the project’s public documentation. Download and install are tested in CI against the official release."
     ],
-    "firstRunEn": "The first time you open it, it will ask for your Ocarina of Time ROM and prepare its files from it."
+    "firstRunEn": "The first time you open it, it will ask for your Ocarina of Time ROM and prepare its files from it.",
+    "tested": [
+      {
+        "status": "install",
+        "version": "9.3.1",
+        "date": "2026-11-27",
+        "by": "CI",
+        "os": "windows-server"
+      }
+    ]
   }
 }

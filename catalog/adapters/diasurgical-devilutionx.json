@@ -1,0 +1,48 @@
+{
+  "repo": "diasurgical/DevilutionX",
+  "adapter": {
+    "id": "devilutionx",
+    "version": 1,
+    "reviewedAt": "2026-11-27",
+    "notes": [
+      "Adaptador revisado con la documentación pública del proyecto (README y docs/installing.md)."
+    ],
+    "notesEn": [
+      "Adapter reviewed against the project’s public documentation (README and docs/installing.md)."
+    ],
+    "firstRun": "Antes de abrirlo, copia DIABDAT.MPQ de tu Diablo (CD o GOG) a la carpeta del juego (Biblioteca › Abrir carpeta) o a %AppData%\\diasurgical\\devilution. Para Hellfire copia también hellfire.mpq, hfmonk.mpq, hfmusic.mpq y hfvoice.mpq. Con la versión shareware sirve spawn.mpq.",
+    "firstRunEn": "Before opening it, copy DIABDAT.MPQ from your Diablo (CD or GOG) to the game folder (Library › Open folder) or to %AppData%\\diasurgical\\devilution. For Hellfire also copy hellfire.mpq, hfmonk.mpq, hfmusic.mpq and hfvoice.mpq. The shareware version works with spawn.mpq.",
+    "exeHint": "(?i)^devilutionx\\.exe$",
+    "userFiles": [
+      {
+        "key": "diabdat",
+        "label": "DIABDAT.MPQ de tu Diablo (o spawn.mpq de la shareware)",
+        "labelEn": "DIABDAT.MPQ from your Diablo (or spawn.mpq from the shareware)",
+        "extensions": [
+          "mpq"
+        ],
+        "magic": [
+          "4d50511a"
+        ],
+        "when": "manual",
+        "help": "NATIVE HUB solo comprueba que es un archivo MPQ; no lo copia ni lo modifica.",
+        "helpEn": "NATIVE HUB only checks that it is an MPQ archive; it does not copy or change it."
+      }
+    ],
+    "preserve": [
+      "diablo.ini",
+      "*.sv",
+      "*.hsv",
+      "*.mpq"
+    ],
+    "tested": [
+      {
+        "status": "install",
+        "version": "1.5.5",
+        "date": "2026-11-27",
+        "by": "CI",
+        "os": "windows-server"
+      }
+    ]
+  }
+}

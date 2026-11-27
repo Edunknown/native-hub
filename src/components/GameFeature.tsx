@@ -10,8 +10,8 @@ import { useNav } from '../app/nav'
 import { IconDownload, IconOut } from '../app/icons'
 import { openExternal } from '../lib/api'
 import { fmtDate, fmtDateTime, fmtNum, fmtSize, kindLabel, originalFilesLabel, plural, requirementsOf, statusLabel, summaryOf } from '../lib/format'
-import type { Game, GameDetail, Project } from '../lib/types'
-import { tr } from '../lib/i18n'
+import type { AdapterTest, Game, GameDetail, Project } from '../lib/types'
+import { lang, tr } from '../lib/i18n'
 import { ErrorNote } from './ErrorNote'
 
 function initials(title: string) {
@@ -38,6 +38,37 @@ function Bool({ v }: { v: boolean | null | undefined }) {
   return <dd className={v ? 'yes' : undefined}>{v ? tr('Sí', 'Yes') : 'No'}</dd>
 }
 
+/** Most relevant test: the newest if it found problems, otherwise the newest played, otherwise the newest install. */
+function bestTest(project: Project): AdapterTest | null {
+  const tests = [...(project.adapter?.tested ?? [])].sort((a, b) => b.date.localeCompare(a.date))
+  if (tests[0]?.status === 'issues') return tests[0]
+  return tests.find((t) => t.status === 'played')
+    ?? tests.find((t) => t.status === 'install')
+    ?? null
+}
+
+function TestStatus({ project }: { project: Project }) {
+  const t = bestTest(project)
+  if (!project.adapter) return <dd className="tbd">{tr('Sin adaptador revisado', 'No reviewed adapter')}</dd>
+  if (!t) return <dd className="tbd">{tr('Sin probar todavía', 'Not tested yet')}</dd>
+  const notes = lang === 'en' ? (t.notesEn ?? t.notes) : t.notes
+  const label = t.status === 'played'
+    ? tr('Jugado', 'Played')
+    : t.status === 'install' ? tr('Se instala y arranca su ejecutable', 'Installs, executable found') : tr('Con problemas', 'Has problems')
+  return (
+    <dd className={t.status === 'issues' ? 'err' : t.status === 'played' ? 'yes' : undefined} title={notes ?? undefined}>
+      {label} <span className="mono">{t.version}</span> <span className="muted num">· {fmtDate(t.date)}</span>
+    </dd>
+  )
+}
+
+function WindowsTested({ project }: { project: Project }) {
+  const played = (project.adapter?.tested ?? []).filter((t) => t.status === 'played' && (t.os === 'win10' || t.os === 'win11'))
+  if (!played.length) return tbd
+  const oses = [...new Set(played.map((t) => (t.os === 'win10' ? 'Windows 10' : 'Windows 11')))].sort().join(', ')
+  return <dd className="yes">{tr('Probado en', 'Tested on')} {oses}</dd>
+}
+
 export function CompatSheet({ project }: { project: Project }) {
   const r = project.release
   const req = project.requirements
@@ -52,7 +83,8 @@ export function CompatSheet({ project }: { project: Project }) {
       <div><dt>{tr('Archivos extraídos', 'Extracted files')}</dt><Bool v={req?.extractedFiles} /></div>
       <div><dt>{tr('Claves', 'Keys')}</dt><Bool v={req?.keys} /></div>
       <div><dt>{tr('Compilación manual', 'Manual build')}</dt><Bool v={req?.manualBuild} /></div>
-      <div><dt>Windows 10 / 11</dt>{tbd}</div>
+      <div><dt>Windows 10 / 11</dt><WindowsTested project={project} /></div>
+      <div className="wide"><dt>{tr('Prueba de NATIVE HUB', 'NATIVE HUB test')}</dt><TestStatus project={project} /></div>
       <div><dt>{tr('Estado', 'Status')}</dt><dd>{statusLabel[project.devStatus] ?? '—'}{project.abandoned ? tr(' · abandonado', ' · abandoned') : ''}</dd></div>
       <div><dt>{tr('Archivo Windows', 'Windows file')}</dt>{a ? <dd className="mono" title={a.name}>{a.name}</dd> : <dd className="tbd">{tr('ninguno', 'none')}</dd>}</div>
       <div><dt>{tr('Tamaño', 'Size')}</dt>{a?.size ? <dd className="num">{fmtSize(a.size, a.sizeApprox)}</dd> : <dd className="tbd">—</dd>}</div>

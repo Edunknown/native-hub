@@ -325,6 +325,14 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 
 - Se enseña una vez por instalación tras la animación de inicio (`onboarding_done` en SQLite, así la portable tiene el suyo). Cinco pasos a ventana completa, sin tarjetas: idioma y tema; qué hace y qué no hace NATIVE HUB (fuentes oficiales, sin ROMs/ISOs/BIOS/claves, plan antes de instalar, solo es instalable lo que tiene ejecutable Windows); carpeta de juegos; comprobaciones automáticas; y un resumen con los instalables. «Saltar» en cada paso; Ajustes › Guía de bienvenida la enseña otra vez.
 
+### Pruebas de adaptadores
+
+- **Automática (instalación).** `crates/core/tests/adapters.rs` descarga la última release oficial para Windows de cada adaptador revisado con el Download Manager real, la instala con el Installation Manager real en una carpeta temporal y comprueba que encuentra el ejecutable. `.github/workflows/adapters.yml` la pasa en Windows en los PR que tocan adaptadores o el código de instalación/descarga, cada lunes y a mano. Nunca abre un juego ni usa archivos del juego.
+- **Por una persona (jugado).** Abrir el juego con tus archivos no se puede automatizar (hace falta la ROM/ISO del usuario). Quien lo pruebe añade una entrada con `status: "played"`, versión, fecha, `by` y `os` (`win10`/`win11`).
+- **Se guarda en el adaptador.** `tested: [{status, version, date, by, os?, notes?, notesEn?}]`, con estado `install`, `played` o `issues`. La ficha enseña la más relevante («Prueba de NATIVE HUB») y rellena «Windows 10 / 11» con las entradas `played`.
+- **Adaptadores nuevos:** DevilutionX (Diablo) y gen1recomp (Pokémon), revisados con su documentación. `when: "manual"` marca archivos que el juego no pide y que copia el usuario (NATIVE HUB nunca copia archivos del juego).
+- `node scripts/apply-adapters.mjs` copia los adaptadores a `catalog.json` sin regenerarlo entero; la comprobación del catálogo falla si no coinciden.
+
 ## 18. Estado real de cada función
 
 | Función | Estado |
@@ -350,3 +358,5 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 | Registro, errores explicados y «Copiar detalles» | Hecho (1.0) |
 | Búsqueda y filtros (consola, familia, tipo, estado, inactivos, orden) | Hecho (1.0) |
 | Primer arranque guiado | Hecho (1.0) |
+| Pruebas automáticas de instalación de adaptadores; estado probado en la ficha | Hecho (1.0) |
+| Adaptadores jugados con archivos reales del juego | Pendiente: requiere a alguien con los archivos del juego |
