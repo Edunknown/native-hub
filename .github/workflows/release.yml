@@ -1,0 +1,130 @@
+name: Release
+
+# Builds the signed installer, the portable ZIP and latest.json for a tag
+# (v1.2.3) and uploads them to a DRAFT release. Nothing reaches users until
+# the draft is reviewed and published by hand on GitHub.
+#
+# Required repository secrets:
+#   TAURI_SIGNING_PRIVATE_KEY           contents of the updater private key
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  its password (empty if it has none)
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build (for example v1.0.0)
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Tag matches the app version
+        shell: pwsh
+        run: |
+          $conf = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          if ("v$($conf.version)" -ne $env:TAG -or $pkg.version -ne $conf.version) {
+            throw "Tag $env:TAG does not match tauri.conf.json ($($conf.version)) / package.json ($($pkg.version))"
+          }
+          if (-not $env:HAS_KEY) { throw "Missing secret TAURI_SIGNING_PRIVATE_KEY" }
+          "VERSION=$($conf.version)" | Out-File -Append $env:GITHUB_ENV
+        env:
+          HAS_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release
+      - run: npm ci
+
+      - name: Core tests
+        run: cargo test -p native-hub-core --locked
+
+      - name: Release notes
+        shell: pwsh
+        run: |
+          $file = "docs/releases/$env:TAG.md"
+          if (-not (Test-Path $file)) { throw "Write the release notes in $file first" }
+          $notes = Get-Content $file -Raw
+          # First paragraph of the notes goes into latest.json (shown in the app).
+          $summary = ($notes -split "`r?`n`r?`n" | Where-Object { $_ -notmatch '^#' } | Select-Object -First 1).Trim()
+          "SUMMARY=$($summary -replace "`r?`n", ' ')" | Out-File -Append $env:GITHUB_ENV
+
+      - name: Build installer and latest.json
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ env.TAG }}
+          releaseName: NATIVE HUB ${{ env.VERSION }}
+          releaseBody: ${{ env.SUMMARY }}
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: true
+
+      - name: Portable ZIP
+        shell: pwsh
+        run: |
+          $dir = "portable/NATIVE HUB"
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          Copy-Item target/release/native-hub.exe "$dir/NATIVE HUB.exe"
+          Copy-Item packaging/portable/portable "$dir/portable"
+          (Get-Content packaging/portable/README.txt -Raw).Replace('{version}', $env:VERSION) |
+            Set-Content -NoNewline "$dir/README.txt"
+          $zip = "NATIVE-HUB_$($env:VERSION)_x64-portable.zip"
+          Compress-Archive -Path $dir -DestinationPath $zip -Force
+          "ZIP=$zip" | Out-File -Append $env:GITHUB_ENV
+
+      - name: Upload portable ZIP and write the release body
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $setup = Get-ChildItem target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          $setupName = $setup.Name -replace ' ', '.'
+          $hSetup = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash
+          $hZip = (Get-FileHash $env:ZIP -Algorithm SHA256).Hash
+          gh release upload $env:TAG $env:ZIP --clobber
+          $body = (Get-Content "docs/releases/$env:TAG.md" -Raw).TrimEnd()
+          $body += @"
+
+
+          ## Downloads
+          - ``$setupName``: installer. It is not signed with a code-signing certificate: if SmartScreen warns you, click "More info" › "Run anyway".
+          - ``$($env:ZIP)``: unzip anywhere and open ``NATIVE HUB.exe``. Requires WebView2 (ships with Windows 11).
+          - ``latest.json``: update manifest read by the app.
+
+          SHA-256 checksums:
+          - ``$setupName``: ``$hSetup``
+          - ``$($env:ZIP)``: ``$hZip``
+
+          NATIVE HUB does not include or download ROMs, ISOs, BIOS, firmware or keys. The catalog includes data from Recompendium under CC BY-SA 4.0; covers come from IGDB.
+          "@
+          $body | Set-Content -NoNewline notes.md
+          gh release edit $env:TAG --notes-file notes.md
+          "Draft ready: review it at https://github.com/${{ github.repository }}/releases" >> $env:GITHUB_STEP_SUMMARY

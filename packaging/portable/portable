@@ -1,0 +1,1 @@
+This file turns on portable mode: NATIVE HUB keeps its data in the 'data' and 'Games' folders next to the executable. Delete it to use the normal Windows folders.

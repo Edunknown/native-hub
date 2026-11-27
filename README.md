@@ -65,7 +65,15 @@ npm test                    # Rust core tests
 
 ### Releasing
 
-Updates are signed with the Tauri updater key. Keep the private key outside the repo and build with it:
+Releases are built by GitHub Actions (`.github/workflows/release.yml`):
+
+1. Bump the version in `package.json`, `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`.
+2. Write the notes in `docs/releases/v<version>.md`. Its first paragraph is the summary the app shows in the update prompt.
+3. Push a tag: `git tag v<version> && git push origin v<version>`.
+
+The workflow runs the core tests, builds the signed installer, `latest.json` and the portable ZIP, and leaves everything in a **draft** release with the SHA-256 checksums. Nothing reaches users until the draft is published on GitHub.
+
+It needs two repository secrets: `TAURI_SIGNING_PRIVATE_KEY` (the contents of the updater private key, which never goes in the repo) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (empty if the key has no password). To build by hand instead:
 
 ```powershell
 $env:TAURI_SIGNING_PRIVATE_KEY = "$env:USERPROFILE\.native-hub-keys\updater.key"
@@ -73,7 +81,7 @@ $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
 npm run tauri build
 ```
 
-The build writes the installer and its `.sig`. Upload the installer, the portable ZIP and a `latest.json` (version, notes, date, and the installer URL and signature for `windows-x86_64`) to the GitHub release: the app reads `releases/latest/download/latest.json`.
+Every push and pull request runs `.github/workflows/ci.yml`: core tests on Windows and Linux, lint, type check and frontend build, catalog and adapter validation (`node scripts/check-catalog.mjs`) and a check of the desktop app on Windows.
 
 Layout: `src/` UI, `src-tauri/` desktop app, `crates/core/` Rust core (SQLite, releases, scanner, downloads, installation, updates, sync), `catalog/` catalog data and adapters, `scripts/` catalog generation.
 
@@ -93,6 +101,7 @@ Layout: `src/` UI, `src-tauri/` desktop app, `crates/core/` Rust core (SQLite, r
 
 ## Licenses and attribution
 
+- **Code.** NATIVE HUB's source code is under the [MIT license](LICENSE). The catalog data in `catalog/` is not: it keeps its own license, below.
 - **Catalog.** Includes data from [Recompendium](https://recompendium.com) under the [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license. The derived catalog (`catalog/`) is distributed under the same license; see [catalog/LICENSE.md](catalog/LICENSE.md).
 - **Covers.** Cover art comes from [IGDB](https://www.igdb.com). The catalog only stores IGDB image IDs; the app downloads each image from images.igdb.com the first time it is shown and caches it locally. The images belong to their publishers.
 - **Linked projects.** Each recompilation or port belongs to its authors and has its own license; NATIVE HUB only links to and downloads their official releases.
