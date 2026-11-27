@@ -5,6 +5,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { isTauri, openExternal } from '../lib/api'
 import { tr } from '../lib/i18n'
+import { ErrorNote } from '../components/ErrorNote'
 
 const RELEASES = 'https://github.com/Edunknown/native-hub/releases'
 const SKIP_KEY = 'nh-skip-update'
@@ -167,7 +168,7 @@ export function AppUpdateSetting() {
           ? tr('NATIVE HUB avisa cuando hay una versión nueva en GitHub. En la versión portable se descarga a mano.', 'NATIVE HUB tells you when a new version is on GitHub. In the portable build you download it yourself.')
           : tr('NATIVE HUB comprueba al arrancar si hay una versión nueva en GitHub y te pregunta antes de instalarla. Las actualizaciones van firmadas.', 'NATIVE HUB checks GitHub for a new version on startup and asks before installing it. Updates are signed.')}
       </p>
-      {u.error && <p className="note-line err">{u.error}</p>}
+      {u.error && <ErrorNote error={u.error} />}
     </>
   )
 }

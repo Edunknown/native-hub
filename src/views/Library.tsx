@@ -11,6 +11,7 @@ import { ConsoleIcon } from '../components/ConsoleIcon'
 import { CoverImage } from '../components/CoverImage'
 import { UpdatePanel } from '../components/UpdatePanel'
 import { tr } from '../lib/i18n'
+import { ErrorNote } from '../components/ErrorNote'
 
 function Pending({ inst, onChange }: { inst: Installation; onChange: () => void }) {
   const task = useTask()
@@ -58,7 +59,7 @@ function Pending({ inst, onChange }: { inst: Installation; onChange: () => void 
         <button type="button" className="btn-line" onClick={() => choose()}>{tr('Elegir ejecutable…', 'Choose executable…')}</button>
         <button type="button" className="link" onClick={() => api.openInstallFolder(inst.id)}>{tr('Abrir carpeta', 'Open folder')}</button>
       </div>
-      {err && <p className="note-line err">{err}</p>}
+      {err && <ErrorNote error={err} />}
     </div>
   )
 }
@@ -115,7 +116,7 @@ function InstallationRow({ inst }: { inst: Installation }) {
             </span>
           </div>
         )}
-        {err && <p className="note-line err">{err}</p>}
+        {err && <ErrorNote error={err} />}
       </div>
       <div className="inst-end">
         {inst.state === 'ready'

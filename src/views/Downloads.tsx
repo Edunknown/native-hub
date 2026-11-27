@@ -6,6 +6,7 @@ import { api, openExternal } from '../lib/api'
 import { fmtDateTime, fmtSize } from '../lib/format'
 import type { DownloadItem } from '../lib/types'
 import { tr } from '../lib/i18n'
+import { ErrorNote } from '../components/ErrorNote'
 
 const STATE_LABEL: Record<DownloadItem['state'], string> = {
   queued: tr('En cola', 'Queued'),
@@ -63,7 +64,7 @@ function Row({ d }: { d: DownloadItem }) {
               {d.gameSlug && <button type="button" className="link" onClick={() => go({ name: 'game', slug: d.gameSlug!, project: d.project })}>{tr('Elegir otra versión o archivo', 'Choose another version or file')}</button>}
             </span>
           </div>
-        ) : d.error && <p className="note-line err">{d.error}</p>}
+        ) : d.error && <ErrorNote error={d.error} />}
         {d.state === 'done' && (
           <p className="note-line">
             <Verify d={d} /> · {fmtSize(d.done)} · {fmtDateTime(d.finishedAt)}

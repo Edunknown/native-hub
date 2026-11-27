@@ -21,6 +21,9 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 /// Catálogo generado por scripts/build-catalog.mjs, incluido al compilar.
 const CATALOG_JSON: &str = include_str!("../../catalog/catalog.json");
+const LOG_FILE: &str = "native-hub";
+/// How much of the log "Copy details" includes (the end of the file).
+const LOG_TAIL_BYTES: u64 = 64 * 1024;
 const FEATURED_GAME: &str = "the-legend-of-zelda-majoras-mask";
 /// Al arrancar se comprueban en segundo plano unos pocos proyectos, para no gastar la cuota.
 const STARTUP_REFRESH: i64 = 20;
@@ -43,6 +46,8 @@ struct AppState {
     /// Caché de portadas (images.igdb.com), servida a la interfaz por el protocolo cover://.
     covers_dir: PathBuf,
     images: Arc<UreqImages>,
+    /// Folder of the log file (`native-hub.log`, plus up to two rotated files).
+    log_dir: PathBuf,
 }
 
 impl AppState {
@@ -467,7 +472,15 @@ fn ensure_download_worker(app: &AppHandle) {
                 let state = download::run(&conn, &transport, id, &control, |p| {
                     let _ = app.emit("download-progress", &p);
                 })
-                .unwrap_or_else(|_| "failed".into());
+                .unwrap_or_else(|e| {
+                    log::error!("download {id}: {e}");
+                    "failed".into()
+                });
+                let error: Option<String> = conn.query_row("SELECT error FROM downloads WHERE id = ?1", [id], |r| r.get(0)).ok().flatten();
+                match &error {
+                    Some(e) => log::warn!("download {id}: {state}: {e}"),
+                    None => log::info!("download {id}: {state}"),
+                }
                 s.dl_controls.lock().expect("controles").remove(&id);
                 let _ = app.emit("download-finished", json!({ "id": id, "state": state }));
             }
@@ -486,6 +499,7 @@ fn ensure_download_worker(app: &AppHandle) {
 fn download_start(app: AppHandle, slug: String) -> Result<i64> {
     let s = app.state::<AppState>();
     let id = s.with(|c| download::enqueue(c, &s.downloads_dir, &slug))?;
+    log::info!("download {id} queued for {slug}");
     ensure_download_worker(&app);
     Ok(id)
 }
@@ -618,7 +632,12 @@ async fn install_project(app: AppHandle, slug: String) -> Result<Value> {
         let root = s.install_root()?;
         std::fs::create_dir_all(&root).map_err(|e| Error::Invalid(native_hub_core::t!("no se puede crear la carpeta de juegos: {e}", "cannot create the games folder: {e}")))?;
         let conn = s.job_conn()?;
-        install::install(&conn, &slug, &root)
+        log::info!("install {slug} into {}", root.display());
+        let r = install::install(&conn, &slug, &root);
+        if let Err(e) = &r {
+            log::error!("install {slug}: {e}");
+        }
+        r
     })
     .await
     .map_err(|e| Error::Invalid(e.to_string()))?
@@ -637,6 +656,7 @@ fn installation_set_exe(s: State<AppState>, id: i64, path: String) -> Result<Val
 #[tauri::command]
 fn installation_launch(s: State<AppState>, id: i64) -> Result<()> {
     let (exe, wd) = s.with(|c| install::launch_target(c, id))?;
+    log::info!("launch installation {id}: {}", exe.display());
     std::process::Command::new(&exe)
         .current_dir(&wd)
         .spawn()
@@ -664,6 +684,7 @@ fn installation_run_installer(s: State<AppState>, id: i64) -> Result<()> {
 #[tauri::command]
 fn installation_uninstall(s: State<AppState>, id: i64, delete_files: bool) -> Result<()> {
     let root = s.install_root()?;
+    log::info!("uninstall installation {id} (delete files: {delete_files})");
     s.with(|c| install::uninstall(c, id, &root, delete_files))
 }
 
@@ -707,11 +728,13 @@ async fn update_plan(app: AppHandle, id: i64) -> Result<Value> {
 
 #[tauri::command]
 async fn update_apply(app: AppHandle, id: i64) -> Result<Value> {
+    log::info!("apply update to installation {id}");
     blocking(app, move |_, c, root| update::apply(c, id, root)).await
 }
 
 #[tauri::command]
 async fn update_rollback(app: AppHandle, id: i64) -> Result<Value> {
+    log::info!("undo update of installation {id}");
     blocking(app, move |_, c, root| update::rollback(c, id, root)).await
 }
 
@@ -743,6 +766,72 @@ async fn set_github_token(app: AppHandle, value: String) -> Result<Value> {
     })
     .await
     .map_err(|e| Error::Invalid(e.to_string()))?
+}
+
+// ---------- Log and error reports ----------
+
+/// The interface reports every failed command here, so the log shows what the user saw.
+#[tauri::command]
+fn log_client_error(command: String, error: String) {
+    log::warn!("{command}: {error}");
+}
+
+/// Text to paste in a bug report: versions, environment, the error (if any) and the end of
+/// the log. Paths under the user's home folder are shortened to `~`.
+#[tauri::command]
+fn log_report(s: State<AppState>, error: Option<String>) -> Result<String> {
+    use std::io::{Read, Seek, SeekFrom};
+    let path = s.log_dir.join(format!("{LOG_FILE}.log"));
+    let mut tail = String::new();
+    if let Ok(mut f) = std::fs::File::open(&path) {
+        let len = f.metadata().map(|m| m.len()).unwrap_or(0);
+        let start = len.saturating_sub(LOG_TAIL_BYTES);
+        if f.seek(SeekFrom::Start(start)).is_ok() {
+            let mut buf = Vec::new();
+            let _ = f.read_to_end(&mut buf);
+            tail = String::from_utf8_lossy(&buf).into_owned();
+            if start > 0 {
+                // Drop the partial first line.
+                tail = tail.split_once('\n').map(|(_, rest)| rest.to_owned()).unwrap_or(tail);
+            }
+        }
+    }
+    let catalog = s.with(catalog::loaded_version).ok().flatten().unwrap_or_default();
+    let mut out = format!(
+        "NATIVE HUB {} · {} {} · {} · catalog {}\n",
+        env!("CARGO_PKG_VERSION"),
+        std::env::consts::OS,
+        std::env::consts::ARCH,
+        if portable_root().is_some() { "portable" } else { "installed" },
+        catalog,
+    );
+    if let Some(e) = error.filter(|e| !e.trim().is_empty()) {
+        out.push_str(&format!("\nError: {e}\n"));
+    }
+    out.push_str("\n--- log ---\n");
+    out.push_str(if tail.is_empty() { "(empty)\n" } else { &tail });
+    Ok(redact_home(&out))
+}
+
+/// Replaces the user's home folder with `~` (the user name is often in it).
+fn redact_home(text: &str) -> String {
+    let home = std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")).unwrap_or_default();
+    if home.len() < 3 {
+        return text.to_owned();
+    }
+    let mut out = text.replace(&home, "~");
+    // JSON-escaped Windows paths (C:\\Users\\name).
+    let escaped = home.replace('\\', "\\\\");
+    if escaped != home {
+        out = out.replace(&escaped, "~");
+    }
+    out.replace(&home.replace('\\', "/"), "~")
+}
+
+#[tauri::command]
+fn log_open_folder(s: State<AppState>) -> Result<()> {
+    std::fs::create_dir_all(&s.log_dir).map_err(|e| Error::Invalid(e.to_string()))?;
+    tauri_plugin_opener::open_path(&s.log_dir, None::<&str>).map_err(|e| Error::Invalid(e.to_string()))
 }
 
 /// Whether this copy runs in portable mode (it then only announces updates).
@@ -799,13 +888,43 @@ pub fn run() {
             tauri::async_runtime::spawn_blocking(move || responder.respond(serve_cover(&app, &path)));
         })
         .setup(|app| {
+            // Log file (also in release builds), so problems can be reported with
+            // Settings › Log › "Copy" or the "Copy details" link next to any error.
+            let log_dir = match portable_root() {
+                Some(root) => root.join("data").join("logs"),
+                None => app.path().app_log_dir()?,
+            };
+            let mut targets = vec![tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Folder {
+                path: log_dir.clone(),
+                file_name: Some(LOG_FILE.into()),
+            })];
             if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
+                targets.push(tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout));
             }
+            app.handle().plugin(
+                tauri_plugin_log::Builder::new()
+                    .targets(targets)
+                    .level(log::LevelFilter::Info)
+                    // ureq and rustls are very chatty at info level.
+                    .level_for("ureq", log::LevelFilter::Warn)
+                    .level_for("rustls", log::LevelFilter::Warn)
+                    .max_file_size(1_000_000)
+                    .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepSome(2))
+                    .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
+                    .build(),
+            )?;
+            let default_hook = std::panic::take_hook();
+            std::panic::set_hook(Box::new(move |info| {
+                log::error!("panic: {info}");
+                default_hook(info);
+            }));
+            log::info!(
+                "NATIVE HUB {} starting ({} {}, {})",
+                env!("CARGO_PKG_VERSION"),
+                std::env::consts::OS,
+                std::env::consts::ARCH,
+                if portable_root().is_some() { "portable" } else { "installed" }
+            );
             let (conn, db_path) = open_database(app)?;
             download::recover(&conn)?;
             let portable = portable_root();
@@ -834,6 +953,7 @@ pub fn run() {
                 default_install_root,
                 covers_dir,
                 images: Arc::new(UreqImages::default()),
+                log_dir,
             });
             // Comprobación ligera en segundo plano de los proyectos menos recientes.
             let _ = refresh_stale(app.handle().clone(), Some(24), Some(STARTUP_REFRESH));
@@ -880,6 +1000,9 @@ pub fn run() {
             clear_github_token,
             set_language,
             is_portable,
+            log_client_error,
+            log_report,
+            log_open_folder,
             download_start,
             project_releases,
             download_asset,

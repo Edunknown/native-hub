@@ -4,6 +4,8 @@
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
 import { tr } from '../lib/i18n'
+import { errorText } from '../lib/errors'
+import { ErrorNote } from '../components/ErrorNote'
 
 export interface TaskSpec {
   title: string
@@ -53,7 +55,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       return result
     } catch (e) {
       finished = true
-      setState((s) => (s ? { ...s, phase: 'error', error: String(e) } : s))
+      setState((s) => (s ? { ...s, phase: 'error', error: errorText(e) } : s))
       await new Promise<void>((r) => { closeRef.current = r })
       setState(null)
       throw e
@@ -81,7 +83,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             {s.phase === 'done' && s.spec.done && <p className="note-line yes">{s.spec.done}</p>}
             {s.phase === 'error' && (
               <>
-                <p className="note-line err">{s.error}</p>
+                <ErrorNote error={s.error ?? ''} />
                 <div className="actions"><button type="button" className="btn-line" onClick={() => closeRef.current?.()}>{tr('Cerrar', 'Close')}</button></div>
               </>
             )}

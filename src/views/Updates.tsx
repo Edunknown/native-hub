@@ -7,6 +7,7 @@ import { api } from '../lib/api'
 import { fmtDate, fmtDateTime, fmtNum } from '../lib/format'
 import type { UpdateEvent, UpdateKind } from '../lib/types'
 import { locale, tr } from '../lib/i18n'
+import { ErrorNote } from '../components/ErrorNote'
 
 const GROUPS: { kind: UpdateKind; title: string }[] = [
   { kind: 'new_version', title: tr('Nuevas versiones', 'New versions') },
@@ -88,7 +89,7 @@ export function Updates() {
                   </button>
                   <span className="note-line">{tr('Revisa hasta 200 proyectos no comprobados en las últimas 24 h, los más antiguos primero. Se detiene solo si se acaba la cuota de GitHub.', 'Checks up to 200 projects not checked in the last 24 h, oldest first. It stops on its own if the GitHub quota runs out.')}</span>
                 </div>
-                {live.error && <p className="note-line err">{live.error}</p>}
+                {live.error && <ErrorNote error={live.error} />}
               </dd>
             </div>
           </dl>

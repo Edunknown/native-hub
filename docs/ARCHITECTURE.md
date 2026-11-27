@@ -307,6 +307,13 @@ Flow: `npm run catalog:update` = import Recompendium → merge with `manual.json
 - Code under MIT (`LICENSE`); `catalog/` keeps CC BY-SA 4.0.
 - `.github/workflows/ci.yml` on every push and pull request; `.github/workflows/release.yml` builds a draft release from a tag (see the README).
 
+### Clear errors and a copyable log
+
+- **Log file.** `native-hub.log` in `%LOCALAPPDATA%\dev.nativehub.app\logs` (`data\logs` in the portable build), also in release builds: start-up, downloads, installs, updates, launches, catalog checks, panics, and every command that failed in the interface. Up to 1 MB, two rotated files kept.
+- **Errors.** `ErrorNote` shows a plain explanation and what to do (no connection, GitHub limit, disk full, file in use, access denied, missing file, SHA-256 mismatch, antivirus, host not allowed, invalid catalog; `src/lib/errors.ts`), then the original message, "Copy details" and "Open the log".
+- **Copy details** (and Settings › Log › "Copy the log") copies the version, OS, build type, catalog version, the error and the last 64 KB of the log. The user's home folder is replaced with `~`.
+- **Tests.** `src/lib/errors.test.ts` (Vitest, `npm run test:web`, also in CI).
+
 ## 18. Actual status of each feature
 
 | Feature | Status |
@@ -329,3 +336,4 @@ Flow: `npm run catalog:update` = import Recompendium → merge with `manual.json
 | English interface (Spanish available) and portable build | Done (0.2.1) |
 | Signed self-updates of the app | Done (0.3.0) |
 | Catalog served from GitHub, imported only if newer | Done (1.0) |
+| Log file, plain error explanations and "Copy details" | Done (1.0) |

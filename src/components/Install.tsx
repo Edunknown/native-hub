@@ -7,6 +7,7 @@ import { useNav } from '../app/nav'
 import { api, pickPath } from '../lib/api'
 import type { InstallPlan, Installation, UserFileCheck, UserFileRule } from '../lib/types'
 import { lang, tr } from '../lib/i18n'
+import { ErrorNote } from './ErrorNote'
 
 const METHOD: Record<InstallPlan['method'], string> = {
   extract_zip: tr('ZIP portable', 'Portable ZIP'),
@@ -47,7 +48,7 @@ export function UserFileChecker({ slug, rule: raw, installation }: { slug: strin
           </ul>
         </div>
       )}
-      {err && <p className="note-line err">{err}</p>}
+      {err && <ErrorNote error={err} />}
     </div>
   )
 }
@@ -86,7 +87,7 @@ export function InstallPanel({ slug, onClose, onInstalled }: { slug: string; onC
   }
 
   if (!plan) {
-    return <div className="panel">{err ? <p className="note-line err">{err}</p> : <p className="note-line">{tr('Preparando el plan…', 'Preparing the plan…')}</p>}</div>
+    return <div className="panel">{err ? <ErrorNote error={err} /> : <p className="note-line">{tr('Preparando el plan…', 'Preparing the plan…')}</p>}</div>
   }
 
   if (done) {
@@ -124,7 +125,7 @@ export function InstallPanel({ slug, onClose, onInstalled }: { slug: string; onC
       {plan.adapter?.userFiles.map((r) => <UserFileChecker key={r.key} slug={slug} rule={r} />)}
       {plan.dirExists && <p className="note-line err">{tr('La carpeta', 'The folder')} {plan.installDir} {tr('ya existe y no está vacía. Bórrala o cambia la carpeta de juegos en Ajustes.', 'already exists and is not empty. Delete it or change the games folder in Settings.')}</p>}
       {plan.alreadyInstalled != null && <p className="note-line">{tr('Ya está instalado. Gestiónalo desde la Biblioteca.', 'Already installed. Manage it from the Library.')}</p>}
-      {err && <p className="note-line err">{err}</p>}
+      {err && <ErrorNote error={err} />}
       <div className="actions">
         <button type="button" className="btn-primary" disabled={busy || !plan.downloaded || plan.dirExists || plan.alreadyInstalled != null} onClick={run}>
           {busy ? tr('Instalando…', 'Installing…') : tr('Instalar', 'Install')}
