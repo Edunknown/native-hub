@@ -8,6 +8,7 @@ import { LibraryProvider } from './app/library'
 import { LiveProvider } from './app/live'
 import { NavProvider, useNav } from './app/nav'
 import { Shell } from './app/Shell'
+import { Welcome } from './app/Welcome'
 import { useTheme } from './app/theme'
 import { Consoles } from './views/Consoles'
 import { Discover } from './views/Discover'
@@ -53,6 +54,7 @@ export default function App() {
         <Shell theme={t.theme} onToggleTheme={t.toggle}>
           <Router {...t} />
         </Shell>
+        <Welcome theme={t.theme} setTheme={t.setTheme} />
       </NavProvider>
       </LibraryProvider>
       </DownloadsProvider>

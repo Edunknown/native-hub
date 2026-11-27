@@ -91,6 +91,10 @@ Object.assign(handlers, {
   update_plan: desktopOnly, update_apply: desktopOnly, update_rollback: desktopOnly, update_discard: desktopOnly,
   install_root_get: () => ({ path: tr('Documentos', 'Documents') + '\\NATIVE HUB', default: true }),
   set_language: () => null,
+  // The browser keeps the welcome guide state in localStorage (the desktop app uses SQLite).
+  onboarding_done: () => { try { return localStorage.getItem('nh-onboarding') === '1' } catch { return true } },
+  onboarding_set: ({ done }: Record<string, unknown>) => { try { if (done) localStorage.setItem('nh-onboarding', '1'); else localStorage.removeItem('nh-onboarding') } catch { /* no storage */ } return null },
+  is_portable: () => false,
   install_plan: desktopOnly, install_project: desktopOnly, install_root_set: desktopOnly, installation_set_exe: desktopOnly, installation_launch: desktopOnly,
   installation_open_folder: desktopOnly, installation_run_installer: desktopOnly, installation_uninstall: desktopOnly, user_file_check: desktopOnly, user_files_list: () => [],
   download_start: desktopOnly, project_releases: desktopOnly, download_asset: desktopOnly, download_pause: desktopOnly, download_resume: desktopOnly, download_cancel: desktopOnly, download_remove: desktopOnly, download_reveal: desktopOnly,

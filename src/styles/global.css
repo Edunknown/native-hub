@@ -452,3 +452,28 @@ button.row:hover .game { color: var(--accent-ink); }
 .refine select option, .refine select optgroup { background: var(--surface); color: var(--fg); }
 .refine .check { cursor: pointer; }
 .refine .check input { accent-color: var(--accent); margin: 0; transform: translateY(1px); }
+
+/* First-run guide: the whole window, editorial, no cards */
+.welcome {
+  position: fixed; inset: 0; z-index: 90; background: var(--bg); color: var(--fg);
+  display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: auto;
+}
+.welcome-top { display: flex; align-items: center; justify-content: space-between; padding: 22px var(--pad-x); border-bottom: 1px solid var(--line); }
+.welcome-brand { display: inline-flex; align-items: center; gap: 12px; font-weight: 600; font-size: 13px; letter-spacing: .3em; }
+.welcome-brand span { color: var(--muted); font-weight: 500; }
+.welcome-mark { width: 22px; height: 22px; }
+.welcome-main { width: 100%; max-width: 760px; padding: 9vh var(--pad-x) 64px; display: flex; flex-direction: column; gap: 6px; }
+.welcome-main .page-title { font-size: 34px; }
+.welcome-main .eyebrow .mono { letter-spacing: 0; }
+.welcome-main .page-lede { margin-bottom: 18px; }
+.welcome-actions { margin-top: 36px; }
+.welcome-prefs { display: grid; grid-template-columns: 172px minmax(0, 1fr); gap: 0; margin: 18px 0 0; }
+.welcome-prefs dt, .welcome-prefs dd { margin: 0; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.welcome-prefs dt { color: var(--muted); font-size: 13px; }
+.welcome-list { list-style: none; counter-reset: w; margin: 22px 0 0; padding: 0; }
+.welcome-list li { counter-increment: w; display: grid; grid-template-columns: 36px minmax(0, 1fr); padding: 16px 0; border-bottom: 1px solid var(--line); }
+.welcome-list li::before { content: counter(w, decimal-leading-zero); font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 2px; grid-row: span 2; }
+.welcome-list strong { font-weight: 500; }
+.welcome-list p { margin: 4px 0 0; font-size: 13.5px; }
+.welcome-setting { border-top: 1px solid var(--line); padding-top: 18px; display: grid; gap: 4px; }
+@media (max-width: 640px) { .welcome-prefs { grid-template-columns: 1fr; } }

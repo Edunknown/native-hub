@@ -816,6 +816,29 @@ fn log_open_folder(s: State<AppState>) -> Result<()> {
     tauri_plugin_opener::open_path(&s.log_dir, None::<&str>).map_err(|e| Error::Invalid(e.to_string()))
 }
 
+// ---------- First run ----------
+
+/// Whether the welcome guide has been completed (or skipped) in this install.
+#[tauri::command]
+fn onboarding_done(s: State<AppState>) -> Result<bool> {
+    s.with(|c| Ok(setting(c, "onboarding_done").is_some()))
+}
+
+#[tauri::command]
+fn onboarding_set(s: State<AppState>, done: bool) -> Result<()> {
+    s.with(|c| {
+        if done {
+            c.execute(
+                "INSERT INTO settings (key, value) VALUES ('onboarding_done', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                [native_hub_core::time::now_iso()],
+            )?;
+        } else {
+            c.execute("DELETE FROM settings WHERE key = 'onboarding_done'", [])?;
+        }
+        Ok(())
+    })
+}
+
 /// Whether this copy runs in portable mode (it then only announces updates).
 #[tauri::command]
 fn is_portable() -> bool {
@@ -982,6 +1005,8 @@ pub fn run() {
             clear_github_token,
             set_language,
             is_portable,
+            onboarding_done,
+            onboarding_set,
             log_client_error,
             log_report,
             log_open_folder,
