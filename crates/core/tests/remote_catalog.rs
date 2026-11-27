@@ -38,7 +38,7 @@ fn catalog_json(generated_at: &str, projects: usize, schema: i64) -> String {
     let projects: Vec<Value> = (0..projects)
         .map(|i| {
             json!({"slug": format!("p{i}"), "game": "g", "games": ["g"], "platform": "n64", "name": format!("Project {i}"),
-                   "kind": "decomp_port", "listing": "in_development", "repoUrl": format!("https://github.com/x/p{i}")})
+                   "kind": "decomp_port", "listing": if i % 2 == 0 { "library" } else { "in_development" }, "repoUrl": format!("https://github.com/x/p{i}")})
         })
         .collect();
     json!({
@@ -125,6 +125,14 @@ fn broken_catalogs_are_rejected_and_the_error_is_kept() {
     let mut bad: Value = serde_json::from_str(&catalog_json("2026-11-20T00:00:00Z", 120, 1)).unwrap();
     bad["projects"][5]["game"] = json!("missing");
     f.set(bad.to_string(), "b");
+    assert!(remote::check(&mut conn, &f, URL).is_err());
+
+    // Built without checking releases: nothing installable.
+    let mut unchecked: Value = serde_json::from_str(&catalog_json("2026-11-20T00:00:00Z", 120, 1)).unwrap();
+    for p in unchecked["projects"].as_array_mut().unwrap() {
+        p["listing"] = json!("in_development");
+    }
+    f.set(unchecked.to_string(), "u");
     assert!(remote::check(&mut conn, &f, URL).is_err());
 
     // Not JSON at all.

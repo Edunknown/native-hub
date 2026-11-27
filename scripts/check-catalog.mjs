@@ -52,6 +52,12 @@ for (const p of catalog.projects) {
   }
 }
 
+// The app downloads this file from main: a catalog built without checking releases
+// (for example `build-catalog.mjs --offline` on a clean clone) would empty the library.
+const library = catalog.projects.filter((p) => p.listing === 'library').length
+if (library < catalog.projects.length / 10) fail(`only ${library} installable projects: was the catalog built without checking releases?`)
+if (catalog.schema !== 1) fail(`schema ${catalog.schema}: update remote::SCHEMA in crates/core/src/remote.rs too`)
+
 // Adapters
 const repos = new Map(
   catalog.projects.filter((p) => p.repo).map((p) => [`${p.repo.owner}/${p.repo.name}`.toLowerCase(), p]),

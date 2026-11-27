@@ -61,6 +61,12 @@ pub fn validate(cat: &CatalogFile, now_unix: i64) -> Result<()> {
     if cat.projects.len() < MIN_PROJECTS {
         return bad(crate::t!("solo {} proyectos", "only {} projects", cat.projects.len()));
     }
+    // A catalog built without checking releases has (almost) nothing installable: don't
+    // replace a good catalog with it.
+    let library = cat.projects.iter().filter(|p| p.get("listing").and_then(Value::as_str) == Some("library")).count();
+    if library < cat.projects.len() / 10 {
+        return bad(crate::t!("solo {library} proyectos instalables", "only {library} installable projects"));
+    }
     let platforms: std::collections::HashSet<&str> = cat.platforms.iter().map(|p| p.slug.as_str()).collect();
     let games: std::collections::HashSet<&str> = cat.games.iter().map(|g| g.slug.as_str()).collect();
     if games.len() != cat.games.len() {
