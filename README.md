@@ -1,7 +1,13 @@
-# NATIVE HUB
+<p align="center">
+  <img src="docs/assets/logo.svg" width="112" height="112" alt="Logo de NATIVE HUB">
+</p>
 
-Launcher universal de recompilaciones y ports nativos de videojuegos para PC (Windows 10/11, 64 bits).
-Tauri 2 + Rust + React + TypeScript + SQLite.
+<h1 align="center">NATIVE HUB</h1>
+
+<p align="center">
+  Launcher universal de recompilaciones y ports nativos de videojuegos para PC (Windows 10/11, 64 bits).<br>
+  Tauri 2 + Rust + React + TypeScript + SQLite.
+</p>
 
 > **Versión 0.2.0 · fase 7, expansión.** Catálogo de ≈1.550 proyectos de 40 plataformas, releases
 > en vivo, escáner de GitHub y GitLab con cola de revisión, sincronización con Recompendium,
