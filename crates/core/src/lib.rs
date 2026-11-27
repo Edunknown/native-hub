@@ -7,6 +7,7 @@
 //! Fase 5: Installation Manager, adaptadores declarativos y Game File Validator.
 //! Fase 6: Update Manager (actualizar sin perder partidas, con copia y deshacer).
 //! Fase 7: sincronización con Recompendium y escáner de GitLab (siempre vía cola de revisión).
+//! Catálogo servido desde GitHub (remote): se descarga, se valida y se importa si es más nuevo.
 //! Portadas: image_id de IGDB en el catálogo, imagen descargada de images.igdb.com y cacheada.
 
 pub mod catalog;
@@ -19,6 +20,7 @@ pub mod i18n;
 pub mod install;
 pub mod query;
 pub mod releases;
+pub mod remote;
 pub mod scanner;
 pub mod sync;
 pub mod text;

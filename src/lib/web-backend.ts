@@ -101,7 +101,7 @@ Object.assign(handlers, {
   install_plan: desktopOnly, install_project: desktopOnly, install_root_set: desktopOnly, installation_set_exe: desktopOnly, installation_launch: desktopOnly,
   installation_open_folder: desktopOnly, installation_run_installer: desktopOnly, installation_uninstall: desktopOnly, user_file_check: desktopOnly, user_files_list: () => [],
   download_start: desktopOnly, project_releases: desktopOnly, download_asset: desktopOnly, download_pause: desktopOnly, download_resume: desktopOnly, download_cancel: desktopOnly, download_remove: desktopOnly, download_reveal: desktopOnly,
-  approve_candidate: desktopOnly, sync_recompendium: desktopOnly, approve_suggested: desktopOnly, approve_all_suggested: desktopOnly, automation_get: desktopOnly, automation_set: desktopOnly, reject_candidate: desktopOnly, set_github_token: desktopOnly, clear_github_token: desktopOnly,
+  approve_candidate: desktopOnly, sync_recompendium: desktopOnly, approve_suggested: desktopOnly, approve_all_suggested: desktopOnly, automation_get: desktopOnly, automation_set: desktopOnly, catalog_remote_check: desktopOnly, reject_candidate: desktopOnly, set_github_token: desktopOnly, clear_github_token: desktopOnly,
 })
 
 export async function handle(cmd: string, args: Record<string, unknown>) {

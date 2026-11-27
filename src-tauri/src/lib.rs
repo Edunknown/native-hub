@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex, RwLock};
 
 use native_hub_core::http::UreqFetcher;
 use native_hub_core::cover::{self, UreqImages};
-use native_hub_core::{Error, Result, catalog, db, download, install, query, releases, scanner, sync, update};
+use native_hub_core::{Error, Result, catalog, db, download, install, query, releases, remote, scanner, sync, update};
 use rusqlite::Connection;
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -226,6 +226,29 @@ fn refresh_stale(app: AppHandle, max_age_hours: Option<i64>, limit: Option<i64>)
     })
 }
 
+/// Downloads the catalog published on GitHub and imports it if it is newer. The interface
+/// reloads its data when it receives `catalog-updated`.
+#[tauri::command]
+fn catalog_remote_check(app: AppHandle) -> Result<bool> {
+    start_job(&app, "catalog", |app, s, _| {
+        let _ = app.emit("job-progress", json!({ "job": "catalog", "done": 0, "total": 1, "current": "GitHub" }));
+        let result = s.job_conn().and_then(|mut conn| remote::check(&mut conn, s.fetcher().as_ref(), remote::CATALOG_URL));
+        match result {
+            Ok(out) => {
+                log::info!("remote catalog: {out:?}");
+                if matches!(out, remote::Outcome::Updated { .. }) {
+                    let _ = app.emit("catalog-updated", &out);
+                }
+                json!({ "catalog": out })
+            }
+            Err(e) => {
+                log::warn!("remote catalog: {e}");
+                json!({ "error": e.to_string() })
+            }
+        }
+    })
+}
+
 #[tauri::command]
 fn cancel_job(s: State<AppState>) {
     s.cancel.store(true, Ordering::SeqCst);
@@ -331,6 +354,8 @@ fn automation_get(s: State<AppState>) -> Result<Value> {
         Ok(json!({
             "releases": setting(c, "auto_releases").unwrap_or_else(|| "24h".into()),
             "discover": setting(c, "auto_discover").unwrap_or_else(|| "24h".into()),
+            "catalog": setting(c, "auto_catalog").unwrap_or_else(|| "24h".into()),
+            "catalogStatus": remote::status(c)?,
             "lastScan": setting(c, "last_scan"),
             "lastSync": setting(c, "last_recompendium_sync"),
             "lastAutoRefresh": setting(c, "last_auto_refresh"),
@@ -339,14 +364,15 @@ fn automation_get(s: State<AppState>) -> Result<Value> {
 }
 
 #[tauri::command]
-fn automation_set(s: State<AppState>, releases: String, discover: String) -> Result<Value> {
-    for v in [&releases, &discover] {
+fn automation_set(s: State<AppState>, releases: String, discover: String, catalog: Option<String>) -> Result<Value> {
+    let catalog = catalog.unwrap_or_else(|| "24h".into());
+    for v in [&releases, &discover, &catalog] {
         if !["off", "6h", "24h"].contains(&v.as_str()) {
             return Err(Error::Invalid(native_hub_core::t!("valor no válido: {v}", "invalid value: {v}")));
         }
     }
     s.with(|c| {
-        for (k, v) in [("auto_releases", &releases), ("auto_discover", &discover)] {
+        for (k, v) in [("auto_releases", &releases), ("auto_discover", &discover), ("auto_catalog", &catalog)] {
             c.execute("INSERT INTO settings (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [k, v.as_str()])?;
         }
         Ok(())
@@ -370,8 +396,11 @@ fn start_scheduler(app: AppHandle) {
             let (rel_mode, disc_mode) = s
                 .with(|c| Ok((setting(c, "auto_releases").unwrap_or_else(|| "24h".into()), setting(c, "auto_discover").unwrap_or_else(|| "24h".into()))))
                 .unwrap_or_else(|_| ("off".into(), "off".into()));
+            let cat_mode = s.with(|c| Ok(setting(c, "auto_catalog"))).ok().flatten().unwrap_or_else(|| "24h".into());
             if !s.busy.load(Ordering::Relaxed) {
-                if due("last_auto_refresh", &rel_mode) {
+                if due("remote_catalog_checked_at", &cat_mode) {
+                    let _ = catalog_remote_check(app.clone());
+                } else if due("last_auto_refresh", &rel_mode) {
                     let _ = s.with(|c| {
                         c.execute("INSERT INTO settings (key, value) VALUES ('last_auto_refresh', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [native_hub_core::time::now_iso()])?;
                         Ok(())
@@ -829,6 +858,7 @@ pub fn run() {
             catalog_discover,
             catalog_home,
             catalog_games_lookup,
+            catalog_remote_check,
             covers_cache_size,
             covers_clear_cache,
             releases_status,

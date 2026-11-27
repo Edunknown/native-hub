@@ -218,15 +218,34 @@ export interface Approval {
   name?: string
 }
 
+export type JobName = 'refresh' | 'scan' | 'sync' | 'catalog'
+
+export interface CatalogStatus {
+  version: string | null
+  checkedAt: string | null
+  error: string | null
+  url: string
+}
+
+export interface Automation {
+  releases: string
+  discover: string
+  catalog: string
+  catalogStatus: CatalogStatus | null
+  lastScan: string | null
+  lastSync: string | null
+  lastAutoRefresh: string | null
+}
+
 export interface JobProgress {
-  job: 'refresh' | 'scan' | 'sync'
+  job: JobName
   done: number
   total: number
   current: string
 }
 
 export interface JobFinished {
-  job: 'refresh' | 'scan' | 'sync'
+  job: JobName
   result: Record<string, unknown>
 }
 

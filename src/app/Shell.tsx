@@ -104,7 +104,7 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
         <div className="scroll" ref={scroller}>{children}</div>
 
         <footer className="status" aria-label={tr('Estado', 'Status')}>
-          <span>{live.progress ? `${live.progress.job === 'scan' ? tr('Buscando proyectos', 'Searching for projects') : live.progress.job === 'sync' ? tr('Sincronizando catálogo', 'Syncing catalog') : tr('Comprobando releases', 'Checking releases')} · ${live.progress.done}/${live.progress.total}` : running ? `${tr('Descargando', 'Downloading')} ${running.projectName ?? running.project}${rPct != null ? ` · ${rPct} %` : ''}` : tr('Sin descargas en curso', 'No downloads in progress')}</span>
+          <span>{live.progress ? `${live.progress.job === 'scan' ? tr('Buscando proyectos', 'Searching for projects') : live.progress.job === 'sync' ? tr('Sincronizando con Recompendium', 'Syncing with Recompendium') : live.progress.job === 'catalog' ? tr('Actualizando el catálogo', 'Updating the catalog') : tr('Comprobando releases', 'Checking releases')} · ${live.progress.done}/${live.progress.total}` : running ? `${tr('Descargando', 'Downloading')} ${running.projectName ?? running.project}${rPct != null ? ` · ${rPct} %` : ''}` : tr('Sin descargas en curso', 'No downloads in progress')}</span>
           <span className="num">{fmtNum(summary.projectCount)} {tr('proyectos', 'projects')} · {fmtNum(summary.installableCount)} {tr('con ejecutable Windows', 'with a Windows executable')}</span>
           <span className="push">{tr('Catálogo: última comprobación', 'Catalog: last checked')} <span className="num">{fmtDateTime(summary.generatedAt)}</span></span>
         </footer>
