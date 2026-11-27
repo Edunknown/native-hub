@@ -687,8 +687,18 @@ fn clear_github_token(s: State<AppState>) -> Result<()> {
     Ok(())
 }
 
+/// Portable mode: if a file named `portable` (or `portable.txt`) sits next to the executable,
+/// everything is stored beside it: `data\` (database and downloads) and `Games\`.
+fn portable_root() -> Option<PathBuf> {
+    let dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
+    (dir.join("portable").exists() || dir.join("portable.txt").exists()).then_some(dir)
+}
+
 fn open_database(app: &tauri::App) -> std::result::Result<(Connection, PathBuf), Box<dyn std::error::Error>> {
-    let dir = app.path().app_data_dir()?;
+    let dir = match portable_root() {
+        Some(root) => root.join("data"),
+        None => app.path().app_data_dir()?,
+    };
     std::fs::create_dir_all(&dir)?;
     let path = dir.join("native-hub.db");
     let mut conn = db::open(&path)?;
@@ -714,9 +724,16 @@ pub fn run() {
             }
             let (conn, db_path) = open_database(app)?;
             download::recover(&conn)?;
-            let downloads_dir = app.path().app_local_data_dir()?.join("downloads");
+            let portable = portable_root();
+            let downloads_dir = match &portable {
+                Some(root) => root.join("data").join("downloads"),
+                None => app.path().app_local_data_dir()?.join("downloads"),
+            };
             std::fs::create_dir_all(&downloads_dir)?;
-            let default_install_root = app.path().document_dir()?.join("NATIVE HUB");
+            let default_install_root = match &portable {
+                Some(root) => root.join("Games"),
+                None => app.path().document_dir()?.join("NATIVE HUB"),
+            };
             app.manage(AppState {
                 db: Mutex::new(conn),
                 db_path,
@@ -731,6 +748,15 @@ pub fn run() {
             // Comprobación ligera en segundo plano de los proyectos menos recientes.
             let _ = refresh_stale(app.handle().clone(), Some(24), Some(STARTUP_REFRESH));
             start_scheduler(app.handle().clone());
+            // The window is created here (not from tauri.conf.json) so that, in portable mode,
+            // the WebView profile (theme, language, sound) also lives next to the executable.
+            if let Some(cfg) = app.config().app.windows.iter().find(|w| w.label == "main") {
+                let mut builder = tauri::WebviewWindowBuilder::from_config(app.handle(), cfg)?;
+                if let Some(root) = &portable {
+                    builder = builder.data_directory(root.join("data").join("webview"));
+                }
+                builder.build()?;
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -1,77 +1,83 @@
 <p align="center">
-  <img src="docs/assets/logo.svg" width="112" height="112" alt="Logo de NATIVE HUB">
+  <img src="docs/assets/logo.svg" width="112" height="112" alt="NATIVE HUB logo">
 </p>
 
 <h1 align="center">NATIVE HUB</h1>
 
 <p align="center">
-  Launcher universal de recompilaciones y ports nativos de videojuegos para PC (Windows 10/11, 64 bits).<br>
+  A universal launcher for native PC recompilations and ports of video games (Windows 10/11, 64-bit).<br>
   Tauri 2 + Rust + React + TypeScript + SQLite.
 </p>
 
-> **Versión 0.2.0 · fase 7, expansión.** Catálogo de ≈1.550 proyectos de 40 plataformas, releases
-> en vivo, escáner de GitHub y GitLab con cola de revisión, sincronización con Recompendium,
-> descargas oficiales con SHA-256, instalación con plan y adaptadores, actualizaciones que
-> conservan partidas y comprobaciones automáticas cada 6 o 24 h.
+<p align="center"><b>English</b> · <a href="README.es.md">Español</a></p>
 
-## Qué hace
+> **Version 0.2.1 · phase 7, expansion.** A catalog of ≈1,550 projects across 40 platforms, live
+> release checks, a GitHub and GitLab scanner with a review queue, Recompendium sync, official
+> downloads with SHA-256, installation with a plan and adapters, updates that keep your saves,
+> automatic checks every 6 or 24 hours, and a portable build.
 
-- **Catálogo fiable.** Qué juego tiene qué recompilación, decompilación o port nativo, y cuáles se pueden instalar de verdad (release oficial con ejecutable Windows). Cada dato lleva su origen y su fecha de comprobación.
-- **Releases en vivo.** Comprueba GitHub, GitLab y Codeberg con la API oficial, ETag y control de cuota. Token de GitHub opcional, guardado en el Administrador de credenciales de Windows.
-- **Descubrir proyectos nuevos.** Escáner de GitHub y GitLab y sincronización con Recompendium. Todo lo nuevo pasa por una cola de revisión; nada entra solo en el catálogo.
-- **Descargar e instalar.** Solo desde la release oficial del propio proyecto, por HTTPS, con verificación SHA-256 cuando se publica. Antes de instalar enseña el plan; los instaladores externos solo se abren con tu confirmación.
-- **Biblioteca y actualizaciones.** Ejecutar, cambiar el ejecutable, abrir la carpeta y desinstalar. Las actualizaciones conservan partidas y configuración, hacen copia de seguridad y se pueden deshacer.
-- **Automatización.** Comprobación de releases y búsqueda de proyectos cada 6 h, cada 24 h o desactivada (Ajustes).
+## What it does
 
-NATIVE HUB **no incluye ni descarga ROMs, ISOs, BIOS, firmware ni claves**. Solo localiza y valida los archivos que ya tienes.
+- **A reliable catalog.** Which game has which recompilation, decompilation or native port, and which ones can actually be installed (an official release with a Windows executable). Every entry records its source and when it was last checked.
+- **Live releases.** Checks GitHub, GitLab and Codeberg through their official APIs, with ETag caching and quota control. An optional GitHub token is stored in Windows Credential Manager.
+- **Discover new projects.** GitHub and GitLab scanner plus Recompendium sync. Everything new goes through a review queue; nothing enters the catalog on its own.
+- **Download and install.** Only from the project's own official release, over HTTPS, with SHA-256 verification when published. The install plan is shown first; external installers only open after you confirm.
+- **Library and updates.** Launch, change the executable, open the folder and uninstall. Updates keep saves and settings, take a backup first and can be undone.
+- **Automation.** Release checks and project discovery every 6 h, every 24 h, or off (Settings).
+- **English and Spanish.** English by default; switch language in Settings.
 
-## Instalar
+NATIVE HUB **does not include or download ROMs, ISOs, BIOS, firmware or keys**. It only locates and validates files you already own.
 
-Descarga el instalador `NATIVE.HUB_0.2.0_x64-setup.exe` desde [Releases](../../releases). No está firmado, así que Windows SmartScreen puede avisar: pulsa «Más información» › «Ejecutar de todas formas». El instalador incluye el arranque de WebView2 si falta.
+## Install
 
-¿Sin instalar? Descarga `NATIVE-HUB_0.2.0_x64-portable.zip`, descomprímelo y abre `NATIVE HUB.exe` (necesita WebView2, que viene con Windows 11).
+Download `NATIVE.HUB_<version>_x64-setup.exe` from [Releases](../../releases). It is not signed, so Windows SmartScreen may warn you: click "More info" › "Run anyway". The installer bootstraps WebView2 if it is missing.
 
-Datos de la app: `%APPDATA%\dev.nativehub.app` (base de datos) y `%LOCALAPPDATA%\dev.nativehub.app` (descargas). Juegos: `Documentos\NATIVE HUB` por defecto.
+App data: `%APPDATA%\dev.nativehub.app` (database) and `%LOCALAPPDATA%\dev.nativehub.app` (downloads). Games: `Documents\NATIVE HUB` by default.
 
-## Documentación
+### Portable
 
-- [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md): análisis, arquitectura, riesgos, modelo de datos, adaptadores, seguridad, estructura de carpetas y detalle de cada fase.
+Download `NATIVE-HUB_<version>_x64-portable.zip`, unzip it anywhere (a USB drive works) and open `NATIVE HUB.exe`. Because the folder contains a file named `portable`, everything stays next to the executable: `data\` (database, downloads and WebView profile) and `Games\`. Requires WebView2, which ships with Windows 11. Delete the `portable` file to make it behave like the installed version. The optional GitHub token still lives in the Credential Manager of the current Windows user.
 
-## Desarrollo
+## Documentation
 
-| Herramienta | Para qué |
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): analysis, architecture, risks, data model, adapters, security, folder layout and details of every phase. Spanish: [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
+
+## Development
+
+| Tool | Used for |
 |---|---|
-| Node.js y npm | Interfaz (Vite + React) |
-| Rust (`rustup`) | Backend de Tauri |
-| Microsoft C++ Build Tools + SDK de Windows | Enlazar el ejecutable en Windows |
-| WebView2 | Motor de la interfaz (viene con Windows 11) |
+| Node.js and npm | UI (Vite + React) |
+| Rust (`rustup`) | Tauri backend |
+| Microsoft C++ Build Tools + Windows SDK | Linking the Windows executable |
+| WebView2 | UI engine (ships with Windows 11) |
 
 ```powershell
-npm install                 # dependencias
-npm run dev                 # interfaz en el navegador: http://localhost:1420
-npm run tauri dev           # app de escritorio (necesita Rust y C++ Build Tools)
-npm run tauri build         # instalador NSIS en target\release\bundle\nsis
-npm run catalog:update      # reimporta Recompendium y comprueba releases en GitHub
-npm run catalog:build       # solo une fuentes y comprueba lo no revisado en 12 h
-npm test                    # pruebas del núcleo en Rust
+npm install                 # dependencies
+npm run dev                 # UI in the browser: http://localhost:1420
+npm run tauri dev           # desktop app (needs Rust and C++ Build Tools)
+npm run tauri build         # NSIS installer in target\release\bundle\nsis
+npm run catalog:update      # re-import Recompendium and check releases on GitHub
+npm run catalog:build       # only merge sources and check entries not reviewed in 12 h
+npm test                    # Rust core tests
 ```
 
-Estructura: `src/` interfaz, `src-tauri/` app de escritorio, `crates/core/` núcleo en Rust (SQLite, releases, escáner, descargas, instalación, actualizaciones, sincronización), `catalog/` datos del catálogo y adaptadores, `scripts/` generación del catálogo.
+Layout: `src/` UI, `src-tauri/` desktop app, `crates/core/` Rust core (SQLite, releases, scanner, downloads, installation, updates, sync), `catalog/` catalog data and adapters, `scripts/` catalog generation.
 
-## Historial
+## History
 
-| Fase | Contenido |
+| Phase | Contents |
 |---|---|
-| 1 | Interfaz, navegación, tema claro/oscuro, ficha con selector de proyecto |
-| 2 | Catálogo de Recompendium + lista manual, SQLite, consolas y familias |
-| 3 | Releases en vivo, escáner de GitHub, cola de revisión, token opcional |
-| 4 | Descargas oficiales reanudables con SHA-256 |
-| 5 | Instalación con plan, adaptadores, validación de archivos, biblioteca |
-| 6 / 6.1 | Actualizaciones que conservan partidas; animación de inicio y paneles de progreso |
-| 7 | Sincronización con Recompendium, escáner de GitLab, automatización |
+| 1 | UI, navigation, light/dark theme, game page with project picker |
+| 2 | Recompendium catalog + manual list, SQLite, consoles and families |
+| 3 | Live releases, GitHub scanner, review queue, optional token |
+| 4 | Resumable official downloads with SHA-256 |
+| 5 | Installation with a plan, adapters, file validation, library |
+| 6 / 6.1 | Updates that keep saves; startup animation and progress panels |
+| 7 | Recompendium sync, GitLab scanner, automation |
+| 0.2.1 | English UI (Spanish available), portable build with data next to the executable |
 
-## Licencias y atribución
+## Licenses and attribution
 
-- **Catálogo.** Incluye datos de [Recompendium](https://recompendium.com) bajo licencia [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.es). El catálogo derivado (`catalog/`) se distribuye bajo esa misma licencia; ver [catalog/LICENSE.md](catalog/LICENSE.md).
-- **Proyectos enlazados.** Cada recompilación o port pertenece a sus autores y tiene su propia licencia; NATIVE HUB solo enlaza y descarga sus releases oficiales.
-- **Nombres de juegos y consolas.** Son marcas de sus respectivos propietarios. NATIVE HUB no está afiliado a ninguno.
+- **Catalog.** Includes data from [Recompendium](https://recompendium.com) under the [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license. The derived catalog (`catalog/`) is distributed under the same license; see [catalog/LICENSE.md](catalog/LICENSE.md).
+- **Linked projects.** Each recompilation or port belongs to its authors and has its own license; NATIVE HUB only links to and downloads their official releases.
+- **Game and console names.** They are trademarks of their respective owners. NATIVE HUB is not affiliated with any of them.
