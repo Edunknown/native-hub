@@ -41,7 +41,7 @@ export const api = {
   platformProjects: (platform: string) => call<Project[]>('catalog_platform_projects', { platform }),
   game: (slug: string) => call<GameDetail>('catalog_game', { slug }),
   search: (q: string, limit = 100) => call<Project[]>('catalog_search', { q, limit }),
-  discover: (f: DiscoverFilter) => call<DiscoverResult>('catalog_discover', { ...f }),
+  discover: (filter: DiscoverFilter) => call<DiscoverResult>('catalog_discover', { filter }),
   home: () => call<Home>('catalog_home'),
   gamesLookup: (q: string) => call<{ slug: string; title: string; platform: string }[]>('catalog_games_lookup', { q }),
 

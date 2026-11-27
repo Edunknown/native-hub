@@ -101,26 +101,8 @@ fn catalog_search(s: State<AppState>, q: String, limit: Option<i64>) -> Result<V
 }
 
 #[tauri::command]
-fn catalog_discover(
-    s: State<AppState>,
-    listing: Option<String>,
-    kind: Option<String>,
-    platform: Option<String>,
-    offset: Option<i64>,
-    limit: Option<i64>,
-) -> Result<Value> {
-    s.with(|c| {
-        query::discover(
-            c,
-            &query::DiscoverFilter {
-                listing: listing.as_deref(),
-                kind: kind.as_deref(),
-                platform: platform.as_deref(),
-                offset: offset.unwrap_or(0),
-                limit: limit.unwrap_or(100),
-            },
-        )
-    })
+fn catalog_discover(s: State<AppState>, filter: query::DiscoverFilter) -> Result<Value> {
+    s.with(|c| query::discover(c, &filter))
 }
 
 #[tauri::command]

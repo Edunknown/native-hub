@@ -437,3 +437,18 @@ button.row:hover .game { color: var(--accent-ink); }
 .error-note p { margin: 0; }
 .error-note .error-raw { font-size: 12px; overflow-wrap: anywhere; }
 .error-note .error-actions { font-size: 13px; }
+
+/* Catalog filters: plain labels with underlined selects, no boxes */
+.refine { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 26px; font-size: 13px; margin-top: -18px; }
+.refine label { display: inline-flex; align-items: baseline; gap: 8px; color: var(--muted); }
+.refine select {
+  appearance: none; background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
+  color: var(--fg); font: inherit; padding: 2px 16px 2px 0; cursor: pointer; max-width: 220px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: right 4px center, right 0 center; background-size: 4px 4px; background-repeat: no-repeat;
+}
+.refine select:hover { border-bottom-color: var(--muted); }
+.refine select:focus-visible { outline: none; border-bottom-color: var(--accent-ink); }
+.refine select option, .refine select optgroup { background: var(--surface); color: var(--fg); }
+.refine .check { cursor: pointer; }
+.refine .check input { accent-color: var(--accent); margin: 0; transform: translateY(1px); }

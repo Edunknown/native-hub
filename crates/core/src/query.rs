@@ -132,28 +132,71 @@ pub fn search(conn: &Connection, q: &str, limit: i64) -> Result<Vec<Value>> {
     Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
-pub struct DiscoverFilter<'a> {
-    pub listing: Option<&'a str>,
-    pub kind: Option<&'a str>,
-    pub platform: Option<&'a str>,
+/// Filters and sort order of the catalog browser (Discover and Search). Every field is
+/// optional; the interface sends them as camelCase JSON.
+#[derive(Debug, Default, Clone, serde::Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct DiscoverFilter {
+    /// Free text: every word must appear in the game, the project, its developers or the console.
+    pub q: Option<String>,
+    pub listing: Option<String>,
+    pub kind: Option<String>,
+    pub platform: Option<String>,
+    /// Console family (Nintendo, PlayStation…).
+    pub family: Option<String>,
+    /// Development status (complete, stable, playable, beta, experimental, unknown); any of them.
+    pub status: Vec<String>,
+    /// Hide abandoned projects and those taken down.
+    pub hide_inactive: bool,
+    /// relevance (default with text) | title (default without) | updated | newest | stars
+    pub sort: Option<String>,
     pub offset: i64,
     pub limit: i64,
 }
 
+const STATUSES: &[&str] = &["complete", "stable", "playable", "beta", "experimental", "unknown"];
+
 pub fn discover(conn: &Connection, f: &DiscoverFilter) -> Result<Value> {
-    let w = "WHERE (?1 IS NULL OR pr.listing = ?1) AND (?2 IS NULL OR pr.kind = ?2) AND (?3 IS NULL OR pr.platform = ?3)";
-    let total: i64 = conn.query_row(
-        &format!("SELECT COUNT(*) FROM projects pr {w}"),
-        params![f.listing, f.kind, f.platform],
-        |r| r.get(0),
-    )?;
-    let mut st = conn.prepare(&format!(
-        "SELECT pr.data, g.cover FROM projects pr JOIN games g ON g.slug = pr.game {w}
-         ORDER BY g.title, pr.name LIMIT ?4 OFFSET ?5"
-    ))?;
-    let items = st
-        .query_map(params![f.listing, f.kind, f.platform, f.limit.clamp(1, 500), f.offset.max(0)], project_data)?
-        .collect::<rusqlite::Result<Vec<_>>>()?;
+    let mut clauses: Vec<String> = Vec::new();
+    let mut args: Vec<String> = Vec::new();
+    let terms: Vec<String> = f.q.as_deref().map(fold).unwrap_or_default().split(' ').filter(|t| !t.is_empty()).map(|t| format!("%{t}%")).collect();
+    for t in &terms {
+        args.push(t.clone());
+        let n = args.len();
+        clauses.push(format!(
+            "(g.search LIKE ?{n} OR pr.search LIKE ?{n} OR LOWER(pl.name) LIKE ?{n} OR LOWER(COALESCE(pl.short, '')) LIKE ?{n})"
+        ));
+    }
+    for (column, value) in [("pr.listing", &f.listing), ("pr.kind", &f.kind), ("pr.platform", &f.platform), ("pl.family", &f.family)] {
+        if let Some(v) = value.as_deref().filter(|v| !v.is_empty()) {
+            args.push(v.to_owned());
+            clauses.push(format!("{column} = ?{}", args.len()));
+        }
+    }
+    let status: Vec<&str> = f.status.iter().map(String::as_str).filter(|s| STATUSES.contains(s)).collect();
+    if !status.is_empty() {
+        // Only known values reach the SQL text, so they can be inlined safely.
+        let list = status.iter().map(|s| format!("'{s}'")).collect::<Vec<_>>().join(", ");
+        let unknown = if status.contains(&"unknown") { " OR pr.dev_status IS NULL" } else { "" };
+        clauses.push(format!("(pr.dev_status IN ({list}){unknown})"));
+    }
+    if f.hide_inactive {
+        clauses.push("pr.abandoned = 0 AND pr.takedown = 0".into());
+    }
+    let w = if clauses.is_empty() { String::new() } else { format!("WHERE {}", clauses.join(" AND ")) };
+    let from = "FROM projects pr JOIN games g ON g.slug = pr.game JOIN platforms pl ON pl.slug = pr.platform";
+    let sort = f.sort.as_deref().unwrap_or(if terms.is_empty() { "title" } else { "relevance" });
+    let order = match sort {
+        "updated" => "pr.release_published_at IS NULL, pr.release_published_at DESC, g.title",
+        "newest" => "pr.created_at IS NULL, pr.created_at DESC, g.title",
+        "stars" => "COALESCE(pr.stars, 0) DESC, g.title",
+        "relevance" => "pr.listing = 'library' DESC, pr.takedown ASC, COALESCE(pr.stars, 0) DESC, g.title",
+        _ => "g.title, pr.name",
+    };
+    let total: i64 = conn.query_row(&format!("SELECT COUNT(*) {from} {w}"), rusqlite::params_from_iter(args.iter()), |r| r.get(0))?;
+    let limit = if f.limit <= 0 { 100 } else { f.limit.clamp(1, 500) };
+    let mut st = conn.prepare(&format!("SELECT pr.data, g.cover {from} {w} ORDER BY {order} LIMIT {limit} OFFSET {}", f.offset.max(0)))?;
+    let items = st.query_map(rusqlite::params_from_iter(args.iter()), project_data)?.collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(json!({ "total": total, "items": items }))
 }
 
@@ -260,7 +303,7 @@ mod tests {
         assert_eq!(g["game"]["cover"], "co3pah");
         assert!(g["projects"].as_array().unwrap().iter().all(|p| p["cover"] == "co3pah"));
         assert_eq!(search(&conn, "pokemon", 10).unwrap()[0]["cover"], Value::Null);
-        let r = discover(&conn, &DiscoverFilter { listing: Some("library"), kind: None, platform: None, offset: 0, limit: 5 }).unwrap();
+        let r = discover(&conn, &DiscoverFilter { listing: Some("library".into()), limit: 5, ..Default::default() }).unwrap();
         assert_eq!(r["items"][0]["cover"], "co3pah");
     }
 
@@ -277,11 +320,34 @@ mod tests {
     #[test]
     fn descubrir_filtra_y_pagina() {
         let conn = setup();
-        let r = discover(&conn, &DiscoverFilter { listing: Some("library"), kind: None, platform: None, offset: 0, limit: 1 }).unwrap();
+        let r = discover(&conn, &DiscoverFilter { listing: Some("library".into()), limit: 1, ..Default::default() }).unwrap();
         assert_eq!(r["total"], 2);
         assert_eq!(r["items"].as_array().unwrap().len(), 1);
-        let r = discover(&conn, &DiscoverFilter { listing: None, kind: Some("static_recomp"), platform: Some("switch2"), offset: 0, limit: 50 }).unwrap();
+        let r = discover(&conn, &DiscoverFilter { kind: Some("static_recomp".into()), platform: Some("switch2".into()), limit: 50, ..Default::default() }).unwrap();
         assert_eq!(r["total"], 1);
+    }
+
+    #[test]
+    fn descubrir_con_texto_familia_estado_y_orden() {
+        let conn = setup();
+        let all = |f: DiscoverFilter| discover(&conn, &DiscoverFilter { limit: 50, ..f }).unwrap();
+        // Text works like search and combines with the other filters.
+        let r = all(DiscoverFilter { q: Some("majora".into()), ..Default::default() });
+        assert_eq!(r["total"], 2);
+        let r = all(DiscoverFilter { q: Some("majora recomp".into()), ..Default::default() });
+        assert_eq!(r["items"][0]["slug"], "b");
+        let r = all(DiscoverFilter { q: Some("majora".into()), listing: Some("in_development".into()), ..Default::default() });
+        assert_eq!(r["total"], 0);
+        let r = all(DiscoverFilter { family: Some("Nintendo".into()), ..Default::default() });
+        let total_nintendo = r["total"].as_i64().unwrap();
+        let r = all(DiscoverFilter { family: Some("PlayStation".into()), ..Default::default() });
+        assert!(total_nintendo > 0 && r["total"].as_i64().unwrap() + total_nintendo == discover(&conn, &DiscoverFilter::default()).unwrap()["total"].as_i64().unwrap());
+        // Unknown statuses are ignored instead of reaching the SQL.
+        let r = all(DiscoverFilter { status: vec!["x'); DROP TABLE projects; --".into()], ..Default::default() });
+        assert_eq!(r["total"], discover(&conn, &DiscoverFilter::default()).unwrap()["total"]);
+        for sort in ["title", "updated", "newest", "stars", "relevance", "bogus"] {
+            all(DiscoverFilter { sort: Some(sort.into()), ..Default::default() });
+        }
     }
 
     #[test]

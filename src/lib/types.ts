@@ -118,10 +118,18 @@ export interface Home {
   newest: Project[]
 }
 
+export type SortOrder = 'relevance' | 'title' | 'updated' | 'newest' | 'stars'
+
+/** Filters of the catalog browser (Discover and Search). Same fields as query::DiscoverFilter. */
 export interface DiscoverFilter {
+  q?: string
   listing?: Listing
   kind?: ProjectKind
   platform?: string
+  family?: string
+  status?: DevStatus[]
+  hideInactive?: boolean
+  sort?: SortOrder
   offset?: number
   limit?: number
 }
