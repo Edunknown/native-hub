@@ -8,6 +8,7 @@ import { api, isTauri, pickPath } from '../lib/api'
 import { fmtDateTime } from '../lib/format'
 import type { Installation } from '../lib/types'
 import { ConsoleIcon } from '../components/ConsoleIcon'
+import { UpdatePanel } from '../components/UpdatePanel'
 
 function Pending({ inst, onChange }: { inst: Installation; onChange: () => void }) {
   const task = useTask()
@@ -66,6 +67,7 @@ function InstallationRow({ inst }: { inst: Installation }) {
   const { go } = useNav()
   const { platformOf } = useCatalog()
   const [open, setOpen] = useState(false)
+  const [updating, setUpdating] = useState(false)
   const [confirm, setConfirm] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const p = inst.projectData
@@ -92,9 +94,15 @@ function InstallationRow({ inst }: { inst: Installation }) {
           <div className="inst-more">
             {inst.executablePath && <p className="note-line">Ejecutable: <span className="mono">{inst.executablePath}</span></p>}
             {rules.map((r) => <UserFileChecker key={r.key} slug={inst.project} rule={r} installation={inst.id} />)}
-            {inst.updateAvailable && <p className="note-line">Actualizar desde aquí llega en la fase 6. Mientras tanto puedes descargar la versión nueva desde la ficha.</p>}
+            {inst.config.updateBackup && (
+              <p className="note-line">
+                Actualizado de {inst.config.updateBackup.fromTag} a {inst.config.updateBackup.toTag}.{' '}
+                <button type="button" className="link" onClick={act(() => task({ title: `Deshaciendo la actualización de ${p?.name ?? ''}`, steps: ['Restaurando los archivos anteriores', 'Quitando los archivos nuevos', 'Actualizando la biblioteca'], minMs: 2200, done: `Vuelve a estar en ${inst.config.updateBackup?.fromTag}` }, () => api.updateRollback(inst.id)))}>Deshacer la actualización</button>
+              </p>
+            )}
           </div>
         )}
+        {updating && <UpdatePanel inst={inst} onClose={() => { setUpdating(false); lib.reload() }} />}
         {confirm && (
           <div className="pending">
             <p>¿Desinstalar {p?.name}? Se borrará la carpeta <span className="mono">{inst.installDir}</span>, <strong>incluidas las partidas guardadas y la configuración que el juego tenga dentro</strong>. No se puede deshacer.</p>
@@ -111,6 +119,9 @@ function InstallationRow({ inst }: { inst: Installation }) {
         {inst.state === 'ready'
           ? <button type="button" className="btn-primary" onClick={act(() => api.launch(inst.id))}>Ejecutar</button>
           : <span className="muted">Falta un paso</span>}
+        {inst.updateAvailable && !updating && (
+          <button type="button" className="btn-line" onClick={() => setUpdating(true)}>Actualizar a {inst.latestTag}</button>
+        )}
         <span className="dl-actions">
           <button type="button" className="link" onClick={() => api.openInstallFolder(inst.id)}>Carpeta</button>
           {inst.state === 'ready' && (

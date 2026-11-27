@@ -297,6 +297,7 @@ export interface Installation {
     method?: InstallPlan['method']
     pending?: 'choose_exe' | 'no_exe' | 'run_installer' | 'manual_extract' | null
     candidates?: string[]
+    updateBackup?: { fromTag: string; toTag: string; at: string } | null
   }
   projectData: Project
 }
@@ -330,4 +331,23 @@ export interface ProjectReleases {
   project: string
   repoUrl: string
   releases: ReleaseChoice[]
+}
+
+// ---------- Fase 6 ----------
+
+export interface UpdatePlan {
+  ready: boolean
+  reason?: 'download' | 'method'
+  method?: string
+  currentTag: string | null
+  newTag?: string
+  assetName?: string
+  installDir?: string
+  added?: number
+  replaced?: number
+  preserved?: { path: string; why: 'adapter' | 'modified' }[]
+  keptOnlyYours?: number
+  sampleReplaced?: string[]
+  sampleAdded?: string[]
+  hasPreviousBackup?: boolean
 }

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLive } from '../app/live'
+import { useLibrary } from '../app/library'
+import { useNav } from '../app/nav'
 import { ProjectRow } from '../components/ProjectRow'
 import { api } from '../lib/api'
 import { fmtDate, fmtDateTime, fmtNum } from '../lib/format'
@@ -44,6 +46,9 @@ export function QuotaLine() {
 
 export function Updates() {
   const live = useLive()
+  const lib = useLibrary()
+  const { go } = useNav()
+  const mine = lib.items.filter((i) => i.updateAvailable)
   const { status, version } = live
   const [events, setEvents] = useState<UpdateEvent[] | null>(null)
 
@@ -90,6 +95,18 @@ export function Updates() {
         </section>
       )}
 
+      {mine.length > 0 && (
+        <section>
+          <div className="sec-head"><h2>Tus juegos con versión nueva</h2><button type="button" onClick={() => go({ name: 'library' })}>Actualizar en la biblioteca</button></div>
+          <ul className="list">
+            {mine.map((i) => (
+              <ProjectRow key={i.id} project={i.projectData}
+                end={<span className="mono">{i.releaseTag} → <span className="yes-plain">{i.latestTag}</span></span>} />
+            ))}
+          </ul>
+        </section>
+      )}
+
       {GROUPS.map(({ kind, title }) => {
         const list = (events ?? []).filter((e) => e.kind === kind)
         if (!list.length) return null
@@ -111,7 +128,7 @@ export function Updates() {
       {events && events.length === 0 && !status?.unsupported && (
         <p className="empty">Todavía no se ha detectado ningún cambio. Las novedades aparecerán aquí después de cada comprobación.</p>
       )}
-      <p className="devnote">Las actualizaciones de lo que tengas instalado llegarán con la biblioteca (fase 6). Aquí se ven los cambios del catálogo.</p>
+      <p className="devnote">Al actualizar un juego instalado se conservan tus partidas y tu configuración, y se puede deshacer.</p>
     </main>
   )
 }

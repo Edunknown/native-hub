@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
 use native_hub_core::http::UreqFetcher;
-use native_hub_core::{Error, Result, catalog, db, download, install, query, releases, scanner};
+use native_hub_core::{Error, Result, catalog, db, download, install, query, releases, scanner, update};
 use rusqlite::Connection;
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -487,6 +487,41 @@ fn user_files_list(s: State<AppState>, installation: i64) -> Result<Vec<Value>> 
     s.with(|c| install::user_files(c, installation))
 }
 
+// ---------- Actualizar lo instalado (fase 6) ----------
+
+fn blocking<T: Send + 'static>(app: AppHandle, f: impl FnOnce(&AppState, &Connection, &std::path::Path) -> Result<T> + Send + 'static) -> impl std::future::Future<Output = Result<T>> {
+    async move {
+        tauri::async_runtime::spawn_blocking(move || {
+            let s = app.state::<AppState>();
+            let root = s.install_root()?;
+            let conn = s.job_conn()?;
+            f(&s, &conn, &root)
+        })
+        .await
+        .map_err(|e| Error::Invalid(e.to_string()))?
+    }
+}
+
+#[tauri::command]
+async fn update_plan(app: AppHandle, id: i64) -> Result<Value> {
+    blocking(app, move |_, c, root| update::plan(c, id, root)).await
+}
+
+#[tauri::command]
+async fn update_apply(app: AppHandle, id: i64) -> Result<Value> {
+    blocking(app, move |_, c, root| update::apply(c, id, root)).await
+}
+
+#[tauri::command]
+async fn update_rollback(app: AppHandle, id: i64) -> Result<Value> {
+    blocking(app, move |_, c, root| update::rollback(c, id, root)).await
+}
+
+#[tauri::command]
+async fn update_discard(app: AppHandle, id: i64) -> Result<()> {
+    blocking(app, move |_, c, root| update::discard(c, id, root)).await
+}
+
 // ---------- Token de GitHub ----------
 
 #[tauri::command]
@@ -606,6 +641,10 @@ pub fn run() {
             installation_uninstall,
             user_file_check,
             user_files_list,
+            update_plan,
+            update_apply,
+            update_rollback,
+            update_discard,
         ])
         .run(tauri::generate_context!())
         .expect("error al iniciar NATIVE HUB");

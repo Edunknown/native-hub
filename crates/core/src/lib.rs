@@ -5,6 +5,7 @@
 //! Fase 3: Release Manager (releases en vivo) y Repository Scanner (cola de revisión).
 //! Fase 4: Download Manager (descargas oficiales, reanudables, con SHA-256).
 //! Fase 5: Installation Manager, adaptadores declarativos y Game File Validator.
+//! Fase 6: Update Manager (actualizar sin perder partidas, con copia y deshacer).
 
 pub mod catalog;
 pub mod db;
@@ -17,5 +18,6 @@ pub mod releases;
 pub mod scanner;
 pub mod text;
 pub mod time;
+pub mod update;
 
 pub use error::{Error, Result};

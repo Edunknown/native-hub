@@ -260,7 +260,15 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 - **Cargas visibles.** `useTask()` muestra un panel con pasos y barra para instalar, desinstalar, borrar descargas, aprobar o descartar candidatos, comprobar releases, comprobar archivos, cambiar el ejecutable y guardar el token. La acción real se ejecuta a la vez; el panel garantiza una duración mínima (1–3 s según la acción) y, si falla, enseña el error.
 - **Accesibilidad.** Con «reducir movimiento» de Windows la animación es estática y las duraciones mínimas bajan a ~0,4 s.
 
-## 13. Estado real de cada función
+## 13. Actualizaciones de lo instalado (fase 6)
+
+- **Update Manager** (`crates/core/src/update.rs`). Se descarga la versión nueva (la recomendada de la última release o la que elijas), se extrae aparte (`<carpeta de juegos>\.native-hub\staging`) y se compara con la instalación. La interfaz enseña cuántos archivos se reemplazan, cuántos son nuevos y cuáles se conservan, y solo aplica al pulsar «Aplicar».
+- **Qué se conserva.** Nada se borra: lo que solo está en tu carpeta (partidas, capturas, mods) se queda. Un archivo que también viene en la versión nueva se conserva si el adaptador lo protege (`preserve`) o si es de partidas o configuración (`*.sav`, `save/`, `saves/`, `mods/`, `*.ini`, `*.cfg`, `*.json`, `*.toml`, `*.xml`…) y cambió después de instalar.
+- **Seguridad.** Antes de reemplazar se copia cada archivo afectado a `.native-hub\backups`. Si algo falla a mitad, se restaura todo. Tras actualizar, «Deshacer la actualización» vuelve a la versión anterior (se guarda una copia por juego).
+- **Formatos.** ZIP y EXE portable. Los instaladores y 7z/RAR se actualizan a mano.
+- **Pruebas.** Cuatro con archivos generados (patrones, conservar partida y configuración, deshacer, protección del adaptador, sin descarga) y una real (`--ignored`) que instala Starship v1.0.0, guarda una partida, actualiza a v2.0.0 y lo deshace.
+
+## 14. Estado real de cada función
 
 | Función | Estado |
 |---|---|
@@ -276,4 +284,4 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 | Instalación con plan, adaptadores declarativos y validación de archivos del usuario | Hecho (fase 5) |
 | Biblioteca: ejecutar, cambiar ejecutable, abrir carpeta, desinstalar | Hecho (fase 5) |
 | Animación de inicio con música y paneles de progreso | Hecho (fase 6.1) |
-| Actualizar instalaciones conservando partidas y configuración | No implementado (fase 6). Se avisa de que hay versión nueva. |
+| Actualizar instalaciones conservando partidas y configuración, con deshacer | Hecho (fase 6) |

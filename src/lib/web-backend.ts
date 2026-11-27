@@ -94,6 +94,7 @@ Object.assign(handlers, {
   refresh_project: desktopOnly, refresh_stale: desktopOnly, cancel_job: desktopOnly, scan_repositories: desktopOnly,
   downloads_list: () => [],
   installations_list: () => [],
+  update_plan: desktopOnly, update_apply: desktopOnly, update_rollback: desktopOnly, update_discard: desktopOnly,
   install_root_get: () => ({ path: 'Documentos\NATIVE HUB', default: true }),
   install_plan: desktopOnly, install_project: desktopOnly, install_root_set: desktopOnly, installation_set_exe: desktopOnly, installation_launch: desktopOnly,
   installation_open_folder: desktopOnly, installation_run_installer: desktopOnly, installation_uninstall: desktopOnly, user_file_check: desktopOnly, user_files_list: () => [],

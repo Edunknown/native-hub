@@ -95,3 +95,39 @@ fn releases_reales_de_tomodachi() {
         }
     }
 }
+
+#[test]
+#[ignore]
+fn actualizacion_real_de_starship() {
+    use std::sync::atomic::AtomicU8;
+    use native_hub_core::{download, install, update};
+    let conn = setup();
+    let f = UreqFetcher::new(std::env::var("GITHUB_TOKEN").ok());
+    let dir = tempfile::tempdir().unwrap();
+    let slug = "harbourmasters-starship";
+    let rels = releases::project_releases(&conn, &f, slug, 10).unwrap();
+    let list = rels["releases"].as_array().unwrap();
+    // Primera release anterior con un archivo de Windows.
+    let old = list.iter().skip(1).find(|r| r["assets"].as_array().unwrap().iter().any(|a| a["os"] == "windows")).expect("release anterior");
+    let asset = old["assets"].as_array().unwrap().iter().find(|a| a["os"] == "windows" && a["name"].as_str().unwrap().ends_with(".zip")).unwrap();
+    println!("antigua {} {}", old["tag"], asset["name"]);
+    let (rel, a) = releases::find_release_asset(&conn, &f, slug, asset["url"].as_str().unwrap()).unwrap();
+    let t = download::UreqTransport::default();
+    let id = download::enqueue_asset(&conn, &dir.path().join("dl"), slug, Some(download::ChosenAsset { url: a.url, name: a.name, size: a.size, sha256: a.sha256, tag: rel.tag })).unwrap();
+    assert_eq!(download::run(&conn, &t, id, &AtomicU8::new(download::RUN), |_| {}).unwrap(), "done");
+    let root = dir.path().join("Juegos");
+    let inst = install::install(&conn, slug, &root).unwrap();
+    let iid = inst["id"].as_i64().unwrap();
+    std::fs::write(root.join(slug).join("mi-partida.sav"), b"partida").unwrap();
+    println!("instalada {}", inst["releaseTag"]);
+
+    let id2 = download::enqueue(&conn, &dir.path().join("dl"), slug).unwrap();
+    assert_eq!(download::run(&conn, &t, id2, &AtomicU8::new(download::RUN), |_| {}).unwrap(), "done");
+    let plan = update::plan(&conn, iid, &root).unwrap();
+    println!("plan: nuevos {} reemplazados {} conservados {} solo tuyos {}", plan["added"], plan["replaced"], plan["preserved"].as_array().map(|a| a.len()).unwrap_or(0), plan["keptOnlyYours"]);
+    let r = update::apply(&conn, iid, &root).unwrap();
+    println!("aplicada {} → {}", r["fromTag"], r["toTag"]);
+    assert_eq!(std::fs::read(root.join(slug).join("mi-partida.sav")).unwrap(), b"partida");
+    let back = update::rollback(&conn, iid, &root).unwrap();
+    println!("deshecha: {}", back["releaseTag"]);
+}

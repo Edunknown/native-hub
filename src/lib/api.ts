@@ -4,7 +4,7 @@
 // las funciones en vivo (releases, escáner, token) solo existen en la app.
 
 import type {
-  Approval, CandidateList, DownloadItem, DownloadProgress, InstallPlan, Installation, UserFileCheck, ProjectReleases, DiscoverFilter, DiscoverResult, GameDetail, Home, JobFinished, JobProgress,
+  Approval, CandidateList, DownloadItem, DownloadProgress, InstallPlan, Installation, UserFileCheck, ProjectReleases, UpdatePlan, DiscoverFilter, DiscoverResult, GameDetail, Home, JobFinished, JobProgress,
   Platform, Project, RefreshResult, ReleasesStatus, Summary, UpdateEvent,
 } from './types'
 
@@ -66,6 +66,11 @@ export const api = {
   runInstaller: (id: number) => call<void>('installation_run_installer', { id }),
   uninstall: (id: number, deleteFiles: boolean) => call<void>('installation_uninstall', { id, deleteFiles }),
   checkUserFile: (slug: string, key: string, path: string, installation?: number) => call<UserFileCheck>('user_file_check', { slug, key, path, installation }),
+
+  updatePlan: (id: number) => call<UpdatePlan>('update_plan', { id }),
+  updateApply: (id: number) => call<{ fromTag: string; toTag: string; replaced: number; added: number; preserved: number }>('update_apply', { id }),
+  updateRollback: (id: number) => call<Installation>('update_rollback', { id }),
+  updateDiscard: (id: number) => call<void>('update_discard', { id }),
 
   setGithubToken: (value: string) => call<{ ok: boolean }>('set_github_token', { value }),
   clearGithubToken: () => call<void>('clear_github_token'),

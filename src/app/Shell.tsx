@@ -95,7 +95,7 @@ export function Shell({ children, theme, onToggleTheme }: { children: ReactNode;
         </header>
 
         <div className="phase-note">
-          <b>Fase 5 · instalación.</b> Descarga, instala y ejecuta; actualizar lo instalado llega en la fase 6.
+          <b>Fase 6 · actualizaciones.</b> Descarga, instala, ejecuta y actualiza conservando tus partidas.
         </div>
 
         <div className="scroll" ref={scroller}>{children}</div>
