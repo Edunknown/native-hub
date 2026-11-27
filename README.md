@@ -11,7 +11,7 @@
 
 <p align="center"><b>English</b> · <a href="README.es.md">Español</a></p>
 
-> **Version 1.0.0.** A catalog of ≈1,550 projects across 40 platforms, live
+> **Version 1.1.0.** A catalog of ≈1,550 projects across 40 platforms, live
 > release checks, a GitHub and GitLab scanner with a review queue, Recompendium sync, official
 > downloads with SHA-256, installation with a plan and adapters, updates that keep your saves,
 > automatic checks every 6 or 24 hours, game covers from IGDB, self-updates, a portable build,
@@ -101,6 +101,7 @@ Layout: `src/` UI, `src-tauri/` desktop app, `crates/core/` Rust core (SQLite, r
 | 0.2.1 | English UI (Spanish available), portable build with data next to the executable |
 | 0.3.0 | IGDB game covers, signed self-updates from GitHub Releases |
 | 1.0.0 | MIT license, catalog served from GitHub, search and filters, guided first run, clear errors and a copyable log, adapters tested in CI, the N app icon |
+| 1.1.0 | ZIP downloads install on their own and the ZIP is deleted; fallback to the ZIP when an .exe cannot be downloaded |
 
 ## Licenses and attribution
 
