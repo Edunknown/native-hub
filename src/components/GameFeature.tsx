@@ -96,7 +96,7 @@ export function CompatSheet({ project }: { project: Project }) {
 
 /** Descargar el ejecutable Windows de la release oficial (fase 4). */
 function DownloadButton({ project, onInstall, onChoose }: { project: Project; onInstall: () => void; onChoose: () => void }) {
-  const { items, progress, start, error, available } = useDownloads()
+  const { items, progress, start, error, available, autoInstall, fallback } = useDownloads()
   const { go } = useNav()
   const lib = useLibrary()
   const inst = lib.byProject(project.slug)
@@ -107,6 +107,16 @@ function DownloadButton({ project, onInstall, onChoose }: { project: Project; on
           ? <button type="button" className="btn-primary" onClick={() => liveApi.launch(inst.id)}>{tr('Ejecutar', 'Launch')}</button>
           : <button type="button" className="btn-line" onClick={() => go({ name: 'library' })}>{tr('Terminar la instalación', 'Finish installing')}</button>}
         <button type="button" className="link" onClick={() => go({ name: 'library' })}>{tr('En la biblioteca', 'In your library')}{inst.updateAvailable ? tr(' · actualización disponible', ' · update available') : ''}</button>
+      </>
+    )
+  }
+  const auto = autoInstall[project.slug]
+  const fellBack = fallback[project.slug]
+  if (auto?.phase === 'started') {
+    return (
+      <>
+        <button type="button" className="btn-line" disabled>{tr('Descomprimiendo e instalando…', 'Unpacking and installing…')}</button>
+        <span className="note-line">{tr('El ZIP se descomprime en tu carpeta de juegos y después se borra.', 'The ZIP is unpacked into your games folder and then deleted.')}</span>
       </>
     )
   }
@@ -130,16 +140,20 @@ function DownloadButton({ project, onInstall, onChoose }: { project: Project; on
     const p = progress[dl.id]
     const total = p?.total ?? dl.total
     const pct = total ? Math.round(((p?.done ?? dl.done) / total) * 100) : null
-    return (
+    const button = (
       <button type="button" className="btn-line" onClick={() => go({ name: 'downloads' })}>
         {dl.state === 'queued' ? tr('En cola…', 'Queued…') : `${tr('Descargando', 'Downloading')}${pct != null ? ` ${pct} %` : '…'}`}
       </button>
     )
+    return fellBack
+      ? <>{button}<span className="note-line">{tr('El .exe no se pudo descargar. Probando con el ZIP de la misma versión', 'The .exe could not be downloaded. Trying the ZIP of the same version')}: <span className="mono">{fellBack}</span></span></>
+      : button
   }
   if (dl && dl.state === 'done') {
     return (
       <>
         <button type="button" className="btn-primary" onClick={onInstall}>{tr('Instalar…', 'Install…')}</button>
+        {auto?.phase === 'failed' && <span className="note-line err">{tr('No se pudo instalar solo', 'Could not install on its own')}: {auto.error}</span>}
         <span className="note-line"><span className="yes">{tr('Descargado', 'Downloaded')} {dl.assetName ?? ''} {dl.releaseTag ?? ''}</span>{dl.verified ? tr(' · SHA-256 comprobado', ' · SHA-256 verified') : ''}</span>
         {choose}
       </>
@@ -267,7 +281,7 @@ export function GameFeature({ detail, eyebrow, initialProject, linkTitle, onRefr
               <div className="note-line">
                 {project.checkedAt && <>{tr('Comprobado el', 'Checked on')} {fmtDateTime(project.checkedAt)}. </>}
                 {project.listing === 'library'
-                  ? tr('La descarga sale de la release oficial y se comprueba su SHA-256 cuando el proyecto lo publica. Antes de instalar verás el plan, y nada se ejecuta hasta que pulses «Ejecutar».', 'The download comes from the official release and its SHA-256 is checked when the project publishes one. You will see the plan before installing, and nothing runs until you press "Launch".')
+                  ? tr('La descarga sale de la release oficial y se comprueba su SHA-256 cuando el proyecto lo publica. Si es un ZIP, se descomprime solo en tu carpeta de juegos y se borra; nada se ejecuta hasta que pulses «Ejecutar».', 'The download comes from the official release and its SHA-256 is checked when the project publishes one. A ZIP is unpacked into your games folder on its own and then deleted; nothing runs until you press "Launch".')
                   : project.checkedAt == null
                     ? tr('Release todavía sin comprobar. Hasta entonces no se puede instalar.', 'Release not checked yet. It cannot be installed until then.')
                     : tr('Su última release oficial no publica un ejecutable para Windows. Se puede consultar, pero no instalar.', 'Its latest official release does not publish a Windows executable. You can browse it, but not install it.')}

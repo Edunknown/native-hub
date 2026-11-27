@@ -165,7 +165,7 @@ pub fn plan(conn: &Connection, slug: &str, root: &Path) -> Result<Value> {
     let mut steps: Vec<Value> = Vec::new();
     steps.push(json!({"kind": "download", "text": crate::t!("Usar el archivo descargado de la release oficial: {asset_name}", "Use the file downloaded from the official release: {asset_name}"), "done": dl.is_some()}));
     match method {
-        Method::ExtractZip => steps.push(json!({"kind": "extract", "text": crate::t!("Extraer el ZIP en {}", "Extract the ZIP into {}", dir.display())})),
+        Method::ExtractZip => steps.push(json!({"kind": "extract", "text": crate::t!("Extraer el ZIP en {} y después borrar el ZIP", "Extract the ZIP into {} and then delete the ZIP", dir.display())})),
         Method::CopyExe => steps.push(json!({"kind": "copy", "text": crate::t!("Copiar el ejecutable portable a {}", "Copy the portable executable to {}", dir.display())})),
         Method::Installer => steps.push(json!({"kind": "installer", "text": crate::i18n::tr("Es un instalador: NATIVE HUB lo abrirá solo cuando tú lo pidas, y después eliges el ejecutable que haya instalado.", "It is an installer: NATIVE HUB will only run it when you ask, and then you choose the executable it installed.")})),
         Method::Manual => steps.push(json!({"kind": "manual", "text": crate::i18n::tr("Este formato (7z, RAR u otro) no se extrae automáticamente: se abrirá la carpeta para que lo hagas tú y después eliges el ejecutable.", "This format (7z, RAR or other) is not extracted automatically: the folder will open so you can do it, and then you choose the executable.")})),
@@ -407,6 +407,25 @@ pub fn install(conn: &Connection, slug: &str, root: &Path) -> Result<Value> {
     let id = conn.last_insert_rowid();
     conn.execute("INSERT INTO audit_log (action, subject, detail) VALUES ('install', ?1, ?2)", params![slug, dir.to_string_lossy()])?;
     get(conn, id)
+}
+
+/// Installs and, when the file was a ZIP that extracted fine, deletes the ZIP and its entry in
+/// Downloads: the game folder now holds everything. Other formats (portable .exe, installer,
+/// 7z) keep their file. Returns the installation, with `zipRemoved` set when it was deleted.
+pub fn install_and_clean(conn: &Connection, slug: &str, root: &Path, downloads_dir: &Path) -> Result<Value> {
+    let dl = finished_download(conn, slug, "")?;
+    let mut v = install(conn, slug, root)?;
+    let extracted = v.pointer("/config/method").and_then(Value::as_str) == Some("extract_zip");
+    if let (true, Some((id, path, _, _))) = (extracted, dl) {
+        match download::remove(conn, downloads_dir, id, true) {
+            Ok(()) => {
+                let gone = !Path::new(&path).exists();
+                v["zipRemoved"] = json!(gone);
+            }
+            Err(e) => v["zipRemoveError"] = json!(e.to_string()),
+        }
+    }
+    Ok(v)
 }
 
 pub fn get(conn: &Connection, id: i64) -> Result<Value> {

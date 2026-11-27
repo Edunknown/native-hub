@@ -129,6 +129,23 @@ export async function onDownloads(progress: (p: DownloadProgress) => void, finis
   return () => { a(); b() }
 }
 
+/** A downloaded ZIP is being installed on its own, or has finished installing. */
+export interface AutoInstall { slug: string; phase: 'started' | 'done' | 'failed'; state?: string; zipRemoved?: boolean; error?: string }
+/** The .exe failed to download and the ZIP of the same release was queued instead. */
+export interface DownloadFallback { slug: string; from: number; to: number; name: string }
+
+export async function onAutoInstall(fn: (e: AutoInstall) => void): Promise<() => void> {
+  if (!isTauri) return () => {}
+  const { listen } = await import('@tauri-apps/api/event')
+  return listen<AutoInstall>('auto-install', (e) => fn(e.payload))
+}
+
+export async function onDownloadFallback(fn: (e: DownloadFallback) => void): Promise<() => void> {
+  if (!isTauri) return () => {}
+  const { listen } = await import('@tauri-apps/api/event')
+  return listen<DownloadFallback>('download-fallback', (e) => fn(e.payload))
+}
+
 /** Selector de archivos o carpetas del sistema (solo en la app de escritorio). */
 export async function pickPath(opts: { directory?: boolean; title?: string; extensions?: string[]; defaultPath?: string }): Promise<string | null> {
   if (!isTauri) return null

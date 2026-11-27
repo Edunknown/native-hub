@@ -227,6 +227,32 @@ pub fn pick_windows_asset<'a>(assets: &'a [AssetInfo], pattern: Option<&str>) ->
     WindowsPick { asset, ambiguous }
 }
 
+/// Best Windows ZIP among a release's files (for when the .exe or installer cannot be
+/// downloaded, which happens often: browsers and antivirus treat .exe files with suspicion).
+pub fn pick_windows_zip(assets: &[AssetInfo]) -> Option<&AssetInfo> {
+    let zips: Vec<AssetInfo> = assets.iter().filter(|a| a.name.to_lowercase().ends_with(".zip")).cloned().collect();
+    let name = pick_windows_asset(&zips, None).asset.map(|a| a.name.clone())?;
+    assets.iter().find(|a| a.name == name)
+}
+
+/// ZIP to try when the download of a non-ZIP file of `tag` failed: same project, same
+/// release, from the official repository. `None` if that release has no Windows ZIP.
+pub fn zip_fallback(conn: &Connection, f: &dyn Fetcher, slug: &str, tag: &str) -> Result<Option<(ReleaseInfo, AssetInfo)>> {
+    let repo_url: String = conn
+        .query_row("SELECT repo_url FROM projects WHERE slug = ?1", params![slug], |r| r.get(0))
+        .optional()?
+        .flatten()
+        .ok_or_else(|| Error::NotFound(crate::t!("proyecto {slug}", "project {slug}")))?;
+    let forge = Forge::from_repo_url(&repo_url).ok_or_else(|| Error::Invalid(crate::i18n::tr("forja no soportada", "unsupported forge").into()))?;
+    for r in list_releases(conn, f, &forge, 30)? {
+        if r.tag == tag {
+            let zip = pick_windows_zip(&r.assets).cloned();
+            return Ok(zip.map(|z| (r, z)));
+        }
+    }
+    Ok(None)
+}
+
 // ---------- Refrescar proyectos ----------
 
 #[derive(Debug, Clone, Serialize)]
