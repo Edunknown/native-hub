@@ -91,7 +91,7 @@ impl Fetcher for UreqFetcher {
         } else {
             resp.body_mut()
                 .with_config()
-                .limit(8 * 1024 * 1024)
+                .limit(32 * 1024 * 1024)
                 .read_to_string()
                 .map_err(|e| Error::Http(e.to_string()))?
         };

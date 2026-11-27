@@ -7,6 +7,7 @@ import { playStartupChime, setStartupSound, startupSoundEnabled } from '../app/s
 
 import type { Theme } from '../app/theme'
 import { api, isTauri, openExternal, pickPath } from '../lib/api'
+import type { Automation, CatalogStatus } from '../lib/types'
 import { fmtDateTime, fmtSize } from '../lib/format'
 import { lang, setLang, tr } from '../lib/i18n'
 
@@ -26,20 +27,57 @@ function CoverCacheSetting() {
 const AUTO: { id: string; label: string }[] = [{ id: 'off', label: tr('Nunca', 'Never') }, { id: '6h', label: tr('Cada 6 h', 'Every 6 h') }, { id: '24h', label: tr('Cada día', 'Daily') }]
 
 function AutomationSetting() {
-  const [a, setA] = useState<{ releases: string; discover: string; lastScan: string | null; lastAutoRefresh: string | null } | null>(null)
+  const [a, setA] = useState<Automation | null>(null)
   useEffect(() => { if (isTauri) api.automation().then(setA, () => {}) }, [])
   if (!isTauri) return <span className="tbd">{tr('Solo en la app de escritorio', 'Desktop app only')}</span>
   if (!a) return null
-  const set = (releases: string, discover: string) => api.setAutomation(releases, discover).then(setA)
+  const set = (releases: string, discover: string, catalog = a.catalog) => api.setAutomation(releases, discover, catalog).then(setA)
   return (
     <>
       <p className="muted">{tr('Comprobar versiones nuevas', 'Check for new versions')}</p>
       <span className="seg">{AUTO.map((o) => <button key={o.id} type="button" aria-pressed={a.releases === o.id} onClick={() => set(o.id, a.discover)}>{o.label}</button>)}</span>
+      <p className="muted" style={{ marginTop: 12 }}>{tr('Actualizar el catálogo desde GitHub', 'Update the catalog from GitHub')}</p>
+      <span className="seg">{AUTO.map((o) => <button key={o.id} type="button" aria-pressed={a.catalog === o.id} onClick={() => set(a.releases, a.discover, o.id)}>{o.label}</button>)}</span>
       <p className="muted" style={{ marginTop: 12 }}>{tr('Buscar proyectos nuevos (GitHub, GitLab y Recompendium)', 'Find new projects (GitHub, GitLab and Recompendium)')}</p>
       <span className="seg">{AUTO.map((o) => <button key={o.id} type="button" aria-pressed={a.discover === o.id} onClick={() => set(a.releases, o.id)}>{o.label}</button>)}</span>
       <p className="note-line">{tr('Funciona mientras NATIVE HUB está abierto. Lo encontrado va a la cola de revisión; nada se descarga ni se instala solo.', 'Runs while NATIVE HUB is open. Findings go to the review queue; nothing is downloaded or installed on its own.')}
         {a.lastAutoRefresh && <> {tr('Última comprobación automática', 'Last automatic check')}: {fmtDateTime(a.lastAutoRefresh)}.</>}
         {a.lastScan && <> {tr('Última búsqueda', 'Last search')}: {fmtDateTime(a.lastScan)}.</>}</p>
+    </>
+  )
+}
+
+function CatalogSetting() {
+  const { summary } = useCatalog()
+  const live = useLive()
+  const [st, setSt] = useState<CatalogStatus | null>(null)
+  const [msg, setMsg] = useState<string | null>(null)
+  // Reload after any background job, including the catalog check itself.
+  useEffect(() => { if (isTauri) api.automation().then((a) => setSt(a.catalogStatus), () => {}) }, [live.version])
+  const running = live.progress?.job === 'catalog'
+  const check = async () => {
+    setMsg(null)
+    try { if (!(await api.catalogRemoteCheck())) setMsg(tr('Hay otra tarea en marcha; inténtalo en un momento.', 'Another task is running; try again in a moment.')) }
+    catch (e) { setMsg(String(e)) }
+  }
+  const result = live.lastFinished?.job === 'catalog' ? (live.lastFinished.result.catalog as { result: string } | undefined)?.result : undefined
+  return (
+    <>
+      <p className="num">{tr('Versión del', 'Version of')} {fmtDateTime(summary.generatedAt) ?? '—'} · {summary.projectCount} {tr('proyectos', 'projects')}{summary.schemaVersion != null && <span className="muted">{tr(' · base de datos', ' · database')} v{summary.schemaVersion}</span>}</p>
+      {isTauri && (
+        <div className="actions">
+          <button type="button" className="btn-line" disabled={running} onClick={check}>{running ? tr('Comprobando…', 'Checking…') : tr('Buscar catálogo nuevo', 'Check for a new catalog')}</button>
+        </div>
+      )}
+      <p className="note-line">
+        {tr('El catálogo se publica en el repositorio de NATIVE HUB en GitHub y se descarga solo cuando hay uno más nuevo, sin esperar a una versión nueva de la app.', 'The catalog is published in the NATIVE HUB repository on GitHub and is downloaded only when there is a newer one, without waiting for a new app version.')}
+        {st?.checkedAt && <> {tr('Última comprobación', 'Last check')}: {fmtDateTime(st.checkedAt)}.</>}
+      </p>
+      {result === 'updated' && <p className="note-line yes">{tr('Catálogo actualizado.', 'Catalog updated.')}</p>}
+      {result === 'upToDate' && <p className="note-line">{tr('Ya tienes el catálogo más reciente.', 'You already have the latest catalog.')}</p>}
+      {result === 'needsAppUpdate' && <p className="note-line">{tr('Hay un catálogo nuevo que necesita una versión más reciente de NATIVE HUB.', 'There is a new catalog that needs a newer version of NATIVE HUB.')}</p>}
+      {st?.error && <p className="note-line err">{tr('La última comprobación falló', 'The last check failed')}: {st.error}</p>}
+      {msg && <p className="note-line err">{msg}</p>}
     </>
   )
 }
@@ -164,7 +202,7 @@ export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Them
         </div>
         <div>
           <dt>{tr('Catálogo', 'Catalog')}</dt>
-          <dd className="num">{tr('Versión del', 'Version of')} {fmtDateTime(summary.generatedAt) ?? '—'}{summary.schemaVersion != null && <span className="muted">{tr(' · base de datos', ' · database')} v{summary.schemaVersion}</span>}</dd>
+          <dd><CatalogSetting /></dd>
         </div>
         <div>
           <dt>{tr('Fuentes', 'Sources')}</dt>

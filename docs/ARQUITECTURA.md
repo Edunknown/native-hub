@@ -291,7 +291,22 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 - **Flujo.** Ocho segundos después de arrancar, la app consulta `latest.json`. Si hay una versión nueva, una barra bajo la cabecera ofrece «Actualizar y reiniciar», «Novedades» y «Ahora no» (que oculta esa versión hasta la próxima comprobación manual). Nada se descarga sin confirmar. El instalador NSIS se ejecuta en modo pasivo y la app se reinicia. Ajustes › Versión de NATIVE HUB muestra la versión y una comprobación manual.
 - **Portable.** `is_portable` indica a la interfaz que está en modo portable: solo avisa de la versión nueva y abre su página de la release.
 
-## 17. Estado real de cada función
+## 17. Camino a la 1.0
+
+### Catálogo servido desde GitHub
+
+- **Qué.** La app trae el catálogo con el que se compiló y además descarga el último publicado en el repositorio (`catalog/catalog.json` en `main`, desde `raw.githubusercontent.com`), así los proyectos nuevos, las correcciones y los adaptadores llegan sin sacar una versión nueva de la app (`crates/core/src/remote.rs`).
+- **Cuándo.** Cada día por defecto (Ajustes › Automatización › «Actualizar el catálogo desde GitHub»: cada 6 h, cada día o nunca) y a mano en Ajustes › Catálogo. La petición lleva el ETag: si no cambió, es un 304.
+- **Seguridad.** Solo HTTPS desde `raw.githubusercontent.com`. Se valida antes de importar (al menos 100 proyectos, juegos y plataformas coherentes, slugs únicos, repositorios HTTPS, fecha no futura) y solo se importa si es **más nuevo** que el cargado; el catálogo incluido en el ejecutable nunca pisa uno descargado más reciente. Los datos en vivo de releases y los del usuario se conservan, como en cualquier importación. Las descargas mantienen sus comprobaciones (hosts permitidos, URL dentro del repositorio del proyecto).
+- **Formato.** `catalog.json` lleva `schema` (ahora 1). Cada versión de la app solo lee los esquemas que conoce; uno más nuevo espera a que se actualice la app.
+- **Pruebas.** `crates/core/tests/remote_catalog.rs`: más nuevo, igual (ETag/304), más antiguo, esquema nuevo, catálogos rotos y el catálogo real pasando la validación.
+
+### Licencia e integración continua
+
+- Código bajo MIT (`LICENSE`); `catalog/` mantiene CC BY-SA 4.0.
+- `.github/workflows/ci.yml` en cada push y PR; `.github/workflows/release.yml` genera una release borrador a partir de un tag (ver el README).
+
+## 18. Estado real de cada función
 
 | Función | Estado |
 |---|---|
@@ -312,3 +327,4 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 | Actualizar instalaciones conservando partidas y configuración, con deshacer | Hecho (fase 6) |
 | Interfaz en inglés (español disponible) y versión portable | Hecho (0.2.1) |
 | Actualizaciones firmadas de la propia app | Hecho (0.3.0) |
+| Catálogo servido desde GitHub, importado solo si es más nuevo | Hecho (1.0) |

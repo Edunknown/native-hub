@@ -292,7 +292,22 @@ Flow: `npm run catalog:update` = import Recompendium → merge with `manual.json
 - **Flow.** Eight seconds after startup the app checks `latest.json`. If there is a newer version, a bar under the header offers "Update and restart", "What's new" and "Not now" (which hides that version until the next manual check). Nothing is downloaded without confirming. The NSIS installer runs in passive mode and the app restarts. Settings › NATIVE HUB version shows the current version and a manual check.
 - **Portable.** `is_portable` tells the UI it runs in portable mode: it only announces the new version and opens its release page.
 
-## 17. Actual status of each feature
+## 17. Road to 1.0
+
+### Catalog served from GitHub
+
+- **What.** The app ships with the catalog it was built with and also downloads the latest one published in the repository (`catalog/catalog.json` on `main`, from `raw.githubusercontent.com`), so new projects, fixes and adapters reach users without a new app version (`crates/core/src/remote.rs`).
+- **When.** Daily by default (Settings › Automation › "Update the catalog from GitHub": every 6 h, daily or never), and by hand in Settings › Catalog. The request carries the ETag, so an unchanged catalog costs a 304.
+- **Safety.** Only HTTPS from `raw.githubusercontent.com`. The file is validated before importing (at least 100 projects, consistent games and platforms, unique slugs, HTTPS repositories, date not in the future) and only imported if it is **newer** than the loaded one; the catalog embedded in the executable never replaces a newer downloaded one. Live release data and user data are kept, as with any import. Downloads keep their own checks (allowed hosts, URL inside the project's repository).
+- **Format.** `catalog.json` carries `schema` (now 1). A build only reads catalogs whose schema it knows; a newer one waits until the app is updated.
+- **Tests.** `crates/core/tests/remote_catalog.rs`: newer, same (ETag/304), older, newer schema, broken catalogs and the real catalog passing validation.
+
+### Licence and continuous integration
+
+- Code under MIT (`LICENSE`); `catalog/` keeps CC BY-SA 4.0.
+- `.github/workflows/ci.yml` on every push and pull request; `.github/workflows/release.yml` builds a draft release from a tag (see the README).
+
+## 18. Actual status of each feature
 
 | Feature | Status |
 |---|---|
@@ -313,3 +328,4 @@ Flow: `npm run catalog:update` = import Recompendium → merge with `manual.json
 | Updating installs while keeping saves and settings, with undo | Done (phase 6) |
 | English interface (Spanish available) and portable build | Done (0.2.1) |
 | Signed self-updates of the app | Done (0.3.0) |
+| Catalog served from GitHub, imported only if newer | Done (1.0) |

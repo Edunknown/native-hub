@@ -57,9 +57,11 @@ pub fn loaded_version(conn: &Connection) -> Result<Option<String>> {
         .optional()?)
 }
 
-/// Importa el catálogo si su versión es distinta de la cargada. Devuelve true si importó.
+/// Importa el catálogo si es más nuevo que el cargado (las fechas ISO se comparan como texto).
+/// Así el catálogo incluido en el ejecutable no pisa uno más reciente descargado de GitHub.
+/// Devuelve true si importó.
 pub fn import_if_newer(conn: &mut Connection, cat: &CatalogFile) -> Result<bool> {
-    if loaded_version(conn)?.as_deref() == Some(cat.generated_at.as_str()) {
+    if loaded_version(conn)?.is_some_and(|v| v.as_str() >= cat.generated_at.as_str()) {
         return Ok(false);
     }
     import(conn, cat)?;

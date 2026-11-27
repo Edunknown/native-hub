@@ -254,6 +254,9 @@ out.sort((a, b) => a.slug.localeCompare(b.slug))
 const usedGames = new Set(out.flatMap((p) => p.games))
 const catalog = {
   $comment: 'Generado por scripts/build-catalog.mjs. No editar a mano. Datos de Recompendium bajo CC BY-SA 4.0.',
+  // Catalog format. Bump it only for changes older apps cannot read (they then ignore the
+  // catalog published on GitHub until they are updated). Keep in sync with remote::SCHEMA.
+  schema: 1,
   generatedAt: new Date().toISOString(),
   sources: [
     { name: 'NATIVE HUB (curado a mano)', url: null, license: null },

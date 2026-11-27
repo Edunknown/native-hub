@@ -4,7 +4,7 @@
 // las funciones en vivo (releases, escáner, token) solo existen en la app.
 
 import type {
-  Approval, CandidateList, DownloadItem, DownloadProgress, InstallPlan, Installation, UserFileCheck, ProjectReleases, UpdatePlan, DiscoverFilter, DiscoverResult, GameDetail, Home, JobFinished, JobProgress,
+  Approval, Automation, CandidateList, DownloadItem, DownloadProgress, InstallPlan, Installation, UserFileCheck, ProjectReleases, UpdatePlan, DiscoverFilter, DiscoverResult, GameDetail, Home, JobFinished, JobProgress,
   Platform, Project, RefreshResult, ReleasesStatus, Summary, UpdateEvent,
 } from './types'
 
@@ -49,8 +49,9 @@ export const api = {
   syncRecompendium: () => call<boolean>('sync_recompendium'),
   approveSuggested: (id: number) => call<string>('approve_suggested', { id }),
   approveAllSuggested: (source: string) => call<number>('approve_all_suggested', { source }),
-  automation: () => call<{ releases: string; discover: string; lastScan: string | null; lastSync: string | null; lastAutoRefresh: string | null }>('automation_get'),
-  setAutomation: (releases: string, discover: string) => call<{ releases: string; discover: string; lastScan: string | null; lastSync: string | null; lastAutoRefresh: string | null }>('automation_set', { releases, discover }),
+  automation: () => call<Automation>('automation_get'),
+  setAutomation: (releases: string, discover: string, catalog: string) => call<Automation>('automation_set', { releases, discover, catalog }),
+  catalogRemoteCheck: () => call<boolean>('catalog_remote_check'),
   approve: (approval: Approval) => call<string>('approve_candidate', { approval }),
   reject: (id: number) => call<void>('reject_candidate', { id }),
 
@@ -92,6 +93,13 @@ export async function onJobs(progress: (p: JobProgress) => void, finished: (f: J
   const a = await listen<JobProgress>('job-progress', (e) => progress(e.payload))
   const b = await listen<JobFinished>('job-finished', (e) => finished(e.payload))
   return () => { a(); b() }
+}
+
+/** Fires when a newer catalog downloaded from GitHub has been imported. */
+export async function onCatalogUpdated(fn: () => void): Promise<() => void> {
+  if (!isTauri) return () => {}
+  const { listen } = await import('@tauri-apps/api/event')
+  return listen('catalog-updated', () => fn())
 }
 
 /** Escucha el progreso de las descargas. */
