@@ -12,6 +12,7 @@ import { openExternal } from '../lib/api'
 import { fmtDate, fmtDateTime, fmtNum, fmtSize, kindLabel, originalFilesLabel, plural, requirementsOf, statusLabel, summaryOf } from '../lib/format'
 import type { Game, GameDetail, Project } from '../lib/types'
 import { tr } from '../lib/i18n'
+import { ErrorNote } from './ErrorNote'
 
 function initials(title: string) {
   const words = title.replace(/^The Legend of Zelda:\s*/i, '').split(/[\s:]+/).filter((w) => /^[\p{Lu}0-9]/u.test(w))
@@ -121,7 +122,7 @@ function DownloadButton({ project, onInstall, onChoose }: { project: Project; on
       </button>
       {choose}
       {dl?.state === 'failed' && <span className="note-line err">{dl.error?.startsWith('ANTIVIRUS: ') ? tr('La última descarga la bloqueó el antivirus. Mira Descargas para más detalles.', 'Your antivirus blocked the last download. See Downloads for details.') : `${tr('La última descarga falló', 'The last download failed')}: ${dl.error ?? ''}`}</span>}
-      {error && <span className="note-line err">{error}</span>}
+      {error && <ErrorNote error={error} />}
     </>
   )
 }

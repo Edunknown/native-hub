@@ -59,6 +59,7 @@ npm run catalog:update      # reimporta Recompendium y comprueba releases en Git
 npm run catalog:build       # solo une fuentes y comprueba lo no revisado en 12 h
 npm run catalog:covers      # resuelve portadas de IGDB (necesita IGDB_CLIENT_ID / IGDB_CLIENT_SECRET)
 npm test                    # pruebas del núcleo en Rust
+npm run test:web            # pruebas de la interfaz (Vitest)
 ```
 
 ### Publicar una versión

@@ -10,6 +10,7 @@ import { fmtDate, fmtNum, kindLabel } from '../lib/format'
 import type { Candidate, CandidateList, ProjectKind } from '../lib/types'
 import { JobBar, QuotaLine } from './Updates'
 import { lang, tr } from '../lib/i18n'
+import { ErrorNote } from '../components/ErrorNote'
 
 type Status = 'new' | 'approved' | 'rejected'
 const SOURCES: { id: string | undefined; label: string }[] = [
@@ -94,7 +95,7 @@ function ApproveForm({ c, onDone, onCancel }: { c: Candidate; onDone: () => void
         <span>{tr('Nombre del proyecto', 'Project name')}</span>
         <input value={name} onChange={(e) => setName(e.target.value)} />
       </label>
-      {err && <p className="note-line err">{err}</p>}
+      {err && <ErrorNote error={err} />}
       <div className="actions">
         <button type="button" className="btn-primary" disabled={saving} onClick={submit}>{saving ? tr('Aprobando…', 'Approving…') : tr('Aprobar y añadir al catálogo', 'Approve and add to the catalog')}</button>
         <button type="button" className="link" onClick={onCancel}>{tr('Cancelar', 'Cancel')}</button>
@@ -185,7 +186,7 @@ export function Review() {
         <span className="note-line"><QuotaLine /></span>
       </div>
       <p className="note-line">{tr('La búsqueda mira GitHub y GitLab. La sincronización trae las fichas nuevas de Recompendium con juego, consola y tipo ya rellenos. Todo llega aquí y nada entra en el catálogo sin que lo apruebes.', 'Search looks at GitHub and GitLab. Sync brings new Recompendium entries with game, console and type already filled in. Everything lands here and nothing enters the catalog until you approve it.')}</p>
-      {live.error && <p className="note-line err">{live.error}</p>}
+      {live.error && <ErrorNote error={live.error} />}
       <JobBar />
       {live.lastFinished?.job === 'sync' && live.lastFinished.result.sync != null && (
         <p className="note-line">

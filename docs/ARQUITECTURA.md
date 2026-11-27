@@ -306,6 +306,13 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 - Código bajo MIT (`LICENSE`); `catalog/` mantiene CC BY-SA 4.0.
 - `.github/workflows/ci.yml` en cada push y PR; `.github/workflows/release.yml` genera una release borrador a partir de un tag (ver el README).
 
+### Errores claros y registro copiable
+
+- **Registro.** `native-hub.log` en `%LOCALAPPDATA%\dev.nativehub.app\logs` (`data\logs` en la portable), también en las versiones publicadas: arranque, descargas, instalaciones, actualizaciones, lanzamientos, comprobaciones del catálogo, pánicos y cada comando que falló en la interfaz. Hasta 1 MB, con dos archivos rotados.
+- **Errores.** `ErrorNote` enseña una explicación sencilla y qué hacer (sin conexión, límite de GitHub, disco lleno, archivo en uso, acceso denegado, falta un archivo, SHA-256 distinto, antivirus, host no permitido, catálogo no válido; `src/lib/errors.ts`), después el mensaje original, «Copiar detalles» y «Abrir el registro».
+- **Copiar detalles** (y Ajustes › Registro › «Copiar el registro») copia versión, sistema, tipo de instalación, versión del catálogo, el error y los últimos 64 KB del registro. La carpeta del usuario se sustituye por `~`.
+- **Pruebas.** `src/lib/errors.test.ts` (Vitest, `npm run test:web`, también en CI).
+
 ## 18. Estado real de cada función
 
 | Función | Estado |
@@ -328,3 +335,4 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 | Interfaz en inglés (español disponible) y versión portable | Hecho (0.2.1) |
 | Actualizaciones firmadas de la propia app | Hecho (0.3.0) |
 | Catálogo servido desde GitHub, importado solo si es más nuevo | Hecho (1.0) |
+| Registro, errores explicados y «Copiar detalles» | Hecho (1.0) |

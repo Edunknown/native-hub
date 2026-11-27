@@ -8,6 +8,7 @@ import { api, openExternal } from '../lib/api'
 import { fmtDate, fmtSize } from '../lib/format'
 import type { ProjectReleases, ReleaseAssetChoice } from '../lib/types'
 import { tr } from '../lib/i18n'
+import { ErrorNote } from './ErrorNote'
 
 const OS_LABEL: Record<ReleaseAssetChoice['os'], string> = {
   windows: 'Windows',
@@ -51,7 +52,7 @@ export function ReleasePicker({ slug, onClose }: { slug: string; onClose: () => 
       <p className="note-line">
         {tr('Solo se pueden descargar archivos de estas releases. El recomendado es el que NATIVE HUB identifica como ejecutable para Windows. Elegir otro puede servir si el recomendado da problemas, pero revisa antes qué es.', 'Only files from these releases can be downloaded. The recommended one is the file NATIVE HUB identifies as the Windows executable. Picking another can help if the recommended one causes trouble, but check what it is first.')}
       </p>
-      {err && <p className="note-line err">{err}</p>}
+      {err && <ErrorNote error={err} />}
       {!data && !err && <p className="note-line">{tr('Consultando releases…', 'Fetching releases…')}</p>}
       {data && data.releases.length === 0 && <p className="empty">{tr('Este proyecto no tiene releases publicadas.', 'This project has no published releases.')}</p>}
       {data?.releases.map((r, i) => {
@@ -90,7 +91,7 @@ export function ReleasePicker({ slug, onClose }: { slug: string; onClose: () => 
       {data && data.releases.length > 0 && (
         <button type="button" className="link" onClick={() => setAll(!all)}>{all ? tr('Ocultar sumas, firmas y símbolos', 'Hide checksums, signatures and symbols') : tr('Mostrar también sumas, firmas y símbolos', 'Also show checksums, signatures and symbols')}</button>
       )}
-      {error && <p className="note-line err">{error}</p>}
+      {error && <ErrorNote error={error} />}
     </div>
   )
 }

@@ -61,6 +61,7 @@ npm run catalog:update      # re-import Recompendium and check releases on GitHu
 npm run catalog:build       # only merge sources and check entries not reviewed in 12 h
 npm run catalog:covers      # resolve IGDB covers (needs IGDB_CLIENT_ID / IGDB_CLIENT_SECRET)
 npm test                    # Rust core tests
+npm run test:web            # frontend tests (Vitest)
 ```
 
 ### Releasing

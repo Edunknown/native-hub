@@ -45,6 +45,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+      - name: Frontend tests
+        run: npm run test:web
       - name: Catalog and adapters are valid
         run: node scripts/check-catalog.mjs
 

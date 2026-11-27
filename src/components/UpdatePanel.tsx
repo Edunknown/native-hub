@@ -9,6 +9,7 @@ import { api } from '../lib/api'
 import { fmtNum } from '../lib/format'
 import type { Installation, UpdatePlan } from '../lib/types'
 import { tr } from '../lib/i18n'
+import { ErrorNote } from './ErrorNote'
 
 export function UpdatePanel({ inst, onClose }: { inst: Installation; onClose: () => void }) {
   const lib = useLibrary()
@@ -108,7 +109,7 @@ export function UpdatePanel({ inst, onClose }: { inst: Installation; onClose: ()
           </div>
         </>
       )}
-      {err && <p className="note-line err">{err}</p>}
+      {err && <ErrorNote error={err} />}
     </div>
   )
 }

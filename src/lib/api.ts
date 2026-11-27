@@ -8,16 +8,27 @@ import type {
   Platform, Project, RefreshResult, ReleasesStatus, Summary, UpdateEvent,
 } from './types'
 
+import { errorText } from './errors'
+
 export const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 
 // TAURI_ENV_PLATFORM solo existe al compilar con la CLI de Tauri: así el backend web
 // (que incluye el catálogo entero en JavaScript) no entra en el ejecutable.
 const loadWebBackend = import.meta.env.TAURI_ENV_PLATFORM ? null : () => import('./web-backend')
 
+// Commands whose failures are expected or already logged by the backend.
+const QUIET = new Set(['log_client_error', 'log_report', 'set_language'])
+
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   if (isTauri || !loadWebBackend) {
     const { invoke } = await import('@tauri-apps/api/core')
-    return invoke<T>(cmd, args)
+    try {
+      return await invoke<T>(cmd, args)
+    } catch (e) {
+      // Every failure the user may see also goes to the log file.
+      if (!QUIET.has(cmd)) invoke('log_client_error', { command: cmd, error: errorText(e) }).catch(() => {})
+      throw e
+    }
   }
   const web = await loadWebBackend()
   return web.handle(cmd, args ?? {}) as Promise<T>
@@ -82,6 +93,9 @@ export const api = {
   updateRollback: (id: number) => call<Installation>('update_rollback', { id }),
   updateDiscard: (id: number) => call<void>('update_discard', { id }),
 
+  logReport: (error?: string) => call<string>('log_report', { error }),
+  openLogFolder: () => call<void>('log_open_folder'),
+
   setGithubToken: (value: string) => call<{ ok: boolean }>('set_github_token', { value }),
   clearGithubToken: () => call<void>('clear_github_token'),
 }
@@ -132,5 +146,19 @@ export async function openExternal(url: string) {
     await openUrl(url)
   } else {
     window.open(url, '_blank', 'noopener')
+  }
+}
+
+/** Copies a report (versions, the error and the end of the log) to the clipboard. */
+export async function copyReport(error?: string): Promise<boolean> {
+  let text = error ?? ''
+  if (isTauri) {
+    try { text = await api.logReport(error) } catch { /* keep the bare error */ }
+  }
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    return false
   }
 }

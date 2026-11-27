@@ -6,10 +6,11 @@ import { AppUpdateSetting } from '../app/appUpdate'
 import { playStartupChime, setStartupSound, startupSoundEnabled } from '../app/sound'
 
 import type { Theme } from '../app/theme'
-import { api, isTauri, openExternal, pickPath } from '../lib/api'
+import { api, copyReport, isTauri, openExternal, pickPath } from '../lib/api'
 import type { Automation, CatalogStatus } from '../lib/types'
 import { fmtDateTime, fmtSize } from '../lib/format'
 import { lang, setLang, tr } from '../lib/i18n'
+import { ErrorNote } from '../components/ErrorNote'
 
 function CoverCacheSetting() {
   const [size, setSize] = useState<number | null>(null)
@@ -76,8 +77,23 @@ function CatalogSetting() {
       {result === 'updated' && <p className="note-line yes">{tr('Catálogo actualizado.', 'Catalog updated.')}</p>}
       {result === 'upToDate' && <p className="note-line">{tr('Ya tienes el catálogo más reciente.', 'You already have the latest catalog.')}</p>}
       {result === 'needsAppUpdate' && <p className="note-line">{tr('Hay un catálogo nuevo que necesita una versión más reciente de NATIVE HUB.', 'There is a new catalog that needs a newer version of NATIVE HUB.')}</p>}
-      {st?.error && <p className="note-line err">{tr('La última comprobación falló', 'The last check failed')}: {st.error}</p>}
-      {msg && <p className="note-line err">{msg}</p>}
+      {st?.error && <ErrorNote error={st.error} />}
+      {msg && <ErrorNote error={msg} />}
+    </>
+  )
+}
+
+function LogSetting() {
+  const [copied, setCopied] = useState<boolean | null>(null)
+  if (!isTauri) return <span className="tbd">{tr('Solo en la app de escritorio', 'Desktop app only')}</span>
+  return (
+    <>
+      <div className="actions">
+        <button type="button" className="btn-line" onClick={async () => setCopied(await copyReport())}>{copied ? tr('Copiado', 'Copied') : tr('Copiar el registro', 'Copy the log')}</button>
+        <button type="button" className="link" onClick={() => api.openLogFolder().catch(() => {})}>{tr('Abrir la carpeta', 'Open the folder')}</button>
+      </div>
+      <p className="note-line">{tr('Lo que hace NATIVE HUB (descargas, instalaciones, errores) queda en un archivo de registro. Si algo falla, copia el registro y pégalo al avisar del problema. Tu carpeta de usuario aparece como ~.', 'What NATIVE HUB does (downloads, installs, errors) is written to a log file. If something fails, copy the log and paste it when you report the problem. Your user folder shows as ~.')}</p>
+      {copied === false && <p className="note-line err">{tr('No se pudo copiar al portapapeles.', 'Could not copy to the clipboard.')}</p>}
     </>
   )
 }
@@ -114,7 +130,7 @@ function InstallRootSetting() {
         {root && !root.default && <button type="button" className="link" onClick={() => api.setInstallRoot(null).then(setRoot)}>{tr('Volver a la carpeta por defecto', 'Back to the default folder')}</button>}
       </div>
       <p className="note-line">{tr('Cada juego se instala en su propia subcarpeta. Cambiarla no mueve lo que ya está instalado.', 'Each game is installed in its own subfolder. Changing it does not move what is already installed.')}</p>
-      {err && <p className="note-line err">{err}</p>}
+      {err && <ErrorNote error={err} />}
     </>
   )
 }
@@ -217,6 +233,10 @@ export function Settings({ theme, setTheme }: { theme: Theme; setTheme: (t: Them
             <p className="note-line">{tr('Las descripciones y requisitos importados de Recompendium se muestran con su atribución y su licencia (CC BY-SA 4.0).', 'Descriptions and requirements imported from Recompendium are shown with their attribution and license (CC BY-SA 4.0).')}</p>
             <p className="note-line">{tr('Portadas de IGDB.com. Las imágenes pertenecen a sus editores y se descargan de images.igdb.com la primera vez que se muestran; después se guardan en la caché local.', 'Covers from IGDB.com. The images belong to their publishers and are downloaded from images.igdb.com the first time they are shown, then kept in the local cache.')}</p>
           </dd>
+        </div>
+        <div>
+          <dt>{tr('Registro', 'Log')}</dt>
+          <dd><LogSetting /></dd>
         </div>
         <div>
           <dt>{tr('Entorno', 'Environment')}</dt>
