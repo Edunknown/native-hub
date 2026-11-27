@@ -1,6 +1,6 @@
 # NATIVE HUB · Análisis y arquitectura
 
-Documento de partida (apartado 19 del brief). Fecha: 26/11/2026. Actualizado: 27/11/2026, fase 7 (versión 0.2.0).
+Documento de partida (apartado 19 del brief). Fecha: 26/11/2026. Actualizado: 27/11/2026, versión 0.2.1. En inglés: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
@@ -277,7 +277,14 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 - **Base de datos.** Migración v4: `scan_candidates` gana `source` (`github-search`, `gitlab-search`, `recompendium`) y `suggestion` (JSON con los datos sugeridos).
 - **Pruebas.** `crates/core/tests/sync.rs` con transporte falso (fichas nuevas y ya conocidas, sugerencias, aprobación individual y en bloque, GitLab) y pruebas reales (`--ignored`) en `tests/network.rs`.
 
-## 15. Estado real de cada función
+## 15. Idiomas y versión portable (0.2.1)
+
+- **Idioma de la interfaz.** Inglés por defecto y español en Ajustes › Idioma (`src/lib/i18n.ts`; la elección se guarda en el WebView y la ventana se recarga). Los textos se escriben en línea como `tr('español', 'English')`.
+- **Mensajes del núcleo.** Errores, planes de instalación y progreso siguen el idioma de la interfaz: la interfaz llama a `set_language` al arrancar y el núcleo usa `t!(es, en, …)` / `tr(es, en)` (`crates/core/src/i18n.rs`).
+- **Textos del catálogo.** Recompendium publica descripciones y requisitos en español e inglés: el catálogo guarda ambos (`summary`/`summaryEn`, `requirementsText`/`requirementsTextEn`). La lista manual y los adaptadores también llevan textos en inglés.
+- **Versión portable.** Si junto al ejecutable hay un archivo llamado `portable` (o `portable.txt`), la base de datos, las descargas y el perfil de WebView van a `data\` y los juegos a `Games\` a su lado. La ventana se crea al arrancar (no desde `tauri.conf.json`) para poder fijar su carpeta de datos. El token opcional de GitHub sigue en el Administrador de credenciales del usuario de Windows.
+
+## 16. Estado real de cada función
 
 | Función | Estado |
 |---|---|
@@ -296,3 +303,4 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 | Biblioteca: ejecutar, cambiar ejecutable, abrir carpeta, desinstalar | Hecho (fase 5) |
 | Animación de inicio con música y paneles de progreso | Hecho (fase 6.1) |
 | Actualizar instalaciones conservando partidas y configuración, con deshacer | Hecho (fase 6) |
+| Interfaz en inglés (español disponible) y versión portable | Hecho (0.2.1) |
