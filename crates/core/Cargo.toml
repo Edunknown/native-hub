@@ -5,6 +5,7 @@ description = "Núcleo de NATIVE HUB: catálogo, base de datos y lógica de domi
 edition = "2024"
 rust-version = "1.90"
 publish = false
+license = "MIT"
 
 [dependencies]
 rusqlite = { version = "0.43.0", features = ["bundled"] }

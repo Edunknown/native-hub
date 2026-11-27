@@ -3,8 +3,8 @@ name = "native-hub"
 version = "0.3.0"
 description = "NATIVE HUB: launcher de recompilaciones y ports nativos"
 authors = ["Eduardo"]
-license = ""
-repository = ""
+license = "MIT"
+repository = "https://github.com/Edunknown/native-hub"
 edition = "2024"
 rust-version = "1.90"
 

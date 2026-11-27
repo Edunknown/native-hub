@@ -227,7 +227,7 @@ for (const p of projects.values()) {
     takedown: p.takedown,
     forkOf: p.forkOf ?? null,
     toolchain: p.toolchain ?? null,
-    repo: p.repo ? { host: 'github', owner: p.repo.split('/')[0], name: p.repo.split('/')[1] } : { host: new URL(p.repoUrl).hostname, owner: null, name: null },
+    repo: p.repo ? { host: 'github', owner: p.repo.split('/')[0], name: p.repo.split('/')[1] } : repoFromUrl(p.repoUrl),
     repoUrl: p.repo ? `https://github.com/${p.repo}` : p.repoUrl,
     repoMovedFrom: p.repoMovedFrom ?? null,
     homepage: p.homepage ?? null,
@@ -270,3 +270,11 @@ await writeFile(join(ROOT, 'catalog/catalog.json'), JSON.stringify(catalog) + '\
 const lib = out.filter((p) => p.listing === 'library').length
 const unchecked = out.filter((p) => p.checkedAt == null).length
 console.log(`catalog/catalog.json · ${catalog.games.length} juegos · ${out.length} proyectos · ${lib} con ejecutable Windows · ${unchecked} sin comprobar · ${failed} errores`)
+
+/** owner/name of a GitLab or Codeberg repository (GitLab owners can include subgroups). */
+function repoFromUrl(url) {
+  const u = new URL(url)
+  const parts = u.pathname.replace(/^\/+|\/+$/g, '').replace(/\.git$/, '').split('/')
+  const host = { 'gitlab.com': 'gitlab', 'codeberg.org': 'codeberg' }[u.hostname] ?? u.hostname
+  return { host, owner: parts.slice(0, -1).join('/') || null, name: parts.at(-1) || null }
+}

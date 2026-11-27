@@ -61,6 +61,18 @@ npm run catalog:covers      # resuelve portadas de IGDB (necesita IGDB_CLIENT_ID
 npm test                    # pruebas del núcleo en Rust
 ```
 
+### Publicar una versión
+
+Las releases las genera GitHub Actions (`.github/workflows/release.yml`):
+
+1. Sube la versión en `package.json`, `src-tauri/tauri.conf.json` y `src-tauri/Cargo.toml`.
+2. Escribe las notas en `docs/releases/v<versión>.md`. Su primer párrafo es el resumen que enseña la app al avisar de la actualización.
+3. Sube un tag: `git tag v<versión> && git push origin v<versión>`.
+
+El workflow pasa las pruebas del núcleo, genera el instalador firmado, `latest.json` y el ZIP portable, y lo deja todo en una release **borrador** con sus SHA-256. No llega a nadie hasta que publicas el borrador en GitHub. Necesita dos secretos del repositorio: `TAURI_SIGNING_PRIVATE_KEY` (el contenido de la clave privada del updater, que nunca va en el repo) y `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (vacío si no tiene contraseña).
+
+Cada push y cada PR pasa `.github/workflows/ci.yml`: pruebas del núcleo en Windows y Linux, lint, tipos y build de la interfaz, validación del catálogo y los adaptadores (`node scripts/check-catalog.mjs`) y comprobación de la app de escritorio en Windows.
+
 Estructura: `src/` interfaz, `src-tauri/` app de escritorio, `crates/core/` núcleo en Rust (SQLite, releases, escáner, descargas, instalación, actualizaciones, sincronización), `catalog/` datos del catálogo y adaptadores, `scripts/` generación del catálogo.
 
 ## Historial
@@ -79,6 +91,7 @@ Estructura: `src/` interfaz, `src-tauri/` app de escritorio, `crates/core/` núc
 
 ## Licencias y atribución
 
+- **Código.** El código fuente de NATIVE HUB está bajo [licencia MIT](LICENSE). Los datos del catálogo en `catalog/` no: conservan su propia licencia, abajo.
 - **Catálogo.** Incluye datos de [Recompendium](https://recompendium.com) bajo licencia [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.es). El catálogo derivado (`catalog/`) se distribuye bajo esa misma licencia; ver [catalog/LICENSE.md](catalog/LICENSE.md).
 - **Portadas.** Las portadas vienen de [IGDB](https://www.igdb.com). El catálogo guarda solo los identificadores de imagen de IGDB; la app descarga cada imagen de images.igdb.com la primera vez que se muestra y la guarda en caché local. Las imágenes pertenecen a sus editores.
 - **Proyectos enlazados.** Cada recompilación o port pertenece a sus autores y tiene su propia licencia; NATIVE HUB solo enlaza y descarga sus releases oficiales.
