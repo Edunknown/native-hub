@@ -326,6 +326,14 @@ Flow: `npm run catalog:update` = import Recompendium → merge with `manual.json
 
 - Shown once per install after the startup animation (`onboarding_done` in SQLite, so the portable build has its own). Five full-window steps, no cards: language and theme; what NATIVE HUB does and does not do (official sources, no ROMs/ISOs/BIOS/keys, a plan before installing, only Windows executables are installable); games folder; automatic checks; and a summary with the installable count. "Skip" on every step; Settings › Welcome guide shows it again.
 
+### Adapter tests
+
+- **Automatic (install).** `crates/core/tests/adapters.rs` downloads the latest official Windows release of every reviewed adapter with the real Download Manager, installs it with the real Installation Manager into a temporary folder and checks that the executable is found. `.github/workflows/adapters.yml` runs it on Windows for pull requests that touch adapters or install/download code, every Monday and by hand. It never runs a game and uses no game files.
+- **By a person (played).** Opening the game with your own files cannot be automated (it needs the user's ROM/ISO). Whoever does it adds an entry with `status: "played"`, the version, the date, `by` and `os` (`win10`/`win11`).
+- **Recorded in the adapter.** `tested: [{status, version, date, by, os?, notes?, notesEn?}]`, with status `install`, `played` or `issues`. The game page shows the most relevant one ("NATIVE HUB test") and fills "Windows 10 / 11" from `played` entries.
+- **New adapters:** DevilutionX (Diablo) and gen1recomp (Pokémon), reviewed against their docs. `when: "manual"` marks files the game does not ask for, which the user copies (NATIVE HUB never copies game files).
+- `node scripts/apply-adapters.mjs` copies the adapters into `catalog.json` without a full rebuild; the catalog check fails if the copies drift.
+
 ## 18. Actual status of each feature
 
 | Feature | Status |
@@ -351,3 +359,5 @@ Flow: `npm run catalog:update` = import Recompendium → merge with `manual.json
 | Log file, plain error explanations and "Copy details" | Done (1.0) |
 | Search and filters (console, family, type, status, inactive, sort) | Done (1.0) |
 | First-run guide | Done (1.0) |
+| Automatic adapter install tests; tested status on the game page | Done (1.0) |
+| Adapters played with real game files | Pending: needs a person with the game files |
