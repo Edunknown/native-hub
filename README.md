@@ -23,6 +23,8 @@ NATIVE HUB **no incluye ni descarga ROMs, ISOs, BIOS, firmware ni claves**. Solo
 
 Descarga el instalador `NATIVE.HUB_0.2.0_x64-setup.exe` desde [Releases](../../releases). No está firmado, así que Windows SmartScreen puede avisar: pulsa «Más información» › «Ejecutar de todas formas». El instalador incluye el arranque de WebView2 si falta.
 
+¿Sin instalar? Descarga `NATIVE-HUB_0.2.0_x64-portable.zip`, descomprímelo y abre `NATIVE HUB.exe` (necesita WebView2, que viene con Windows 11).
+
 Datos de la app: `%APPDATA%\dev.nativehub.app` (base de datos) y `%LOCALAPPDATA%\dev.nativehub.app` (descargas). Juegos: `Documentos\NATIVE HUB` por defecto.
 
 ## Documentación
