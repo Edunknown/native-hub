@@ -1,6 +1,6 @@
 [package]
 name = "native-hub"
-version = "0.1.0"
+version = "0.2.0"
 description = "NATIVE HUB: launcher de recompilaciones y ports nativos"
 authors = ["Eduardo"]
 license = ""

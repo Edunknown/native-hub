@@ -1,6 +1,6 @@
 # NATIVE HUB · Análisis y arquitectura
 
-Documento de partida (apartado 19 del brief). Fecha: 26/11/2026. Estado: fase 1 en curso.
+Documento de partida (apartado 19 del brief). Fecha: 26/11/2026. Actualizado: 27/11/2026, fase 7 (versión 0.2.0).
 
 ---
 
@@ -268,7 +268,16 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 - **Formatos.** ZIP y EXE portable. Los instaladores y 7z/RAR se actualizan a mano.
 - **Pruebas.** Cuatro con archivos generados (patrones, conservar partida y configuración, deshacer, protección del adaptador, sin descarga) y una real (`--ignored`) que instala Starship v1.0.0, guarda una partida, actualiza a v2.0.0 y lo deshace.
 
-## 14. Estado real de cada función
+## 14. Expansión del catálogo y automatización (fase 7)
+
+- **Sincronizar con Recompendium** (`crates/core/src/sync.rs`). La app lee la lista de fichas del repositorio de datos de Recompendium (`github.com/Nio03/unricopie`, CC BY-SA 4.0) con la API de GitHub y descarga de `raw.githubusercontent.com` solo las que aún no conoce, hasta 300 por pasada (el resto queda para la siguiente). Cada ficha nueva entra en la **cola de revisión** con juego, consola, tipo y estado ya sugeridos a partir de sus datos; no pasa al catálogo hasta aprobarla.
+- **Aprobar.** En la cola de revisión se aprueba en un clic o en bloque por fuente. Tras aprobar se comprueban las releases de lo aprobado. Lo aprobado es de origen `local` y sobrevive a las reimportaciones del catálogo.
+- **Escáner en GitLab.** Búsquedas en la API oficial (`gitlab.com/api/v4/projects`, «recomp», «pc port»…) que también van a la cola. Se descarta lo que ya está en el catálogo o en la cola (comparando la URL sin distinguir mayúsculas).
+- **Automatización.** Un hilo en segundo plano mira cada 15 minutos (el primero, un minuto después de arrancar) si toca: comprobar releases (lotes de 1.500 con token o 50 sin él) o buscar proyectos nuevos (GitHub, GitLab y Recompendium). Cada tarea se configura en Ajustes como «cada 6 h», «cada 24 h» (por defecto) o «desactivada», y nunca arranca si ya hay otra en marcha.
+- **Base de datos.** Migración v4: `scan_candidates` gana `source` (`github-search`, `gitlab-search`, `recompendium`) y `suggestion` (JSON con los datos sugeridos).
+- **Pruebas.** `crates/core/tests/sync.rs` con transporte falso (fichas nuevas y ya conocidas, sugerencias, aprobación individual y en bloque, GitLab) y pruebas reales (`--ignored`) en `tests/network.rs`.
+
+## 15. Estado real de cada función
 
 | Función | Estado |
 |---|---|
@@ -279,7 +288,9 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 | Comprobación de releases en vivo (GitHub, GitLab, Codeberg) con ETag y control de cuota | Hecho (fase 3) |
 | Escáner de GitHub y cola de revisión con aprobación manual | Hecho (fase 3) |
 | Token de GitHub opcional en el Administrador de credenciales | Hecho (fase 3) |
-| Escáner en GitLab | No implementado (solo se comprueban releases de proyectos de GitLab ya en el catálogo) |
+| Escáner en GitLab | Hecho (fase 7) |
+| Sincronización con Recompendium desde la app, aprobación en un clic o en bloque | Hecho (fase 7) |
+| Comprobación de releases y búsqueda automáticas (6 h / 24 h / desactivada) | Hecho (fase 7) |
 | Descargas oficiales reanudables con SHA-256 | Hecho (fase 4) |
 | Instalación con plan, adaptadores declarativos y validación de archivos del usuario | Hecho (fase 5) |
 | Biblioteca: ejecutar, cambiar ejecutable, abrir carpeta, desinstalar | Hecho (fase 5) |
