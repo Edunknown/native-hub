@@ -2,7 +2,8 @@
 // sobre catalog/catalog.json. Solo se carga fuera de Tauri (npm run dev).
 
 import catalogJson from '../../catalog/catalog.json'
-import type { Game, Platform, Project } from './types'
+import type { DiscoverFilter, Game, Platform, Project } from './types'
+import { discoverProjects, fold } from './discover'
 import { tr } from './i18n'
 
 interface CatalogFile {
@@ -16,9 +17,6 @@ interface CatalogFile {
 
 const cat = catalogJson as unknown as CatalogFile
 const FEATURED = 'the-legend-of-zelda-majoras-mask'
-
-const fold = (s: string) =>
-  s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’'´`]/g, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
 
 const gameMap = new Map(cat.games.map((g) => [g.slug, g]))
 const platMap = new Map(cat.platforms.map((p) => [p.slug, p]))
@@ -63,12 +61,7 @@ const handlers: Record<string, (a: Record<string, unknown>) => unknown> = {
       .sort((a, b) => Number(b.listing === 'library') - Number(a.listing === 'library') || (b.stars ?? 0) - (a.stars ?? 0))
       .slice(0, Number(limit ?? 100))
   },
-  catalog_discover: ({ listing, kind, platform, offset = 0, limit = 100 }) => {
-    const all = cat.projects
-      .filter((p) => (!listing || p.listing === listing) && (!kind || p.kind === kind) && (!platform || p.platform === platform))
-      .sort((a, b) => a.gameTitle.localeCompare(b.gameTitle) || a.name.localeCompare(b.name))
-    return { total: all.length, items: all.slice(Number(offset), Number(offset) + Number(limit)) }
-  },
+  catalog_discover: ({ filter }) => discoverProjects(cat.projects, platMap, (filter ?? {}) as DiscoverFilter),
   catalog_home: () => {
     const updated = cat.projects
       .filter((p) => p.listing === 'library' && p.release?.publishedAt)

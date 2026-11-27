@@ -314,6 +314,14 @@ Flow: `npm run catalog:update` = import Recompendium → merge with `manual.json
 - **Copy details** (and Settings › Log › "Copy the log") copies the version, OS, build type, catalog version, the error and the last 64 KB of the log. The user's home folder is replaced with `~`.
 - **Tests.** `src/lib/errors.test.ts` (Vitest, `npm run test:web`, also in CI).
 
+### Search and filters
+
+- **One query for both views.** `query::discover` takes the text, availability, console or console family, type, development status, "hide abandoned and taken down" and the sort order (relevance, title, latest release, newest, most popular). Discover shows it as a table; Search (text from the header) as an editorial list with the same filters.
+- **Filters stay** while the window is open (session storage; nothing breaks without it). Search starts with every project (installable first); Discover starts with the installable ones.
+- **Design.** Plain labels and underlined selects on one line, no boxes; lime only for the active availability.
+- **Safety.** Text and values go in as SQL parameters; statuses are checked against a closed list.
+- **Tests.** `query::tests::descubrir_con_texto_familia_estado_y_orden` and `src/lib/discover.test.ts` (the browser backend mirrors the Rust query).
+
 ## 18. Actual status of each feature
 
 | Feature | Status |
@@ -337,3 +345,4 @@ Flow: `npm run catalog:update` = import Recompendium → merge with `manual.json
 | Signed self-updates of the app | Done (0.3.0) |
 | Catalog served from GitHub, imported only if newer | Done (1.0) |
 | Log file, plain error explanations and "Copy details" | Done (1.0) |
+| Search and filters (console, family, type, status, inactive, sort) | Done (1.0) |

@@ -313,6 +313,14 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 - **Copiar detalles** (y Ajustes › Registro › «Copiar el registro») copia versión, sistema, tipo de instalación, versión del catálogo, el error y los últimos 64 KB del registro. La carpeta del usuario se sustituye por `~`.
 - **Pruebas.** `src/lib/errors.test.ts` (Vitest, `npm run test:web`, también en CI).
 
+### Búsqueda y filtros
+
+- **Una consulta para las dos vistas.** `query::discover` recibe el texto, la disponibilidad, la consola o la familia de consolas, el tipo, el estado de desarrollo, «ocultar abandonados y retirados» y el orden (relevancia, título, última release, más nuevos, más populares). Descubrir lo enseña como tabla; Búsqueda (el texto de la cabecera), como lista editorial con los mismos filtros.
+- **Los filtros se mantienen** mientras la ventana está abierta (sessionStorage; sin él no se rompe nada). Búsqueda empieza con todos los proyectos (los instalables primero); Descubrir, con los instalables.
+- **Diseño.** Etiquetas y desplegables subrayados en una línea, sin cajas; el lima solo para la disponibilidad activa.
+- **Seguridad.** El texto y los valores van como parámetros SQL; los estados se comprueban contra una lista cerrada.
+- **Pruebas.** `query::tests::descubrir_con_texto_familia_estado_y_orden` y `src/lib/discover.test.ts` (el backend del navegador replica la consulta de Rust).
+
 ## 18. Estado real de cada función
 
 | Función | Estado |
@@ -336,3 +344,4 @@ Flujo: `npm run catalog:update` = importar Recompendium → unir con `manual.jso
 | Actualizaciones firmadas de la propia app | Hecho (0.3.0) |
 | Catálogo servido desde GitHub, importado solo si es más nuevo | Hecho (1.0) |
 | Registro, errores explicados y «Copiar detalles» | Hecho (1.0) |
+| Búsqueda y filtros (consola, familia, tipo, estado, inactivos, orden) | Hecho (1.0) |
