@@ -108,6 +108,20 @@ pub fn safe_file_name(name: &str) -> Option<String> {
     base.chars().all(|c| c.is_ascii_alphanumeric() || "._-+() ".contains(c)).then(|| base.to_owned())
 }
 
+/// Mensaje cuando el antivirus de Windows bloquea o borra el archivo. La interfaz lo reconoce
+/// por el prefijo. NATIVE HUB nunca intenta saltarse el antivirus.
+pub const AV_PREFIX: &str = "ANTIVIRUS: ";
+
+fn io_err(context: &str, e: std::io::Error) -> Error {
+    // 225 = ERROR_VIRUS_INFECTED, 226 = ERROR_VIRUS_DELETED (Windows).
+    match e.raw_os_error() {
+        Some(225) | Some(226) => Error::Invalid(format!(
+            "{AV_PREFIX}Windows ha bloqueado el archivo porque su antivirus lo considera peligroso. NATIVE HUB no lo ha guardado."
+        )),
+        _ => Error::Invalid(format!("{context}: {e}")),
+    }
+}
+
 // ---------- Estado de cada descarga (para pausar o cancelar desde la interfaz) ----------
 
 pub const RUN: u8 = 0;
@@ -127,6 +141,20 @@ pub struct Progress {
 
 /// Pone en cola el ejecutable Windows de un proyecto. Devuelve el id de la descarga.
 pub fn enqueue(conn: &Connection, downloads_dir: &Path, slug: &str) -> Result<i64> {
+    enqueue_asset(conn, downloads_dir, slug, None)
+}
+
+/// Archivo elegido por el usuario en el selector de releases (ya comprobado contra la lista
+/// de releases del repositorio con `releases::find_release_asset`).
+pub struct ChosenAsset {
+    pub url: String,
+    pub name: String,
+    pub size: Option<i64>,
+    pub sha256: Option<String>,
+    pub tag: String,
+}
+
+pub fn enqueue_asset(conn: &Connection, downloads_dir: &Path, slug: &str, chosen: Option<ChosenAsset>) -> Result<i64> {
     let data: String = conn
         .query_row("SELECT data FROM projects WHERE slug = ?1", params![slug], |r| r.get(0))
         .optional()?
@@ -135,18 +163,27 @@ pub fn enqueue(conn: &Connection, downloads_dir: &Path, slug: &str) -> Result<i6
     if p["takedown"].as_bool() == Some(true) {
         return Err(Error::Invalid("el proyecto está retirado por DMCA".into()));
     }
-    if p["listing"].as_str() != Some("library") {
+    if chosen.is_none() && p["listing"].as_str() != Some("library") {
         return Err(Error::Invalid("el proyecto no tiene un ejecutable Windows comprobado".into()));
     }
-    let asset = &p["windowsAsset"];
-    let url = asset["url"].as_str().ok_or_else(|| Error::Invalid("falta la URL del archivo".into()))?;
+    let default_asset = &p["windowsAsset"];
+    let (url, raw_name, size, sha, tag) = match &chosen {
+        Some(c) => (c.url.clone(), c.name.clone(), c.size, c.sha256.clone(), c.tag.clone()),
+        None => (
+            default_asset["url"].as_str().ok_or_else(|| Error::Invalid("falta la URL del archivo".into()))?.to_owned(),
+            default_asset["name"].as_str().unwrap_or_default().to_owned(),
+            default_asset["size"].as_i64(),
+            default_asset["sha256"].as_str().map(str::to_owned),
+            p.pointer("/release/tag").and_then(Value::as_str).unwrap_or("sin-version").to_owned(),
+        ),
+    };
+    let url = url.as_str();
     let repo_url = p["repoUrl"].as_str().unwrap_or_default();
     if !url.starts_with("https://") || !host_allowed(url) || !url_belongs_to_repo(url, repo_url) {
         return Err(Error::Invalid(format!("origen no permitido para la descarga: {url}")));
     }
-    let name = safe_file_name(asset["name"].as_str().unwrap_or_default())
-        .ok_or_else(|| Error::Invalid("nombre de archivo no válido".into()))?;
-    let tag = p.pointer("/release/tag").and_then(Value::as_str).unwrap_or("sin-version");
+    let name = safe_file_name(&raw_name).ok_or_else(|| Error::Invalid("nombre de archivo no válido".into()))?;
+    let tag = tag.as_str();
     let tag_dir = safe_file_name(tag).unwrap_or_else(|| "version".into());
     let dest = downloads_dir.join(slug).join(tag_dir).join(&name);
 
@@ -172,8 +209,8 @@ pub fn enqueue(conn: &Connection, downloads_dir: &Path, slug: &str) -> Result<i6
             slug,
             url,
             dest.to_string_lossy(),
-            asset["size"].as_i64(),
-            asset["sha256"].as_str(),
+            size,
+            sha,
             name,
             tag,
             time::now_iso()
@@ -206,11 +243,11 @@ fn part_path(dest: &Path) -> PathBuf {
 }
 
 pub fn sha256_file(path: &Path) -> Result<String> {
-    let mut f = File::open(path).map_err(|e| Error::Invalid(format!("no se puede leer {}: {e}", path.display())))?;
+    let mut f = File::open(path).map_err(|e| io_err(&format!("no se puede leer {}", path.display()), e))?;
     let mut h = Sha256::new();
     let mut buf = vec![0u8; 1 << 16];
     loop {
-        let n = f.read(&mut buf).map_err(|e| Error::Invalid(e.to_string()))?;
+        let n = f.read(&mut buf).map_err(|e| io_err("no se puede leer", e))?;
         if n == 0 {
             break;
         }
@@ -263,9 +300,9 @@ pub fn run(
         }
         let mut o = opened.ok_or_else(|| Error::Http("demasiadas redirecciones".into()))?;
         let (mut done, mut file) = match o.status {
-            206 if have > 0 => (have, OpenOptions::new().append(true).open(&part).map_err(|e| Error::Invalid(e.to_string()))?),
-            200 => (0, File::create(&part).map_err(|e| Error::Invalid(e.to_string()))?),
-            416 if have > 0 && total_hint == Some(have as i64) => (have, OpenOptions::new().append(true).open(&part).map_err(|e| Error::Invalid(e.to_string()))?),
+            206 if have > 0 => (have, OpenOptions::new().append(true).open(&part).map_err(|e| io_err("no se puede abrir", e))?),
+            200 => (0, File::create(&part).map_err(|e| io_err("no se puede crear el archivo", e))?),
+            416 if have > 0 && total_hint == Some(have as i64) => (have, OpenOptions::new().append(true).open(&part).map_err(|e| io_err("no se puede abrir", e))?),
             s => return Err(Error::Http(format!("HTTP {s} al descargar"))),
         };
         let total = o.range_total.or(o.content_length.map(|l| l + done)).or(total_hint.map(|t| t as u64));
@@ -292,7 +329,7 @@ pub fn run(
                 if n == 0 {
                     break;
                 }
-                file.write_all(&buf[..n]).map_err(|e| Error::Invalid(format!("no se puede escribir: {e}")))?;
+                file.write_all(&buf[..n]).map_err(|e| io_err("no se puede escribir", e))?;
                 done += n as u64;
                 if done > MAX_SIZE {
                     return Err(Error::Invalid("archivo demasiado grande".into()));
@@ -306,7 +343,7 @@ pub fn run(
                 }
             }
         }
-        file.flush().map_err(|e| Error::Invalid(e.to_string()))?;
+        file.flush().map_err(|e| io_err("no se puede escribir", e))?;
         drop(file);
         if total.is_some_and(|t| t != done) {
             return Err(Error::Http(format!("descarga incompleta: {done} de {} bytes", total.unwrap_or(0))));
@@ -323,7 +360,12 @@ pub fn run(
         if dest.exists() {
             let _ = fs::remove_file(&dest);
         }
-        fs::rename(&part, &dest).map_err(|e| Error::Invalid(format!("no se puede mover el archivo: {e}")))?;
+        fs::rename(&part, &dest).map_err(|e| io_err("no se puede mover el archivo", e))?;
+        // Si el antivirus lo pone en cuarentena justo después, el archivo desaparece.
+        std::thread::sleep(Duration::from_millis(300));
+        if !dest.exists() {
+            return Err(Error::Invalid(format!("{AV_PREFIX}El archivo desapareció nada más descargarlo: es probable que el antivirus de Windows lo haya puesto en cuarentena.")));
+        }
         progress(Progress { id, done, total: Some(done), bytes_per_sec: 0 });
         Ok("done".into())
     })();

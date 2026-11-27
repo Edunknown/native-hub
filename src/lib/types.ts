@@ -306,3 +306,28 @@ export interface UserFileCheck {
   size: number
   checks: { check: string; ok: boolean; text: string }[]
 }
+
+// ---------- Selector de releases ----------
+
+export interface ReleaseAssetChoice {
+  name: string
+  url: string
+  size: number | null
+  sha256: string | null
+  os: 'windows' | 'linux' | 'macos' | 'android' | 'debug' | 'metadata' | 'unknown'
+  recommended: boolean
+}
+
+export interface ReleaseChoice {
+  tag: string
+  url: string
+  publishedAt: string | null
+  prerelease: boolean | null
+  assets: ReleaseAssetChoice[]
+}
+
+export interface ProjectReleases {
+  project: string
+  repoUrl: string
+  releases: ReleaseChoice[]
+}

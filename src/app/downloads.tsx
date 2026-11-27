@@ -10,6 +10,7 @@ interface DownloadsCtx {
   progress: Record<number, DownloadProgress>
   reload: () => void
   start: (slug: string) => Promise<void>
+  startAsset: (slug: string, url: string) => Promise<void>
   error: string | null
   available: boolean
 }
@@ -48,6 +49,10 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
     start: async (slug: string) => {
       setError(null)
       try { await api.downloadStart(slug); reload() } catch (e) { setError(String(e)) }
+    },
+    startAsset: async (slug: string, url: string) => {
+      setError(null)
+      try { await api.downloadAsset(slug, url); reload() } catch (e) { setError(String(e)) }
     },
   }), [items, progress, reload, error])
 

@@ -221,3 +221,34 @@ fn escaner_cola_y_aprobacion() {
     };
     assert!(scanner::approve(&mut conn, &bad_platform).is_err());
 }
+
+#[test]
+fn selector_de_releases_y_archivos() {
+    let conn = setup();
+    let fake = Fake::default();
+    let list = format!("[{RELEASE}, {{\"tag_name\": \"v0.3.0\", \"html_url\": \"https://x\", \"prerelease\": true, \"assets\": [{{\"name\": \"old-windows.zip\", \"size\": 5, \"browser_download_url\": \"https://github.com/metrist38/fefw-recomp/releases/download/v0.3.0/old-windows.zip\"}}]}}]");
+    fake.route("https://api.github.com/repos/metrist38/fefw-recomp/releases?per_page=10", 200, &list);
+    fake.route("https://api.github.com/repos/metrist38/fefw-recomp/releases?per_page=30", 200, &list);
+    let r = releases::project_releases(&conn, &fake, "fefw-recomp", 10).unwrap();
+    let rels = r["releases"].as_array().unwrap();
+    assert_eq!(rels.len(), 2);
+    let a = rels[0]["assets"].as_array().unwrap();
+    assert_eq!(a.iter().find(|x| x["recommended"] == true).unwrap()["name"], "fefw-recomp-0.4.1-win64.zip");
+    assert_eq!(a[0]["os"], "linux");
+    assert_eq!(a[1]["os"], "debug");
+
+    // Un archivo de una release antigua sí; una URL inventada, no.
+    let old = "https://github.com/metrist38/fefw-recomp/releases/download/v0.3.0/old-windows.zip";
+    let (rel, asset) = releases::find_release_asset(&conn, &fake, "fefw-recomp", old).unwrap();
+    assert_eq!((rel.tag.as_str(), asset.name.as_str()), ("v0.3.0", "old-windows.zip"));
+    assert!(releases::find_release_asset(&conn, &fake, "fefw-recomp", "https://github.com/metrist38/fefw-recomp/releases/download/v9/evil.exe").is_err());
+}
+
+#[test]
+fn sistema_por_nombre_de_archivo() {
+    assert_eq!(releases::os_guess("Game-Windows-x64.zip"), "windows");
+    assert_eq!(releases::os_guess("game.AppImage"), "linux");
+    assert_eq!(releases::os_guess("game-macos-arm64.zip"), "macos");
+    assert_eq!(releases::os_guess("game.zip"), "unknown");
+    assert_eq!(releases::os_guess("game.zip.sha256"), "metadata");
+}

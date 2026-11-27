@@ -472,3 +472,99 @@ pub fn status(conn: &Connection) -> Result<Value> {
         "unseenEvents": unseen_events(conn)?,
     }))
 }
+
+// ---------- Elegir release y archivo (descarga manual) ----------
+
+/// Últimas releases de un repositorio (incluidas prereleases), las más recientes primero.
+pub fn list_releases(conn: &Connection, f: &dyn Fetcher, forge: &Forge, limit: u32) -> Result<Vec<ReleaseInfo>> {
+    let limit = limit.clamp(1, 30);
+    let (url, parse): (String, Box<dyn Fn(&Value) -> ReleaseInfo>) = match forge {
+        Forge::GitHub { owner, name } => (
+            format!("https://api.github.com/repos/{owner}/{name}/releases?per_page={limit}"),
+            Box::new(parse_github_release),
+        ),
+        Forge::GitLab { path } => {
+            let p = path.clone();
+            (
+                format!("https://gitlab.com/api/v4/projects/{}/releases?per_page={limit}", urlencoding::encode(path)),
+                Box::new(move |v| parse_gitlab_release(v, &p)),
+            )
+        }
+        Forge::Codeberg { owner, name } => (
+            format!("https://codeberg.org/api/v1/repos/{owner}/{name}/releases?limit={limit}"),
+            Box::new(parse_codeberg_release),
+        ),
+    };
+    let r = http::cached_get(conn, f, &url)?;
+    check(&r, &url)?;
+    if r.status == 404 {
+        return Err(Error::NotFound("el repositorio ya no existe".into()));
+    }
+    let list: Value = serde_json::from_str(&r.body)?;
+    Ok(list.as_array().map(|a| a.iter().map(|v| parse(v)).collect()).unwrap_or_default())
+}
+
+/// Sistema al que parece destinado un archivo, por su nombre.
+pub fn os_guess(name: &str) -> &'static str {
+    let n = name.to_lowercase();
+    let has = |re: &str| Regex::new(re).expect("regex").is_match(&n);
+    if has(r"\.(sha256|sig|asc|txt|md|json)$") {
+        "metadata"
+    } else if has(r"(symbols|\.pdb$|debug)") {
+        "debug"
+    } else if has(r"(android|\.apk$)") {
+        "android"
+    } else if has(r"(mac|osx|darwin|apple|\.dmg$)") {
+        "macos"
+    } else if has(r"(linux|appimage|flatpak|steamdeck|decky|\.deb$|\.rpm$|\.tar\.)") {
+        "linux"
+    } else if has(r"(win|windows|msvc|mingw|\.exe$|\.msi$)") {
+        "windows"
+    } else {
+        "unknown"
+    }
+}
+
+/// Releases de un proyecto listas para la interfaz, con el archivo recomendado marcado.
+pub fn project_releases(conn: &Connection, f: &dyn Fetcher, slug: &str, limit: u32) -> Result<Value> {
+    let (data, repo_url): (String, Option<String>) = conn
+        .query_row("SELECT data, repo_url FROM projects WHERE slug = ?1", params![slug], |r| Ok((r.get(0)?, r.get(1)?)))
+        .optional()?
+        .ok_or_else(|| Error::NotFound(format!("proyecto {slug}")))?;
+    let data: Value = serde_json::from_str(&data)?;
+    let repo_url = repo_url.ok_or_else(|| Error::Invalid("el proyecto no tiene repositorio".into()))?;
+    let forge = Forge::from_repo_url(&repo_url).ok_or_else(|| Error::Invalid(format!("forja no soportada: {repo_url}")))?;
+    let pattern = data["windowsAssetPattern"].as_str().map(str::to_owned);
+    let releases = list_releases(conn, f, &forge, limit)?;
+    Ok(json!({
+        "project": slug,
+        "repoUrl": repo_url,
+        "releases": releases.iter().map(|r| {
+            let rec = pick_windows_asset(&r.assets, pattern.as_deref()).asset.map(|a| a.url.clone());
+            json!({
+                "tag": r.tag, "url": r.url, "publishedAt": r.published_at, "prerelease": r.prerelease,
+                "assets": r.assets.iter().map(|a| json!({
+                    "name": a.name, "url": a.url, "size": a.size, "sha256": a.sha256,
+                    "os": os_guess(&a.name), "recommended": rec.as_deref() == Some(a.url.as_str()),
+                })).collect::<Vec<_>>(),
+            })
+        }).collect::<Vec<_>>(),
+    }))
+}
+
+/// Comprueba que un archivo pertenece a una de las releases publicadas del proyecto.
+/// Devuelve (release, archivo). La interfaz nunca puede pedir una URL arbitraria.
+pub fn find_release_asset(conn: &Connection, f: &dyn Fetcher, slug: &str, url: &str) -> Result<(ReleaseInfo, AssetInfo)> {
+    let repo_url: String = conn
+        .query_row("SELECT repo_url FROM projects WHERE slug = ?1", params![slug], |r| r.get(0))
+        .optional()?
+        .flatten()
+        .ok_or_else(|| Error::NotFound(format!("proyecto {slug}")))?;
+    let forge = Forge::from_repo_url(&repo_url).ok_or_else(|| Error::Invalid("forja no soportada".into()))?;
+    for r in list_releases(conn, f, &forge, 30)? {
+        if let Some(a) = r.assets.iter().find(|a| a.url == url).cloned() {
+            return Ok((r, a));
+        }
+    }
+    Err(Error::Invalid("ese archivo no está en las releases del proyecto".into()))
+}

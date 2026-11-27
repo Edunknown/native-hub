@@ -293,6 +293,39 @@ fn download_start(app: AppHandle, slug: String) -> Result<i64> {
 }
 
 #[tauri::command]
+async fn project_releases(app: AppHandle, slug: String) -> Result<Value> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let s = app.state::<AppState>();
+        let conn = s.job_conn()?;
+        releases::project_releases(&conn, s.fetcher().as_ref(), &slug, 10)
+    })
+    .await
+    .map_err(|e| Error::Invalid(e.to_string()))?
+}
+
+/// Descarga un archivo elegido en el selector. La URL se comprueba contra las releases del
+/// propio repositorio antes de ponerla en cola.
+#[tauri::command]
+async fn download_asset(app: AppHandle, slug: String, url: String) -> Result<i64> {
+    let app2 = app.clone();
+    let id = tauri::async_runtime::spawn_blocking(move || {
+        let s = app2.state::<AppState>();
+        let conn = s.job_conn()?;
+        let (rel, asset) = releases::find_release_asset(&conn, s.fetcher().as_ref(), &slug, &url)?;
+        download::enqueue_asset(
+            &conn,
+            &s.downloads_dir,
+            &slug,
+            Some(download::ChosenAsset { url: asset.url, name: asset.name, size: asset.size, sha256: asset.sha256, tag: rel.tag }),
+        )
+    })
+    .await
+    .map_err(|e| Error::Invalid(e.to_string()))??;
+    ensure_download_worker(&app);
+    Ok(id)
+}
+
+#[tauri::command]
 fn downloads_list(s: State<AppState>) -> Result<Vec<Value>> {
     s.with(download::list)
 }
@@ -553,6 +586,8 @@ pub fn run() {
             set_github_token,
             clear_github_token,
             download_start,
+            project_releases,
+            download_asset,
             downloads_list,
             download_pause,
             download_resume,

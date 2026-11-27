@@ -156,3 +156,22 @@ fn nombres_de_archivo_seguros() {
     assert!(download::safe_file_name("..").is_none());
     assert!(download::safe_file_name("a;rm -rf.zip").is_none());
 }
+
+#[test]
+fn archivo_elegido_aunque_el_proyecto_no_sea_instalable() {
+    let (conn, dir) = setup(ASSET, None, "in_development");
+    let chosen = download::ChosenAsset {
+        url: "https://github.com/someone/game-recomp/releases/download/v0.9/other-win.zip".into(),
+        name: "other-win.zip".into(),
+        size: Some(BODY.len() as i64),
+        sha256: None,
+        tag: "v0.9".into(),
+    };
+    let id = download::enqueue_asset(&conn, dir.path(), "p", Some(chosen)).unwrap();
+    let row = &download::list(&conn).unwrap()[0];
+    assert_eq!(row["id"], id);
+    assert_eq!(row["releaseTag"], "v0.9");
+    // Otro repositorio: rechazado aunque venga «elegido».
+    let bad = download::ChosenAsset { url: "https://github.com/otro/repo/releases/download/v1/x.zip".into(), name: "x.zip".into(), size: None, sha256: None, tag: "v1".into() };
+    assert!(download::enqueue_asset(&conn, dir.path(), "p", Some(bad)).is_err());
+}

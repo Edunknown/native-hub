@@ -81,3 +81,17 @@ fn instalacion_real_de_spaghettikart() {
     println!("estado {} · exe {} · candidatos {}", inst["state"], inst["executablePath"], inst["config"]["candidates"]);
     assert!(inst["executablePath"].is_string() || inst["config"]["pending"] == "choose_exe");
 }
+
+#[test]
+#[ignore]
+fn releases_reales_de_tomodachi() {
+    let conn = setup();
+    let f = UreqFetcher::new(std::env::var("GITHUB_TOKEN").ok());
+    let r = releases::project_releases(&conn, &f, "josiahg2502-glitch-tomodachilife-recomp", 10).unwrap();
+    for rel in r["releases"].as_array().unwrap() {
+        println!("{} {}", rel["tag"], rel["publishedAt"]);
+        for a in rel["assets"].as_array().unwrap() {
+            println!("   {} · {} · {} · rec={}", a["name"], a["os"], a["size"], a["recommended"]);
+        }
+    }
+}

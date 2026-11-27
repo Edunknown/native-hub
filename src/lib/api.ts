@@ -4,7 +4,7 @@
 // las funciones en vivo (releases, escáner, token) solo existen en la app.
 
 import type {
-  Approval, CandidateList, DownloadItem, DownloadProgress, InstallPlan, Installation, UserFileCheck, DiscoverFilter, DiscoverResult, GameDetail, Home, JobFinished, JobProgress,
+  Approval, CandidateList, DownloadItem, DownloadProgress, InstallPlan, Installation, UserFileCheck, ProjectReleases, DiscoverFilter, DiscoverResult, GameDetail, Home, JobFinished, JobProgress,
   Platform, Project, RefreshResult, ReleasesStatus, Summary, UpdateEvent,
 } from './types'
 
@@ -46,6 +46,8 @@ export const api = {
   reject: (id: number) => call<void>('reject_candidate', { id }),
 
   downloadStart: (slug: string) => call<number>('download_start', { slug }),
+  projectReleases: (slug: string) => call<ProjectReleases>('project_releases', { slug }),
+  downloadAsset: (slug: string, url: string) => call<number>('download_asset', { slug, url }),
   downloads: () => call<DownloadItem[]>('downloads_list'),
   downloadPause: (id: number) => call<void>('download_pause', { id }),
   downloadResume: (id: number) => call<void>('download_resume', { id }),

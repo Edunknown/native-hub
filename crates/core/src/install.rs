@@ -103,13 +103,16 @@ fn project(conn: &Connection, slug: &str) -> Result<ProjectInfo> {
     Ok(ProjectInfo { data, adapter })
 }
 
-/// Descarga terminada del archivo Windows actual del proyecto.
-fn finished_download(conn: &Connection, slug: &str, url: &str) -> Result<Option<(i64, String, Option<String>)>> {
+/// Descarga terminada que se usará para instalar: la más reciente del proyecto, sea el archivo
+/// recomendado o uno elegido en el selector de releases (`_url` se conserva por compatibilidad).
+/// Devuelve (id, ruta, versión, nombre del archivo).
+fn finished_download(conn: &Connection, slug: &str, _url: &str) -> Result<Option<(i64, String, Option<String>, String)>> {
     Ok(conn
         .query_row(
-            "SELECT id, dest_path, release_tag FROM downloads WHERE project = ?1 AND url = ?2 AND state = 'done' ORDER BY id DESC LIMIT 1",
-            params![slug, url],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            "SELECT id, dest_path, release_tag, COALESCE(asset_name, '') FROM downloads
+             WHERE project = ?1 AND state = 'done' ORDER BY finished_at DESC, id DESC LIMIT 1",
+            params![slug],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
         )
         .optional()?)
 }
@@ -117,14 +120,17 @@ fn finished_download(conn: &Connection, slug: &str, url: &str) -> Result<Option<
 /// Plan de instalación que se enseña al usuario antes de hacer nada.
 pub fn plan(conn: &Connection, slug: &str, root: &Path) -> Result<Value> {
     let p = project(conn, slug)?;
-    if p.data["listing"].as_str() != Some("library") {
-        return Err(Error::Invalid("el proyecto no tiene un ejecutable Windows comprobado".into()));
-    }
-    let asset_name = p.data.pointer("/windowsAsset/name").and_then(Value::as_str).unwrap_or_default().to_owned();
     let url = p.data.pointer("/windowsAsset/url").and_then(Value::as_str).unwrap_or_default().to_owned();
+    let dl = finished_download(conn, slug, &url)?;
+    if dl.is_none() && p.data["listing"].as_str() != Some("library") {
+        return Err(Error::Invalid("el proyecto no tiene un ejecutable Windows comprobado; elige un archivo de sus releases".into()));
+    }
+    let asset_name = match &dl {
+        Some((_, _, _, n)) if !n.is_empty() => n.clone(),
+        _ => p.data.pointer("/windowsAsset/name").and_then(Value::as_str).unwrap_or_default().to_owned(),
+    };
     let method = method_for(&asset_name);
     let dir = install_dir_for(root, slug);
-    let dl = finished_download(conn, slug, &url)?;
     let existing: Option<i64> =
         conn.query_row("SELECT id FROM installations WHERE project = ?1", params![slug], |r| r.get(0)).optional()?;
 
@@ -222,18 +228,29 @@ pub fn extract_zip(zip_path: &Path, dest: &Path) -> Result<usize> {
         if let Some(parent) = out.parent() {
             fs::create_dir_all(parent).map_err(|e| Error::Invalid(e.to_string()))?;
         }
-        let mut w = File::create(&out).map_err(|e| Error::Invalid(format!("no se puede escribir {}: {e}", out.display())))?;
+        let mut w = File::create(&out).map_err(|e| av_or(e, &format!("no se puede escribir {}", out.display())))?;
         let mut buf = vec![0u8; 1 << 16];
         loop {
             let n = e.read(&mut buf).map_err(|err| Error::Invalid(format!("ZIP dañado: {err}")))?;
             if n == 0 {
                 break;
             }
-            w.write_all(&buf[..n]).map_err(|err| Error::Invalid(err.to_string()))?;
+            w.write_all(&buf[..n]).map_err(|err| av_or(err, "no se puede escribir"))?;
         }
         written += 1;
     }
     Ok(written)
+}
+
+/// El antivirus de Windows puede bloquear un ejecutable al extraerlo (error 225/226).
+fn av_or(e: std::io::Error, context: &str) -> Error {
+    match e.raw_os_error() {
+        Some(225) | Some(226) => Error::Invalid(format!(
+            "{}Windows ha bloqueado un archivo del ZIP porque su antivirus lo considera peligroso. La instalación se ha cancelado.",
+            download::AV_PREFIX
+        )),
+        _ => Error::Invalid(format!("{context}: {e}")),
+    }
 }
 
 fn zip_is_dir_name(p: &Path) -> bool {
@@ -284,15 +301,19 @@ fn is_inside(path: &Path, dir: &Path) -> bool {
 /// Instala un proyecto ya descargado. Devuelve la fila de la instalación.
 pub fn install(conn: &Connection, slug: &str, root: &Path) -> Result<Value> {
     let p = project(conn, slug)?;
-    if p.data["listing"].as_str() != Some("library") {
-        return Err(Error::Invalid("el proyecto no tiene un ejecutable Windows comprobado".into()));
+    if p.data["takedown"].as_bool() == Some(true) {
+        return Err(Error::Invalid("el proyecto está retirado por DMCA".into()));
     }
     if conn.query_row("SELECT 1 FROM installations WHERE project = ?1", params![slug], |_| Ok(())).optional()?.is_some() {
         return Err(Error::Invalid("ya está instalado".into()));
     }
-    let asset_name = p.data.pointer("/windowsAsset/name").and_then(Value::as_str).unwrap_or_default().to_owned();
     let url = p.data.pointer("/windowsAsset/url").and_then(Value::as_str).unwrap_or_default().to_owned();
-    let (_, file, tag) = finished_download(conn, slug, &url)?.ok_or_else(|| Error::Invalid("primero descarga el archivo".into()))?;
+    let (_, file, tag, dl_name) = finished_download(conn, slug, &url)?.ok_or_else(|| Error::Invalid("primero descarga el archivo".into()))?;
+    let asset_name = if dl_name.is_empty() {
+        p.data.pointer("/windowsAsset/name").and_then(Value::as_str).unwrap_or_default().to_owned()
+    } else {
+        dl_name
+    };
     let file = PathBuf::from(file);
     if !file.exists() {
         return Err(Error::Invalid("el archivo descargado ya no está en disco; vuelve a descargarlo".into()));

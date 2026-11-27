@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useDownloads } from '../app/downloads'
 import { useLibrary } from '../app/library'
 import { InstallPanel } from './Install'
+import { ReleasePicker } from './ReleasePicker'
 import { api as liveApi } from '../lib/api'
 import { useCatalog } from '../app/catalog'
 import { useNav } from '../app/nav'
@@ -57,7 +58,7 @@ export function CompatSheet({ project }: { project: Project }) {
 }
 
 /** Descargar el ejecutable Windows de la release oficial (fase 4). */
-function DownloadButton({ project, onInstall }: { project: Project; onInstall: () => void }) {
+function DownloadButton({ project, onInstall, onChoose }: { project: Project; onInstall: () => void; onChoose: () => void }) {
   const { items, progress, start, error, available } = useDownloads()
   const { go } = useNav()
   const lib = useLibrary()
@@ -72,9 +73,18 @@ function DownloadButton({ project, onInstall }: { project: Project; onInstall: (
       </>
     )
   }
-  const dl = items.find((d) => d.project === project.slug && d.url === project.windowsAsset?.url && d.state !== 'cancelled')
-  if (project.listing !== 'library') {
-    return <button type="button" className="btn-primary" disabled><IconDownload width={15} height={15} strokeWidth={2.2} />No instalable</button>
+  const mine = items.filter((d) => d.project === project.slug && d.state !== 'cancelled')
+  const dl = mine.find((d) => d.state === 'running' || d.state === 'queued') ?? mine.find((d) => d.state === 'done') ?? mine.find((d) => d.url === project.windowsAsset?.url)
+  const choose = available && project.repoUrl && !project.takedown
+    ? <button type="button" className="link" onClick={onChoose}>Elegir versión y archivo…</button>
+    : null
+  if (project.listing !== 'library' && !(dl && dl.state === 'done')) {
+    return (
+      <>
+        <button type="button" className="btn-primary" disabled><IconDownload width={15} height={15} strokeWidth={2.2} />Sin ejecutable recomendado</button>
+        {choose}
+      </>
+    )
   }
   if (!available) {
     return <button type="button" className="btn-primary" disabled title="Solo en la app de escritorio"><IconDownload width={15} height={15} strokeWidth={2.2} />Descargar {project.name}</button>
@@ -93,7 +103,8 @@ function DownloadButton({ project, onInstall }: { project: Project; onInstall: (
     return (
       <>
         <button type="button" className="btn-primary" onClick={onInstall}>Instalar…</button>
-        <span className="note-line"><span className="yes">Descargado {dl.releaseTag ?? ''}</span>{dl.verified ? ' · SHA-256 comprobado' : ''}</span>
+        <span className="note-line"><span className="yes">Descargado {dl.assetName ?? ''} {dl.releaseTag ?? ''}</span>{dl.verified ? ' · SHA-256 comprobado' : ''}</span>
+        {choose}
       </>
     )
   }
@@ -104,6 +115,8 @@ function DownloadButton({ project, onInstall }: { project: Project; onInstall: (
         {dl?.state === 'paused' ? 'Reanudar descarga' : `Descargar ${project.name}`}
         {project.windowsAsset?.size ? <span className="btn-sub">{fmtSize(project.windowsAsset.size, project.windowsAsset.sizeApprox)}</span> : null}
       </button>
+      {choose}
+      {dl?.state === 'failed' && <span className="note-line err">{dl.error?.startsWith('ANTIVIRUS: ') ? 'La última descarga la bloqueó el antivirus. Mira Descargas para más detalles.' : `La última descarga falló: ${dl.error ?? ''}`}</span>}
       {error && <span className="note-line err">{error}</span>}
     </>
   )
@@ -157,6 +170,7 @@ export function GameFeature({ detail, eyebrow, initialProject, linkTitle, onRefr
   const project = projects[sel]
   const installable = projects.filter((p) => p.listing === 'library').length
   const [installing, setInstalling] = useState<string | null>(null)
+  const [picking, setPicking] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
   const [checkMsg, setCheckMsg] = useState<string | null>(null)
   const check = async () => {
@@ -197,7 +211,7 @@ export function GameFeature({ detail, eyebrow, initialProject, linkTitle, onRefr
                 <div className="req"><div className="eyebrow">Requisitos según el proyecto</div><p>{project.requirementsText}</p></div>
               )}
               <div className="actions">
-                <DownloadButton project={project} onInstall={() => setInstalling(project.slug)} />
+                <DownloadButton project={project} onInstall={() => { setPicking(null); setInstalling(project.slug) }} onChoose={() => { setInstalling(null); setPicking(project.slug) }} />
                 <a className="link" onClick={() => openExternal(project.repoUrl)}>
                   <span className="mono">{project.repoUrl.replace(/^https?:\/\//, '')}</span>
                   <IconOut />
@@ -211,6 +225,7 @@ export function GameFeature({ detail, eyebrow, initialProject, linkTitle, onRefr
                 {project.stars != null && <span className="note-line num">★ {fmtNum(project.stars)}</span>}
               </div>
               {installing === project.slug && <InstallPanel slug={project.slug} onClose={() => setInstalling(null)} />}
+              {picking === project.slug && <ReleasePicker slug={project.slug} onClose={() => setPicking(null)} />}
               {checkMsg && <div className="note-line">{checkMsg}</div>}
               <div className="note-line">
                 {project.checkedAt && <>Comprobado el {fmtDateTime(project.checkedAt)}. </>}

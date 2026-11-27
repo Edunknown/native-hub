@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useDownloads } from '../app/downloads'
 import { useNav } from '../app/nav'
-import { api } from '../lib/api'
+import { api, openExternal } from '../lib/api'
 import { fmtDateTime, fmtSize } from '../lib/format'
 import type { DownloadItem } from '../lib/types'
 
@@ -49,7 +49,19 @@ function Row({ d }: { d: DownloadItem }) {
             </span>
           </div>
         )}
-        {d.error && <p className="note-line err">{d.error}</p>}
+        {d.error?.startsWith('ANTIVIRUS: ') ? (
+          <div className="av">
+            <p className="err">{d.error.slice('ANTIVIRUS: '.length)}</p>
+            <p className="note-line">
+              Pasa a menudo con proyectos nuevos que publican ejecutables sin firma digital, pero también es como se reparte el malware, sobre todo en repositorios recientes o con muchos forks. NATIVE HUB no intenta saltarse el antivirus.
+              Antes de nada, revisa el repositorio (quién lo publica, cuántas estrellas tiene, si otros usuarios lo comentan) o prueba otra versión u otro archivo.
+            </p>
+            <span className="cand-actions">
+              <button type="button" className="btn-line" onClick={() => openExternal(d.url.split('/releases/')[0])}>Ver el repositorio</button>
+              {d.gameSlug && <button type="button" className="link" onClick={() => go({ name: 'game', slug: d.gameSlug!, project: d.project })}>Elegir otra versión o archivo</button>}
+            </span>
+          </div>
+        ) : d.error && <p className="note-line err">{d.error}</p>}
         {d.state === 'done' && (
           <p className="note-line">
             <Verify d={d} /> · {fmtSize(d.done)} · {fmtDateTime(d.finishedAt)}

@@ -363,3 +363,13 @@ button.row:hover .game { color: var(--accent-ink); }
 .thumb svg { flex: none; }
 .row { grid-template-columns: 44px minmax(0, 1fr) auto; }
 .row .sub .plat-name { color: var(--fg); }
+
+/* Selector de releases y aviso del antivirus */
+.rel { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.rel-head { display: flex; align-items: baseline; gap: 12px; font-size: 13px; }
+.rel-assets { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rel-assets li { display: grid; grid-template-columns: minmax(0, 1fr) 90px 80px 60px 100px 110px; gap: 12px; align-items: center; padding: 6px 0; font-size: 12.5px; border-bottom: 1px solid var(--line); }
+.rel-assets li:last-child { border-bottom: 0; }
+.rel-assets .btn-primary, .rel-assets .btn-line { height: 30px; padding: 0 12px; justify-self: end; }
+.av { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; max-width: 760px; }
+.panel { max-width: 920px; }
