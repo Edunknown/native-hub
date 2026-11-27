@@ -155,7 +155,7 @@ export function Library() {
       {!isTauri ? (
         <p className="empty">{tr('La biblioteca solo funciona en la app de escritorio.', 'The library only works in the desktop app.')}</p>
       ) : items.length === 0 ? (
-        <p className="empty">{tr('Todavía no hay nada instalado. Busca un juego, descarga su ejecutable desde la ficha y pulsa «Instalar…».', 'Nothing installed yet. Find a game, download its executable from its page and press "Install…".')} <button type="button" className="link" onClick={() => go({ name: 'discover' })}>{tr('Ir al catálogo', 'Go to the catalog')}</button></p>
+        <p className="empty">{tr('Todavía no hay nada instalado. Busca un juego y descárgalo desde su ficha: si es un ZIP, se instala solo.', 'Nothing installed yet. Find a game and download it from its page: a ZIP installs on its own.')} <button type="button" className="link" onClick={() => go({ name: 'discover' })}>{tr('Ir al catálogo', 'Go to the catalog')}</button></p>
       ) : (
         <ul className="list">{items.map((i) => <InstallationRow key={i.id} inst={i} />)}</ul>
       )}

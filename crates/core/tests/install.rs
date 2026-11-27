@@ -183,3 +183,58 @@ fn adaptador_aparece_en_el_plan() {
     assert!(texts.iter().any(|t| t.contains("Te pedirá tu ROM")));
     assert_eq!(install::adapter_rule(&conn, "p", "rom").unwrap().label, "ROM de prueba");
 }
+
+#[test]
+fn zip_se_borra_tras_extraerlo_bien() {
+    let (conn, tmp) = setup("game-recomp-win64.zip", "null");
+    let downloads = tmp.path().join("Descargas");
+    fs::create_dir_all(&downloads).unwrap();
+    let z = downloads.join("game-recomp-win64.zip");
+    make_zip(&z, &[("game.exe", b"MZ")]);
+    downloaded(&conn, &z);
+    let root = tmp.path().join("Juegos");
+    let inst = install::install_and_clean(&conn, "p", &root, &downloads).unwrap();
+    assert_eq!(inst["state"], "ready");
+    assert_eq!(inst["zipRemoved"], true);
+    assert!(!z.exists(), "el ZIP se borra");
+    assert!(root.join("p").join("game.exe").exists());
+    let left: i64 = conn.query_row("SELECT COUNT(*) FROM downloads", [], |r| r.get(0)).unwrap();
+    assert_eq!(left, 0, "y sale de Descargas");
+}
+
+#[test]
+fn zip_peligroso_no_se_instala_ni_se_borra() {
+    let (conn, tmp) = setup("game-recomp-win64.zip", "null");
+    let downloads = tmp.path().join("Descargas");
+    fs::create_dir_all(&downloads).unwrap();
+    let z = downloads.join("game-recomp-win64.zip");
+    make_zip(&z, &[("../fuera.exe", b"MZ")]);
+    downloaded(&conn, &z);
+    let root = tmp.path().join("Juegos");
+    assert!(install::install_and_clean(&conn, "p", &root, &downloads).is_err());
+    assert!(z.exists(), "si falla, el ZIP se queda para reintentar");
+    assert!(!tmp.path().join("fuera.exe").exists());
+    assert!(!root.join("p").exists());
+}
+
+#[test]
+fn instalador_no_se_borra() {
+    let (conn, tmp) = setup("Game-Setup.exe", "null");
+    let downloads = tmp.path().join("Descargas");
+    fs::create_dir_all(&downloads).unwrap();
+    let f = downloads.join("Game-Setup.exe");
+    fs::write(&f, b"MZ").unwrap();
+    downloaded(&conn, &f);
+    let inst = install::install_and_clean(&conn, "p", &tmp.path().join("Juegos"), &downloads).unwrap();
+    assert!(inst.get("zipRemoved").is_none());
+    assert!(f.exists(), "el instalador hace falta para ejecutarlo");
+}
+
+#[test]
+fn elige_el_zip_de_windows_de_una_release() {
+    use native_hub_core::releases::{AssetInfo, pick_windows_zip};
+    let a = |n: &str| AssetInfo { name: n.into(), url: format!("https://github.com/o/r/releases/download/v1/{n}"), size: None, sha256: None };
+    let assets = vec![a("Game-Setup.exe"), a("game-linux.zip"), a("game-win64.zip"), a("game-macos.zip"), a("game.exe")];
+    assert_eq!(pick_windows_zip(&assets).unwrap().name, "game-win64.zip");
+    assert!(pick_windows_zip(&[a("Game-Setup.exe"), a("game-linux.zip")]).is_none());
+}

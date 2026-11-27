@@ -104,7 +104,7 @@ export function Downloads() {
         <div className="eyebrow">{tr('Descargas', 'Downloads')}</div>
         <h1 className="page-title">{tr('Descargas', 'Downloads')}</h1>
         <p className="page-lede">
-          {tr('Cada descarga sale de la release oficial del proyecto, solo por HTTPS y desde GitHub, GitLab o Codeberg. Si el proyecto publica el SHA-256, se comprueba y un archivo que no coincide se descarta. Nada se descomprime ni se ejecuta hasta que lo instalas.', 'Every download comes from the project\'s official release, only over HTTPS and from GitHub, GitLab or Codeberg. If the project publishes a SHA-256, it is checked and a file that does not match is discarded. Nothing is unpacked or run until you install it.')}
+          {tr('Cada descarga sale de la release oficial del proyecto, solo por HTTPS y desde GitHub, GitLab o Codeberg. Si el proyecto publica el SHA-256, se comprueba y un archivo que no coincide se descarta. Los ZIP se descomprimen solos en tu carpeta de juegos y después se borran; si un .exe no se puede descargar, se prueba con el ZIP de la misma versión. Nada se ejecuta hasta que pulsas «Ejecutar».', 'Every download comes from the project\'s official release, only over HTTPS and from GitHub, GitLab or Codeberg. If the project publishes a SHA-256, it is checked and a file that does not match is discarded. ZIP files are unpacked into your games folder on their own and then deleted; if an .exe cannot be downloaded, the ZIP of the same version is tried. Nothing runs until you press "Launch".')}
         </p>
       </div>
 

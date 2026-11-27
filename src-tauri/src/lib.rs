@@ -464,7 +464,18 @@ fn ensure_download_worker(app: &AppHandle) {
                     None => log::info!("download {id}: {state}"),
                 }
                 s.dl_controls.lock().expect("controles").remove(&id);
+                let follow = after_download(&app, &conn, id, &state);
                 let _ = app.emit("download-finished", json!({ "id": id, "state": state }));
+                if let AfterDownload::Install(slug) = follow {
+                    let r = install_with_cleanup(&s, &conn, &slug);
+                    let _ = app.emit(
+                        "auto-install",
+                        match &r {
+                            Ok(v) => json!({ "slug": slug, "phase": "done", "state": v["state"], "zipRemoved": v["zipRemoved"] }),
+                            Err(e) => json!({ "slug": slug, "phase": "failed", "error": e.to_string() }),
+                        },
+                    );
+                }
             }
         }
         s.dl_worker.store(false, Ordering::SeqCst);
@@ -475,6 +486,73 @@ fn ensure_download_worker(app: &AppHandle) {
             }
         }
     });
+}
+
+enum AfterDownload {
+    Nothing,
+    /// A ZIP finished for a project that is not installed yet: extract it now.
+    Install(String),
+}
+
+/// What to do when a download ends. A finished ZIP is installed straight away (and deleted
+/// once it is extracted). When an .exe, installer or other non-ZIP file fails (antivirus,
+/// browser-style blocks, broken link), the Windows ZIP of the same official release is
+/// queued instead, if the release has one.
+fn after_download(app: &AppHandle, conn: &rusqlite::Connection, id: i64, state: &str) -> AfterDownload {
+    let row: Option<(String, String, String)> = conn
+        .query_row(
+            "SELECT project, COALESCE(asset_name, ''), COALESCE(release_tag, '') FROM downloads WHERE id = ?1",
+            [id],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .ok();
+    let Some((slug, name, tag)) = row else { return AfterDownload::Nothing };
+    let installed = conn.query_row("SELECT 1 FROM installations WHERE project = ?1", [&slug], |_| Ok(())).is_ok();
+    if installed {
+        return AfterDownload::Nothing;
+    }
+    let is_zip = name.to_lowercase().ends_with(".zip");
+    match state {
+        "done" if is_zip => {
+            let _ = app.emit("auto-install", json!({ "slug": slug, "phase": "started" }));
+            AfterDownload::Install(slug)
+        }
+        "failed" if !is_zip && !tag.is_empty() => {
+            let s = app.state::<AppState>();
+            let found = releases::zip_fallback(conn, s.fetcher().as_ref(), &slug, &tag);
+            match found {
+                Ok(Some((rel, zip))) => {
+                    let zip_name = zip.name.clone();
+                    let chosen = download::ChosenAsset { url: zip.url, name: zip.name, size: zip.size, sha256: zip.sha256, tag: rel.tag };
+                    match download::enqueue_asset(conn, &s.downloads_dir, &slug, Some(chosen)) {
+                        Ok(new_id) => {
+                            log::info!("download {id} failed; trying the release ZIP instead: {zip_name} (download {new_id})");
+                            let _ = app.emit("download-fallback", json!({ "slug": slug, "from": id, "to": new_id, "name": zip_name }));
+                        }
+                        Err(e) => log::warn!("download {id}: cannot queue the ZIP fallback: {e}"),
+                    }
+                }
+                Ok(None) => log::info!("download {id} failed and release {tag} has no Windows ZIP"),
+                Err(e) => log::warn!("download {id}: cannot look for a ZIP fallback: {e}"),
+            }
+            AfterDownload::Nothing
+        }
+        _ => AfterDownload::Nothing,
+    }
+}
+
+/// Installs a downloaded project into the games folder; a ZIP is deleted once extracted.
+fn install_with_cleanup(s: &AppState, conn: &rusqlite::Connection, slug: &str) -> Result<Value> {
+    let root = s.install_root()?;
+    std::fs::create_dir_all(&root).map_err(|e| Error::Invalid(native_hub_core::t!("no se puede crear la carpeta de juegos: {e}", "cannot create the games folder: {e}")))?;
+    log::info!("install {slug} into {}", root.display());
+    let r = install::install_and_clean(conn, slug, &root, &s.downloads_dir);
+    match &r {
+        Ok(v) if v["zipRemoved"] == true => log::info!("install {slug}: ZIP extracted and deleted"),
+        Ok(_) => {}
+        Err(e) => log::error!("install {slug}: {e}"),
+    }
+    r
 }
 
 #[tauri::command]
@@ -611,15 +689,8 @@ fn install_plan(s: State<AppState>, slug: String) -> Result<Value> {
 async fn install_project(app: AppHandle, slug: String) -> Result<Value> {
     tauri::async_runtime::spawn_blocking(move || {
         let s = app.state::<AppState>();
-        let root = s.install_root()?;
-        std::fs::create_dir_all(&root).map_err(|e| Error::Invalid(native_hub_core::t!("no se puede crear la carpeta de juegos: {e}", "cannot create the games folder: {e}")))?;
         let conn = s.job_conn()?;
-        log::info!("install {slug} into {}", root.display());
-        let r = install::install(&conn, &slug, &root);
-        if let Err(e) = &r {
-            log::error!("install {slug}: {e}");
-        }
-        r
+        install_with_cleanup(&s, &conn, &slug)
     })
     .await
     .map_err(|e| Error::Invalid(e.to_string()))?

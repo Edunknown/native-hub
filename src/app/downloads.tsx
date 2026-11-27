@@ -2,7 +2,7 @@
 // Descargas, la barra de estado y el botón de la ficha.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { api, isTauri, onDownloads } from '../lib/api'
+import { api, isTauri, onAutoInstall, onDownloadFallback, onDownloads, type AutoInstall } from '../lib/api'
 import type { DownloadItem, DownloadProgress } from '../lib/types'
 
 interface DownloadsCtx {
@@ -13,6 +13,10 @@ interface DownloadsCtx {
   startAsset: (slug: string, url: string) => Promise<void>
   error: string | null
   available: boolean
+  /** Automatic install of a downloaded ZIP, by project. */
+  autoInstall: Record<string, AutoInstall>
+  /** ZIP queued because the .exe could not be downloaded, by project (file name). */
+  fallback: Record<string, string>
 }
 
 const Ctx = createContext<DownloadsCtx | null>(null)
@@ -21,6 +25,8 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<DownloadItem[]>([])
   const [progress, setProgress] = useState<Record<number, DownloadProgress>>({})
   const [error, setError] = useState<string | null>(null)
+  const [autoInstall, setAutoInstall] = useState<Record<string, AutoInstall>>({})
+  const [fallback, setFallback] = useState<Record<string, string>>({})
 
   const reload = useCallback(() => {
     api.downloads().then(setItems, () => {})
@@ -33,7 +39,11 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       (p) => setProgress((prev) => ({ ...prev, [p.id]: p })),
       () => reload(),
     ).then((u) => { off = u })
-    return () => off?.()
+    let offA: (() => void) | undefined
+    let offF: (() => void) | undefined
+    onAutoInstall((e) => { setAutoInstall((prev) => ({ ...prev, [e.slug]: e })); reload() }).then((u) => { offA = u })
+    onDownloadFallback((e) => { setFallback((prev) => ({ ...prev, [e.slug]: e.name })); reload() }).then((u) => { offF = u })
+    return () => { off?.(); offA?.(); offF?.() }
   }, [reload])
 
   // Recargar la lista de vez en cuando mientras haya algo en marcha (estado y bytes en disco).
@@ -45,7 +55,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
   }, [active, reload])
 
   const value = useMemo<DownloadsCtx>(() => ({
-    items, progress, reload, error, available: isTauri,
+    items, progress, reload, error, available: isTauri, autoInstall, fallback,
     start: async (slug: string) => {
       setError(null)
       try { await api.downloadStart(slug); reload() } catch (e) { setError(String(e)) }
@@ -54,7 +64,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       setError(null)
       try { await api.downloadAsset(slug, url); reload() } catch (e) { setError(String(e)) }
     },
-  }), [items, progress, reload, error])
+  }), [items, progress, reload, error, autoInstall, fallback])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
