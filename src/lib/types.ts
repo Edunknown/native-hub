@@ -80,7 +80,7 @@ export interface Project {
   requirementsTextEn?: string | null
   requirements: Requirements | null
   tags: string[]
-  adapter?: { id: string; version: number; reviewedAt: string | null; firstRun?: string | null; userFiles: UserFileRule[] } | null
+  adapter?: { id: string; version: number; reviewedAt: string | null; firstRun?: string | null; userFiles: UserFileRule[]; tested?: AdapterTest[] } | null
   stars: number | null
   createdAt: string | null
   pushedAt: string | null
@@ -116,6 +116,22 @@ export interface Home {
   featured: GameDetail | null
   updated: Project[]
   newest: Project[]
+}
+
+/**
+ * A test of a reviewed adapter. `install`: downloaded and installed from the official release
+ * and the executable was found (automatic test). `played`: a person opened it with their own
+ * game files and played. `issues`: tested, with problems described in the notes.
+ */
+export interface AdapterTest {
+  status: 'install' | 'played' | 'issues'
+  version: string
+  date: string
+  by: string
+  /** win10 | win11 | windows-server (CI) */
+  os?: string
+  notes?: string
+  notesEn?: string
 }
 
 export type SortOrder = 'relevance' | 'title' | 'updated' | 'newest' | 'stars'

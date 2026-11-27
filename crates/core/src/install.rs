@@ -175,7 +175,12 @@ pub fn plan(conn: &Connection, slug: &str, root: &Path) -> Result<Value> {
     }
     if let Some(a) = &p.adapter {
         for f in &a.user_files {
-            let when = if f.when == "first_launch" { crate::i18n::tr("El juego te lo pedirá al abrirlo por primera vez; aquí puedes comprobar antes que es el correcto.", "The game will ask for it the first time you open it; here you can check beforehand that it is the right one.") } else { crate::i18n::tr("Te lo pediré durante la instalación.", "You will be asked for it during installation.") };
+            let when = match f.when.as_str() {
+                "first_launch" => crate::i18n::tr("El juego te lo pedirá al abrirlo por primera vez; aquí puedes comprobar antes que es el correcto.", "The game will ask for it the first time you open it; here you can check beforehand that it is the right one."),
+                // The game does not ask: the user copies it (NATIVE HUB never copies game files).
+                "manual" => crate::i18n::tr("Tienes que copiarlo tú donde indica el proyecto; aquí puedes comprobar antes que es el correcto.", "You copy it yourself where the project says; here you can check beforehand that it is the right one."),
+                _ => crate::i18n::tr("Te lo pediré durante la instalación.", "You will be asked for it during installation."),
+            };
             steps.push(json!({"kind": "user_file", "text": format!("{}. {when}", f.label)}));
         }
         if let Some(fr) = &a.first_run {

@@ -1,0 +1,64 @@
+name: Adapter install tests
+
+# Downloads the latest official Windows release of every reviewed adapter, installs it
+# into a temporary folder and checks that the game executable is found. It never runs
+# the game and uses no game files. Results: the job summary and the adapter-report artifact.
+# Record them in each adapter's "tested" list (status "install", by "CI").
+
+on:
+  pull_request:
+    paths:
+      - 'catalog/adapters/**'
+      - 'crates/core/tests/adapters.rs'
+      - 'crates/core/src/install.rs'
+      - 'crates/core/src/download.rs'
+      - '.github/workflows/adapters.yml'
+  schedule:
+    - cron: '17 5 * * 1'   # Mondays 05:17 UTC
+  workflow_dispatch:
+    inputs:
+      adapters:
+        description: Adapter ids, comma separated (empty = all)
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  install:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: core
+      - name: Install every adapter from its official release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ADAPTERS: ${{ github.event.inputs.adapters }}
+        run: cargo test -p native-hub-core --locked --test adapters -- --ignored --nocapture
+      - name: Summary
+        if: always()
+        shell: pwsh
+        run: |
+          if (-not (Test-Path target/adapter-report.json)) { "No report." >> $env:GITHUB_STEP_SUMMARY; exit 0 }
+          $r = Get-Content target/adapter-report.json -Raw | ConvertFrom-Json
+          "## Adapter install tests ($($r.testedAt), $($r.os))" >> $env:GITHUB_STEP_SUMMARY
+          "| Adapter | Result | Release | File | SHA-256 | Executable |" >> $env:GITHUB_STEP_SUMMARY
+          "|---|---|---|---|---|---|" >> $env:GITHUB_STEP_SUMMARY
+          foreach ($x in $r.results) {
+            $res = if ($x.ok) { "installs" } else { "fails at $($x.stage): $($x.error)" }
+            $sha = if ($x.sha256.published) { if ($x.sha256.matches) { "matches" } else { "MISMATCH" } } else { "not published" }
+            "| $($x.adapter) | $res | $($x.releaseTag) | $($x.asset) | $sha | $($x.executable) |" >> $env:GITHUB_STEP_SUMMARY
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: adapter-report
+          path: target/adapter-report.json
+          if-no-files-found: ignore
